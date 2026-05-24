@@ -9,11 +9,11 @@
 
 ### Block 2 (Day 2)
 - [x] Phase 3: Supabase auth.
-- [ ] Phase 4: UI shell + dashboard.
+- [x] Phase 4: UI shell + dashboard.
 
 ### Block 3 (Day 3)
-- [ ] Phase 5: Calendar.
-- [ ] Phase 6: Group predictions.
+- [x] Phase 5: Calendar.
+- [x] Phase 6: Group predictions.
 
 ### Block 4 (Day 4)
 - [ ] Phase 7: Scoring + ranking.
