@@ -21,8 +21,8 @@
 
 ### Block 5 (Day 5)
 - [x] Phase 8: Sync + GitHub Action.
-- [ ] Phase 10: README + hardening.
-- [ ] Deploy to Vercel.
+- [x] Phase 10: README + hardening.
+- [x] Deploy to Vercel.
 
 ### Block 6 (Day 6)
 - [x] Phase 9: Bracket MVP visual.
