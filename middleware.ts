@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && pathname === "/login") {
     const profileUrl = request.nextUrl.clone();
-    profileUrl.pathname = "/profile";
+    profileUrl.pathname = "/dashboard";
     const redirectResponse = NextResponse.redirect(profileUrl);
     copyCookies(supabaseResponse, redirectResponse);
     return redirectResponse;

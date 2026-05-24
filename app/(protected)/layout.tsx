@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AppShell } from "@/components/layout/AppShell";
+import { Header } from "@/components/layout/Header";
 import {
   ensureProfileForUser,
   isProfileComplete,
@@ -28,34 +30,9 @@ export default async function ProtectedLayout({
   const label = profile.display_name?.trim() || profile.username;
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-6 sm:px-6">
-      <div className="space-y-4">
-        <header className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent-primary">
-                Tournament access
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-                {label}
-              </h1>
-              <p className="mt-1 text-sm text-text-secondary">
-                {user.email ?? "Signed-in player"}
-              </p>
-            </div>
-
-            <form action={signOut}>
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
-                type="submit"
-              >
-                Log out
-              </button>
-            </form>
-          </div>
-        </header>
-
-        {!profileComplete ? (
+    <AppShell
+      banner={
+        !profileComplete ? (
           <div className="rounded-card border border-status-warning/35 bg-status-warning/10 px-4 py-3 text-sm text-text-primary">
             Your account is in, but your profile still needs a username and
             display name.{" "}
@@ -64,10 +41,28 @@ export default async function ProtectedLayout({
             </Link>
             .
           </div>
-        ) : null}
-
-        {children}
-      </div>
-    </main>
+        ) : undefined
+      }
+      header={
+        <Header
+          action={
+            <form action={signOut}>
+              <button
+                className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
+                type="submit"
+              >
+                Log out
+              </button>
+            </form>
+          }
+          leagueName="App Mundial League"
+          subtitle="A private World Cup race with broadcast energy, daily ranking tension, and every pick under the lights."
+          userEmail={user.email ?? "Signed-in player"}
+          userLabel={label}
+        />
+      }
+    >
+      {children}
+    </AppShell>
   );
 }

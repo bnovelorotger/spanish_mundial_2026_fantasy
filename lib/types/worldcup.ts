@@ -1,72 +1,56 @@
-// World Cup 2026 Pick'em App — Type definitions
-// This file will contain shared types for the application.
-
-// ============================================================
-// Match Status
-// ============================================================
 export type MatchStatus =
-  | 'SCHEDULED'
-  | 'LIVE'
-  | 'FINISHED'
-  | 'POSTPONED'
-  | 'CANCELLED';
+  | "SCHEDULED"
+  | "LIVE"
+  | "FINISHED"
+  | "POSTPONED"
+  | "CANCELLED";
 
-// ============================================================
-// Match Phase
-// ============================================================
 export type MatchPhase =
-  | 'GROUP_STAGE'
-  | 'ROUND_OF_32'
-  | 'ROUND_OF_16'
-  | 'QUARTER_FINALS'
-  | 'SEMI_FINALS'
-  | 'THIRD_PLACE'
-  | 'FINAL';
+  | "GROUP_STAGE"
+  | "ROUND_OF_32"
+  | "ROUND_OF_16"
+  | "QUARTER_FINALS"
+  | "SEMI_FINALS"
+  | "THIRD_PLACE"
+  | "FINAL";
 
-// ============================================================
-// Group Letters
-// ============================================================
-export type GroupLetter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L';
+export type LockPhase = MatchPhase | "CHAMPION";
 
-// ============================================================
-// Qualification Status
-// ============================================================
+export type GroupLetter =
+  | "A"
+  | "B"
+  | "C"
+  | "D"
+  | "E"
+  | "F"
+  | "G"
+  | "H"
+  | "I"
+  | "J"
+  | "K"
+  | "L";
+
 export type QualificationStatus =
-  | 'QUALIFIED_FIRST'
-  | 'QUALIFIED_SECOND'
-  | 'BEST_THIRD'
-  | 'ELIMINATED';
+  | "QUALIFIED_FIRST"
+  | "QUALIFIED_SECOND"
+  | "BEST_THIRD"
+  | "ELIMINATED";
 
-// ============================================================
-// Prediction State
-// ============================================================
 export type PredictionState =
-  | 'EDITABLE'
-  | 'LOCKED'
-  | 'PENDING'
-  | 'COMPLETED';
+  | "EDITABLE"
+  | "LOCKED"
+  | "PENDING"
+  | "COMPLETED";
 
-// ============================================================
-// Points Source Type
-// ============================================================
 export type PointsSourceType =
-  | 'GROUP_POSITION'
-  | 'KNOCKOUT_WINNER'
-  | 'CHAMPION';
+  | "GROUP_POSITION"
+  | "KNOCKOUT_WINNER"
+  | "CHAMPION";
 
-// ============================================================
-// Sync Run Status
-// ============================================================
-export type SyncRunStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED';
+export type SyncRunStatus = "SUCCESS" | "PARTIAL" | "FAILED";
 
-// ============================================================
-// Lock Type
-// ============================================================
-export type LockType = 'AUTOMATIC' | 'MANUAL';
+export type LockType = "AUTOMATIC" | "MANUAL";
 
-// ============================================================
-// Database Row Types (matching Supabase schema)
-// ============================================================
 export interface Team {
   id: string;
   name: string;
@@ -156,7 +140,7 @@ export interface Points {
 
 export interface GameLock {
   id: string;
-  phase: MatchPhase;
+  phase: LockPhase;
   locked: boolean;
   lock_at: string | null;
   locked_by: LockType | null;
@@ -193,9 +177,6 @@ export interface AppSetting {
   updated_at: string;
 }
 
-// ============================================================
-// Provider DTOs
-// ============================================================
 export interface TeamDTO {
   name: string;
   code: string;
@@ -236,24 +217,57 @@ export interface GroupStandingDTO {
   is_final: boolean;
 }
 
-// ============================================================
-// View Models (for UI components)
-// ============================================================
+export interface MatchTeamViewModel {
+  code: string;
+  flagUrl: string | null;
+  isTbd: boolean;
+  name: string;
+}
+
 export interface MatchCardViewModel {
+  awayPlaceholder: string | null;
+  awayScore: number | null;
+  awayTeam: MatchTeamViewModel | null;
+  city: string | null;
+  groupLetter: GroupLetter | null;
+  homePlaceholder: string | null;
+  homeScore: number | null;
+  homeTeam: MatchTeamViewModel | null;
   id: string;
+  kickoff: string;
   matchNumber: number;
   phase: MatchPhase;
-  groupLetter: GroupLetter | null;
-  homeTeam: { name: string; code: string; flagUrl: string | null } | null;
-  awayTeam: { name: string; code: string; flagUrl: string | null } | null;
-  homePlaceholder: string | null;
-  awayPlaceholder: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
   status: MatchStatus;
   venue: string | null;
-  city: string | null;
-  kickoff: string;
+}
+
+export interface MatchFilters {
+  group?: GroupLetter | "ALL";
+  phase?: MatchPhase | "ALL";
+}
+
+export interface GroupPredictionTeamViewModel {
+  id: string;
+  code: string;
+  flagUrl: string | null;
+  isTbd: boolean;
+  name: string;
+  predictedPosition: number;
+}
+
+export interface PhaseLockViewModel {
+  effectiveLockAt: string | null;
+  isLocked: boolean;
+  phase: LockPhase;
+  source: LockType;
+}
+
+export interface GroupPredictionGroupViewModel {
+  groupLetter: GroupLetter;
+  lock: PhaseLockViewModel;
+  savedCount: number;
+  state: PredictionState;
+  teams: GroupPredictionTeamViewModel[];
 }
 
 export interface RankingEntry {
@@ -279,3 +293,28 @@ export interface PointsBreakdown {
     reason: string | null;
   }>;
 }
+
+export const MATCH_PHASE_OPTIONS: MatchPhase[] = [
+  "GROUP_STAGE",
+  "ROUND_OF_32",
+  "ROUND_OF_16",
+  "QUARTER_FINALS",
+  "SEMI_FINALS",
+  "THIRD_PLACE",
+  "FINAL",
+];
+
+export const GROUP_LETTER_OPTIONS: GroupLetter[] = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+];
