@@ -14,6 +14,13 @@ export type MatchPhase =
   | "THIRD_PLACE"
   | "FINAL";
 
+export type KnockoutRoundPhase =
+  | "ROUND_OF_32"
+  | "ROUND_OF_16"
+  | "QUARTER_FINALS"
+  | "SEMI_FINALS"
+  | "FINAL";
+
 export type LockPhase = MatchPhase | "CHAMPION";
 
 export type GroupLetter =
@@ -271,27 +278,74 @@ export interface GroupPredictionGroupViewModel {
 }
 
 export interface RankingEntry {
-  position: number;
-  userId: string;
-  username: string;
-  displayName: string | null;
   avatarUrl: string | null;
-  totalPoints: number;
+  championPoints: number;
+  createdAt: string;
+  displayName: string | null;
+  gapToLeader: number;
+  gapToPrevious: number | null;
   groupPoints: number;
   knockoutPoints: number;
+  position: number;
+  totalPoints: number;
+  userId: string;
+  username: string;
 }
 
 export interface PointsBreakdown {
-  total: number;
-  groupStage: number;
-  knockout: number;
   champion: number;
   details: Array<{
-    sourceType: PointsSourceType;
-    sourceId: string;
+    metadata: Record<string, unknown> | null;
     pointsAwarded: number;
     reason: string | null;
+    sourceId: string;
+    sourceType: PointsSourceType;
   }>;
+  groupStage: number;
+  knockout: number;
+  total: number;
+}
+
+export type PredictionStamp = "+1 pt" | "+2 pts" | "+3 pts" | "Exact" | "Miss";
+
+export interface RankingStamp {
+  label: PredictionStamp;
+  tone: "exact" | "miss" | "points";
+}
+
+export interface BracketSlotViewModel {
+  code: string | null;
+  flagUrl: string | null;
+  id: string | null;
+  isKnown: boolean;
+  isTbd: boolean;
+  name: string;
+}
+
+export interface BracketPredictionViewModel {
+  isRandom: boolean;
+  predictedWinnerTeamId: string | null;
+}
+
+export interface BracketMatchViewModel {
+  awaySlot: BracketSlotViewModel;
+  canPredict: boolean;
+  city: string | null;
+  homeSlot: BracketSlotViewModel;
+  id: string;
+  isFinal: boolean;
+  kickoff: string;
+  lock: PhaseLockViewModel;
+  matchNumber: number;
+  phase: KnockoutRoundPhase;
+  prediction: BracketPredictionViewModel | null;
+  venue: string | null;
+}
+
+export interface BracketRoundViewModel {
+  label: string;
+  matches: BracketMatchViewModel[];
+  phase: KnockoutRoundPhase;
 }
 
 export const MATCH_PHASE_OPTIONS: MatchPhase[] = [

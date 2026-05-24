@@ -13,8 +13,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "seed": "node ./scripts/seed.mjs",
-    "sync": "node ./scripts/sync-worldcup-data.mjs",
-    "recalculate-points": "node ./scripts/recalculate-points.mjs"
+    "sync": "node --experimental-strip-types ./scripts/sync-worldcup-data.ts",
+    "recalculate-points": "node --experimental-strip-types ./scripts/recalculate-points.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

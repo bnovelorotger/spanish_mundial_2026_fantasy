@@ -1,22 +1,39 @@
-import { ArrowUpRight, Medal } from "lucide-react";
+import { ArrowUpRight, Crown, Medal } from "lucide-react";
 
+import type { RankingStamp } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
 interface RankingCardProps {
   accentLabel: string;
+  breakdown: {
+    champion: number;
+    groupStage: number;
+    knockout: number;
+  };
   gapCopy: string;
   highlighted?: boolean;
   points: number;
   position: number;
+  stamps: RankingStamp[];
   title: string;
 }
 
+const stampToneStyles: Record<RankingStamp["tone"], string> = {
+  exact:
+    "border-status-success/30 bg-status-success/10 text-status-success",
+  miss: "border-status-live/30 bg-status-live/10 text-status-live",
+  points:
+    "border-accent-primary/30 bg-accent-primary/10 text-accent-primary",
+};
+
 export function RankingCard({
   accentLabel,
+  breakdown,
   gapCopy,
   highlighted = false,
   points,
   position,
+  stamps,
   title,
 }: RankingCardProps) {
   return (
@@ -37,12 +54,13 @@ export function RankingCard({
             {title}
           </h2>
         </div>
-        <div className="rounded-pill border border-border-subtle bg-background-secondary/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
+        <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
+          <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
           You
         </div>
       </div>
 
-      <div className="mt-6 flex items-end justify-between gap-4">
+      <div className="mt-6 grid grid-cols-2 gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
             Position
@@ -67,6 +85,53 @@ export function RankingCard({
           <ArrowUpRight className="size-4" strokeWidth={2} />
           <Medal className="size-4" strokeWidth={2} />
         </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+            Group
+          </p>
+          <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
+            {breakdown.groupStage}
+          </p>
+        </div>
+        <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+            Knockout
+          </p>
+          <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
+            {breakdown.knockout}
+          </p>
+        </div>
+        <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+            Champion
+          </p>
+          <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
+            {breakdown.champion}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {stamps.length > 0 ? (
+          stamps.map((stamp, index) => (
+            <span
+              key={`${stamp.label}-${index}`}
+              className={cn(
+                "inline-flex items-center rounded-pill border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]",
+                stampToneStyles[stamp.tone],
+              )}
+            >
+              {stamp.label}
+            </span>
+          ))
+        ) : (
+          <span className="inline-flex items-center rounded-pill border border-border-subtle bg-background-secondary/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+            Your first score stamp lands with the next recalculation.
+          </span>
+        )}
       </div>
     </section>
   );

@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-import { getSupabaseServiceRoleKey, getSupabaseUrl } from "./env";
+import { getSupabaseServiceRoleKey, getSupabaseUrl } from "./env.ts";
 
 const supabaseUrl = getSupabaseUrl();
 const serviceRoleKey = getSupabaseServiceRoleKey();
