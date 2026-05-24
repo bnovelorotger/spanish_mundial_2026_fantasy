@@ -53,7 +53,8 @@ Every phase must meet these criteria before moving to the next:
 - [ ] RLS migration file exists.
 - [ ] Seed files exist for teams and mock matches.
 - [ ] All 11 tables are defined.
-- [ ] UUID primary keys used throughout.
+- [ ] UUID primary keys used where defined by DATABASE_SCHEMA.md
+      (`app_settings.key` remains a text primary key by design).
 - [ ] Foreign keys are correct.
 - [ ] Unique constraints match DATABASE_SCHEMA.md.
 - [ ] RLS policies allow authenticated reads of public data.
