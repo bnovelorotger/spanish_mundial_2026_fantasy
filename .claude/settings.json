@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(pnpm lint)",
+      "Bash(pnpm test)",
+      "Bash(pnpm supabase --version)",
+      "Bash(pnpm supabase --help)",
+      "Bash(pnpm exec supabase --version)",
+      "Bash(pnpm supabase status)",
+      "Bash(pnpm supabase db lint *)",
+      "Bash(pnpm supabase db diff *)",
+      "Bash(pnpm supabase migration list *)",
+      "Bash(pnpm supabase gen types *)",
+      "Bash(pnpm install)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm build)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm supabase db push)",
+      "Bash(pnpm supabase db push *)",
+      "Bash(pnpm supabase db pull)",
+      "Bash(pnpm supabase db pull *)",
+      "Bash(pnpm supabase migration new *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(git restore *)",
+      "Bash(git merge *)",
+      "Bash(git rebase)",
+      "Bash(git fetch *)",
+      "Bash(git pull)"
+    ]
+  }
+}
