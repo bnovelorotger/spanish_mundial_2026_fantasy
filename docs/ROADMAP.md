@@ -4,11 +4,11 @@
 
 ### Block 1 (Day 1)
 - [x] Create project documentation.
-- [ ] Phase 1: Project base.
-- [ ] Phase 2: Supabase schema.
+- [x] Phase 1: Project base.
+- [x] Phase 2: Supabase schema.
 
 ### Block 2 (Day 2)
-- [ ] Phase 3: Supabase auth.
+- [x] Phase 3: Supabase auth.
 - [ ] Phase 4: UI shell + dashboard.
 
 ### Block 3 (Day 3)
