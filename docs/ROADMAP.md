@@ -16,16 +16,16 @@
 - [x] Phase 6: Group predictions.
 
 ### Block 4 (Day 4)
-- [ ] Phase 7: Scoring + ranking.
-- [ ] Tests for scoring and ranking.
+- [x] Phase 7: Scoring + ranking.
+- [x] Tests for scoring and ranking.
 
 ### Block 5 (Day 5)
-- [ ] Phase 8: Sync + GitHub Action.
+- [x] Phase 8: Sync + GitHub Action.
 - [ ] Phase 10: README + hardening.
 - [ ] Deploy to Vercel.
 
 ### Block 6 (Day 6)
-- [ ] Phase 9: Bracket MVP visual.
+- [x] Phase 9: Bracket MVP visual.
 
 ### Block 7 (Day 7)
 - [ ] Phase 11: Real provider chain.
