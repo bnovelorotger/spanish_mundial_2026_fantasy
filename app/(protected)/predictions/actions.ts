@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  parseKnockoutPredictionFormData,
+  saveKnockoutPrediction,
+} from "@/lib/services/bracket.service";
 import { ensureProfileForUser } from "@/lib/services/profile.service";
 import {
   parseGroupPredictionFormData,
@@ -47,6 +51,7 @@ export async function saveGroupPredictionAction(formData: FormData) {
     redirectToPredictions({
       error: parsed.error,
       group: groupLetter,
+      tab: "groups",
     });
   }
 
@@ -58,6 +63,7 @@ export async function saveGroupPredictionAction(formData: FormData) {
     redirectToPredictions({
       error: toSafePredictionErrorMessage(error),
       group: parsedData.groupLetter,
+      tab: "groups",
     });
   }
 
@@ -65,5 +71,49 @@ export async function saveGroupPredictionAction(formData: FormData) {
   redirectToPredictions({
     group: parsedData.groupLetter,
     saved: "1",
+    tab: "groups",
+  });
+}
+
+export async function saveKnockoutPredictionAction(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?error=Sign%20in%20to%20save%20your%20knockout%20pick.");
+  }
+
+  await ensureProfileForUser(user);
+
+  const parsed = parseKnockoutPredictionFormData(formData);
+  const matchId = String(formData.get("match_id") ?? "").trim();
+
+  if (!parsed.data) {
+    redirectToPredictions({
+      error: parsed.error,
+      match: matchId,
+      tab: "knockout",
+    });
+  }
+
+  const parsedData = parsed.data;
+
+  try {
+    await saveKnockoutPrediction(supabase, user.id, parsedData);
+  } catch (error) {
+    redirectToPredictions({
+      error: toSafePredictionErrorMessage(error),
+      match: parsedData.matchId,
+      tab: "knockout",
+    });
+  }
+
+  revalidatePath("/predictions");
+  redirectToPredictions({
+    match: parsedData.matchId,
+    saved: "1",
+    tab: "knockout",
   });
 }
