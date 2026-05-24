@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { StateCard } from "@/components/ui/StateCard";
 import { BracketView } from "@/components/worldcup/BracketView";
 import { GroupPredictionEditor } from "@/components/worldcup/GroupPredictionEditor";
 import { getBracketRounds } from "@/lib/services/bracket.service";
@@ -90,17 +91,12 @@ function PredictionsErrorState({
   title: string;
 }) {
   return (
-    <section className="rounded-cardLg border border-status-live/35 bg-surface-card/90 p-6 shadow-card">
-      <p className="text-sm font-medium uppercase tracking-[0.18em] text-status-live">
-        Prediction board offline
-      </p>
-      <h2 className="mt-2 text-2xl font-semibold text-text-primary">
-        {title}
-      </h2>
-      <p className="mt-3 text-sm leading-6 text-text-secondary">
-        Try again in a moment. Your tournament board should be back under the lights shortly.
-      </p>
-    </section>
+    <StateCard
+      description="Try again in a moment. Your tournament board should be back under the lights shortly."
+      eyebrow="Prediction board offline"
+      title={title}
+      tone="error"
+    />
   );
 }
 

@@ -6,6 +6,7 @@ import {
   Trophy,
 } from "lucide-react";
 
+import { StateCard } from "@/components/ui/StateCard";
 import type { RankingEntry } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
@@ -123,14 +124,13 @@ export function RankingTable({
             })}
           </div>
         ) : (
-          <div className="mt-5 rounded-card border border-border-subtle bg-background-secondary/70 p-4">
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-              Your tournament starts here.
-            </p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              The ranking board fills up as soon as league profiles and points
-              are on the table.
-            </p>
+          <div className="mt-5">
+            <StateCard
+              description="The ranking board fills up as soon as league profiles and points are on the table."
+              eyebrow="Your tournament starts here."
+              title="The podium is ready for the first scored picks."
+              tone="default"
+            />
           </div>
         )}
       </div>
@@ -244,15 +244,12 @@ export function RankingTable({
               );
             })
           ) : (
-            <div className="rounded-card border border-border-subtle bg-background-secondary/70 p-4">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-                Your tournament starts here.
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                Once the first predictions are scored, this table becomes the
-                daily race to watch.
-              </p>
-            </div>
+            <StateCard
+              description="Once the first predictions are scored, this table becomes the daily race to watch."
+              eyebrow="Your tournament starts here."
+              title="The full table opens up with the first recalculation."
+              tone="default"
+            />
           )}
         </div>
       </div>

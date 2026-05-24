@@ -1,6 +1,7 @@
 import { Trophy } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { StateCard } from "@/components/ui/StateCard";
 import { RankingCard } from "@/components/worldcup/RankingCard";
 import { RankingTable } from "@/components/worldcup/RankingTable";
 import {
@@ -36,18 +37,12 @@ export default async function RankingPage() {
 
   if (!ranking || !breakdown) {
     return (
-      <section className="rounded-cardLg border border-status-live/35 bg-surface-card/90 p-6 shadow-card">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-status-live">
-          Ranking board offline
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-          Couldn&apos;t load the league ranking.
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-text-secondary">
-          Try again in a moment. The podium should be back under the lights
-          shortly.
-        </p>
-      </section>
+      <StateCard
+        description="Try again in a moment. The podium should be back under the lights shortly."
+        eyebrow="Ranking board offline"
+        title="Couldn't load the league ranking."
+        tone="error"
+      />
     );
   }
 
@@ -92,18 +87,12 @@ export default async function RankingPage() {
           title="Your tournament pulse"
         />
       ) : (
-        <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-6 shadow-card">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-            Your tournament starts here.
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-text-primary">
-            Your ranking row appears as soon as your profile joins the board.
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Lock in predictions, wait for final standings, and your first point
-            stamps will show up here.
-          </p>
-        </div>
+        <StateCard
+          description="Lock in predictions, wait for final standings, and your first point stamps will show up here."
+          eyebrow="Your tournament starts here."
+          title="Your ranking row appears as soon as your profile joins the board."
+          tone="default"
+        />
       )}
 
       <RankingTable currentUserId={user.id} entries={topRanking} />

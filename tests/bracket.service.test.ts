@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   canPredictKnockoutMatch,
   isKnockoutRoundPhase,
+  parseKnockoutPredictionFormData,
   validateKnockoutPredictionInput,
 } from "@/lib/services/bracket.service";
 
@@ -109,6 +110,33 @@ describe("validateKnockoutPredictionInput", () => {
 
     expect(result.data).toEqual({
       predictedWinnerTeamId: "team-2",
+    });
+  });
+});
+
+describe("parseKnockoutPredictionFormData", () => {
+  it("parses a valid knockout prediction payload", () => {
+    const formData = new FormData();
+    formData.set("match_id", "match-1");
+    formData.set("phase", "ROUND_OF_16");
+    formData.set("predicted_winner_team_id", "team-1");
+
+    expect(parseKnockoutPredictionFormData(formData)).toEqual({
+      data: {
+        matchId: "match-1",
+        phase: "ROUND_OF_16",
+        predictedWinnerTeamId: "team-1",
+      },
+    });
+  });
+
+  it("rejects invalid or incomplete knockout payloads", () => {
+    const formData = new FormData();
+    formData.set("match_id", "match-1");
+    formData.set("phase", "GROUP_STAGE");
+
+    expect(parseKnockoutPredictionFormData(formData)).toEqual({
+      error: "That knockout pick could not be resolved.",
     });
   });
 });

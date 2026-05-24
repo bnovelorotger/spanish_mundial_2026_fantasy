@@ -58,11 +58,11 @@ const groupTextStyles: Record<GroupPredictionGroupViewModel["groupLetter"], stri
 function badgeForState(state: PredictionState) {
   switch (state) {
     case "COMPLETED":
-      return { label: "Completed", variant: "finished" as const };
+      return { label: "Completed", variant: "saved" as const };
     case "LOCKED":
       return { label: "Locked", variant: "locked" as const };
     case "PENDING":
-      return { label: "Pending", variant: "locked" as const };
+      return { label: "Pending", variant: "pending" as const };
     default:
       return { label: "Editable", variant: "editable" as const };
   }

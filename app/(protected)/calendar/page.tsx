@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { StateCard } from "@/components/ui/StateCard";
 import { MatchCard } from "@/components/worldcup/MatchCard";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -169,18 +170,12 @@ export default async function CalendarPage({
           ))}
         </div>
       ) : (
-        <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-6 shadow-card">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-            Your tournament starts here.
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-text-primary">
-            No matches fit this filter yet.
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Try a different phase or group and come back once more fixtures are
-            synced into the calendar.
-          </p>
-        </div>
+        <StateCard
+          description="Try a different phase or group and come back once more fixtures are synced into the calendar."
+          eyebrow="Your tournament starts here."
+          title="No matches fit this filter yet."
+          tone="default"
+        />
       )}
     </section>
   );

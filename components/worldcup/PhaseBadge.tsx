@@ -5,6 +5,8 @@ type PhaseBadgeVariant =
   | "finished"
   | "live"
   | "locked"
+  | "pending"
+  | "saved"
   | "scheduled";
 
 interface PhaseBadgeProps {
@@ -19,6 +21,10 @@ const badgeStyles: Record<PhaseBadgeVariant, string> = {
   live: "animate-pulse border-[rgba(255,59,59,0.35)] bg-[rgba(255,59,59,0.16)] text-status-live",
   locked:
     "border-[rgba(255,176,32,0.35)] bg-[rgba(255,176,32,0.16)] text-status-warning",
+  pending:
+    "border-[rgba(255,176,32,0.35)] bg-[rgba(255,176,32,0.16)] text-status-warning",
+  saved:
+    "border-[rgba(46,229,157,0.35)] bg-[rgba(46,229,157,0.16)] text-status-success",
   scheduled:
     "border-[rgba(0,212,255,0.24)] bg-[rgba(0,212,255,0.14)] text-accent-primary",
 };

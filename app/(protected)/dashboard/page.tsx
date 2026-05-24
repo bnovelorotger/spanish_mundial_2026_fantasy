@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, ChevronRight, Sparkles, Trophy, Users } from "lucide-react";
 
+import { StateCard } from "@/components/ui/StateCard";
 import { CountdownCard } from "@/components/worldcup/CountdownCard";
 import { PhaseBadge } from "@/components/worldcup/PhaseBadge";
 import { RankingCard } from "@/components/worldcup/RankingCard";
@@ -102,18 +103,12 @@ export default async function DashboardPage() {
           title="Your tournament pulse"
         />
       ) : (
-        <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-            My ranking position
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-text-primary">
-            Your ranking card lights up once points hit the table.
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Final group standings and recalculated points turn this panel into
-            your daily tournament pulse.
-          </p>
-        </section>
+        <StateCard
+          description="Final group standings and recalculated points turn this panel into your daily tournament pulse."
+          eyebrow="My ranking position"
+          title="Your ranking card lights up once points hit the table."
+          tone="default"
+        />
       )}
 
       <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">

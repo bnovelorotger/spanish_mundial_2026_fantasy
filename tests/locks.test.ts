@@ -31,6 +31,20 @@ describe("resolvePhaseLock", () => {
     expect(resolved.effectiveLockAt).toBe("2026-06-11T19:00:00Z");
     expect(resolved.source).toBe("AUTOMATIC");
   });
+
+  it("respects a manual unlock override even after kickoff", () => {
+    const resolved = resolvePhaseLock({
+      firstKickoff: "2026-06-11T19:00:00Z",
+      lockAt: "2026-06-11T18:00:00Z",
+      locked: false,
+      lockedBy: "MANUAL",
+      now: new Date("2026-06-11T20:00:00Z"),
+      phase: "GROUP_STAGE",
+    });
+
+    expect(resolved.isLocked).toBe(false);
+    expect(resolved.source).toBe("MANUAL");
+  });
 });
 
 describe("resolvePredictionState", () => {
@@ -52,5 +66,15 @@ describe("resolvePredictionState", () => {
         savedCount: 4,
       }),
     ).toBe("COMPLETED");
+  });
+
+  it("returns locked before any pending or completed state", () => {
+    expect(
+      resolvePredictionState({
+        hasDirtyChanges: true,
+        isLocked: true,
+        savedCount: 4,
+      }),
+    ).toBe("LOCKED");
   });
 });

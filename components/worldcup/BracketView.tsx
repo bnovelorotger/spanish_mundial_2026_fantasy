@@ -1,3 +1,4 @@
+import { StateCard } from "@/components/ui/StateCard";
 import type { BracketRoundViewModel } from "@/lib/types/worldcup";
 
 import { BracketPredictionEditor } from "./BracketPredictionEditor";
@@ -72,14 +73,12 @@ export function BracketView({
                     />
                   ))
                 ) : (
-                  <div className="rounded-card border border-border-subtle bg-background-secondary/70 p-4">
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-                      Your tournament starts here.
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-text-secondary">
-                      This round column is ready. Knockout fixtures appear here as soon as they land in Supabase.
-                    </p>
-                  </div>
+                  <StateCard
+                    description="This round column is ready. Knockout fixtures appear here as soon as they land in Supabase."
+                    eyebrow="Your tournament starts here."
+                    title="This bracket round is waiting for its first match card."
+                    tone="default"
+                  />
                 )}
               </div>
             </section>

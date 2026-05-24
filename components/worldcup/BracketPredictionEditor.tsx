@@ -35,7 +35,7 @@ function matchStateLabel(match: BracketMatchViewModel) {
   if (match.prediction) {
     return {
       label: "Saved",
-      variant: "finished" as const,
+      variant: "saved" as const,
     };
   }
 
