@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -8,7 +9,10 @@ import {
 } from "lucide-react";
 
 import { StateCard } from "@/components/ui/StateCard";
-import { CountdownCard, type CountdownUrgency } from "@/components/worldcup/CountdownCard";
+import {
+  CountdownCard,
+  type CountdownUrgency,
+} from "@/components/worldcup/CountdownCard";
 import { LocalKickoff } from "@/components/worldcup/LocalKickoff";
 import { PhaseBadge } from "@/components/worldcup/PhaseBadge";
 import { RankingCard } from "@/components/worldcup/RankingCard";
@@ -21,8 +25,11 @@ import {
   getUserPointsBreakdown,
 } from "@/lib/services/ranking.service";
 import { createClient } from "@/lib/supabase/server";
-import type { LockPhase, MatchCardViewModel, MatchPhase } from "@/lib/types/worldcup";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  LockPhase,
+  MatchCardViewModel,
+  MatchPhase,
+} from "@/lib/types/worldcup";
 
 interface ActivityItem {
   id: string;
@@ -249,14 +256,7 @@ export default async function DashboardPage() {
           <div className="mt-5 grid gap-3 rounded-card border border-border-subtle bg-background-secondary/75 p-4">
             <div className="flex items-center gap-2 text-sm text-text-secondary">
               <CalendarClock className="size-4 text-accent-primary" strokeWidth={2} />
-              <LocalKickoff isoUtc={nextMatch.kickoff}>
-                {({ date, time }) => (
-                  <>
-                    <span suppressHydrationWarning>{date}</span>{" · "}
-                    <span suppressHydrationWarning>{time}</span>
-                  </>
-                )}
-              </LocalKickoff>
+              <LocalKickoff isoUtc={nextMatch.kickoff} separator=" · " />
             </div>
             <p className="text-sm text-text-secondary">
               {matchPhaseLabels[nextMatch.phase]}

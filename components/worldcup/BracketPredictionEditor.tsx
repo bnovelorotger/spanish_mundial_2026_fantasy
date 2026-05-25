@@ -81,14 +81,7 @@ export function BracketPredictionEditor({
             {match.isFinal ? (
               "Final under the lights"
             ) : (
-              <LocalKickoff isoUtc={match.kickoff}>
-                {({ date, time }) => (
-                  <>
-                    <span suppressHydrationWarning>{date}</span>{" · "}
-                    <span suppressHydrationWarning>{time}</span>
-                  </>
-                )}
-              </LocalKickoff>
+              <LocalKickoff isoUtc={match.kickoff} separator=" · " />
             )}
           </h3>
         </div>

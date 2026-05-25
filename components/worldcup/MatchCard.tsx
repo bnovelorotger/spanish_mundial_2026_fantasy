@@ -111,15 +111,10 @@ export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
             ) : null}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-            <LocalKickoff isoUtc={match.kickoff}>
-              {({ date, time }) => (
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarClock className="size-3.5 text-accent-primary" strokeWidth={2} />
-                  <span suppressHydrationWarning>{date}</span>{" · "}
-                  <span suppressHydrationWarning>{time}</span>
-                </span>
-              )}
-            </LocalKickoff>
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="size-3.5 text-accent-primary" strokeWidth={2} />
+              <LocalKickoff isoUtc={match.kickoff} separator=" · " />
+            </span>
             {match.city || match.venue ? (
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-3.5 text-accent-secondary" strokeWidth={2} />
