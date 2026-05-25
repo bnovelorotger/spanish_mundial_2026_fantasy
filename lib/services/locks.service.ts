@@ -74,3 +74,24 @@ export async function getGroupStageLock(
 ) {
   return getPhaseLock(supabase, "GROUP_STAGE", now);
 }
+
+export async function getNextOpenLock(
+  supabase: SupabaseClient,
+  now = new Date(),
+) {
+  const { data, error } = await supabase
+    .from("game_locks")
+    .select(GAME_LOCK_SELECT)
+    .eq("locked", false)
+    .not("lock_at", "is", null)
+    .gt("lock_at", now.toISOString())
+    .order("lock_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not load the next open lock: ${error.message}`);
+  }
+
+  return (data as GameLockRow | null) ?? null;
+}

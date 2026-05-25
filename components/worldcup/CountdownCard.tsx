@@ -7,10 +7,12 @@ import { PhaseBadge } from "./PhaseBadge";
 export type CountdownUrgency = "critical" | "normal" | "warning";
 
 interface CountdownCardProps {
+  description?: string;
   label: string;
   phaseLabel: string;
+  state?: "active" | "finished";
   timeDisplay: string;
-  urgency: CountdownUrgency;
+  urgency?: CountdownUrgency;
 }
 
 const urgencyStyles: Record<CountdownUrgency, string> = {
@@ -28,17 +30,24 @@ const urgencyCopy: Record<CountdownUrgency, string> = {
   warning: "The deadline is getting close. Review your picks before it locks.",
 };
 
+const finishedStyle =
+  "border-border-subtle bg-linear-to-b from-surface-elevated to-surface-card shadow-card";
+
 export function CountdownCard({
+  description,
   label,
   phaseLabel,
+  state = "active",
   timeDisplay,
-  urgency,
+  urgency = "normal",
 }: CountdownCardProps) {
+  const isFinished = state === "finished";
+
   return (
     <section
       className={cn(
         "rounded-cardLg border p-5 shadow-card",
-        urgencyStyles[urgency],
+        isFinished ? finishedStyle : urgencyStyles[urgency],
       )}
     >
       <div className="flex items-start justify-between gap-4">
@@ -51,20 +60,28 @@ export function CountdownCard({
             {timeDisplay}
           </p>
           <p className="mt-3 max-w-md text-sm leading-6 text-text-secondary">
-            {urgencyCopy[urgency]}
+            {description ?? urgencyCopy[urgency]}
           </p>
         </div>
 
         <div className="flex flex-col items-end gap-3">
           <PhaseBadge
             label={phaseLabel}
-            variant={urgency === "critical" ? "locked" : "editable"}
+            variant={
+              isFinished
+                ? "finished"
+                : urgency === "critical"
+                  ? "locked"
+                  : "editable"
+            }
           />
           <div className="inline-flex items-center gap-2 rounded-pill border border-border-subtle bg-background-secondary/70 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
             <Flame
               className={cn(
                 "size-4",
-                urgency === "critical"
+                isFinished
+                  ? "text-text-muted"
+                  : urgency === "critical"
                   ? "text-status-live"
                   : urgency === "warning"
                     ? "text-status-warning"
@@ -72,7 +89,7 @@ export function CountdownCard({
               )}
               strokeWidth={2}
             />
-            Deadline watch
+            {isFinished ? "Lock complete" : "Deadline watch"}
           </div>
         </div>
       </div>

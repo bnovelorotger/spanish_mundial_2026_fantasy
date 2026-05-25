@@ -147,3 +147,27 @@ export async function getMatches(
 
   return (data as MatchRow[]).map(toMatchCardViewModel);
 }
+
+export async function getNextScheduledMatch(
+  supabase: SupabaseClient,
+  now = new Date(),
+) {
+  const { data, error } = await supabase
+    .from("matches")
+    .select(MATCHES_SELECT)
+    .eq("status", "SCHEDULED")
+    .gt("kickoff", now.toISOString())
+    .order("kickoff", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not load the next scheduled match: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return toMatchCardViewModel(data as MatchRow);
+}
