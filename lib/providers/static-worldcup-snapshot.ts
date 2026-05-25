@@ -156,6 +156,45 @@ for (const standing of mockStandings) {
   standingsByGroup.set(standing.group_letter, rows);
 }
 
+for (const team of mockTeams) {
+  const existingRows = standingsByGroup.get(team.group_letter);
+
+  if (existingRows && existingRows.length === 4) {
+    continue;
+  }
+
+  const teamsInGroup = mockTeams
+    .filter((candidate) => candidate.group_letter === team.group_letter)
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  standingsByGroup.set(
+    team.group_letter,
+    teamsInGroup.map<ApiFootballStandingRow>((candidate, index) => ({
+      all: {
+        draw: 0,
+        goals: {
+          against: 0,
+          for: 0,
+        },
+        lose: 0,
+        played: 0,
+        win: 0,
+      },
+      description: null,
+      goalsDiff: 0,
+      group: `Group ${candidate.group_letter}`,
+      points: 0,
+      rank: index + 1,
+      team: {
+        code: candidate.code,
+        id: teamByCode.get(candidate.code)?.apiId ?? null,
+        logo: flagUrlFromTeam(candidate),
+        name: candidate.name,
+      },
+    })),
+  );
+}
+
 export const STATIC_WORLD_CUP_STANDINGS_RESPONSE = {
   response: [
     {

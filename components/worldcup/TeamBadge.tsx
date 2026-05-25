@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -26,14 +29,19 @@ export function TeamBadge({
   isPlaceholder = false,
   name,
 }: TeamBadgeProps) {
+  const [failedFlagUrl, setFailedFlagUrl] = useState<string | null>(null);
+  const showFlag = Boolean(flagUrl) && flagUrl !== failedFlagUrl && !isPlaceholder;
+  const resolvedFlagUrl = showFlag ? flagUrl ?? "" : "";
+
   return (
     <div className="flex min-w-0 items-center gap-3">
-      {flagUrl ? (
+      {showFlag ? (
         <Image
           alt={`${name} flag`}
           className="size-10 rounded-full border border-border-subtle object-cover"
           height={40}
-          src={flagUrl}
+          onError={() => setFailedFlagUrl(flagUrl ?? null)}
+          src={resolvedFlagUrl}
           width={40}
         />
       ) : (

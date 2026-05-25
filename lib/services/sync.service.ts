@@ -152,6 +152,36 @@ function instantiateProvider(
   }
 }
 
+export function validateProviderPayload(input: {
+  matches: MatchDTO[];
+  standings: GroupStandingDTO[];
+  teams: TeamDTO[];
+}) {
+  const teamCodes = new Set(input.teams.map((team) => team.code));
+
+  for (const match of input.matches) {
+    if (match.home_team_code && !teamCodes.has(match.home_team_code)) {
+      throw new Error(
+        `Provider payload is missing team data for ${match.home_team_code}.`,
+      );
+    }
+
+    if (match.away_team_code && !teamCodes.has(match.away_team_code)) {
+      throw new Error(
+        `Provider payload is missing team data for ${match.away_team_code}.`,
+      );
+    }
+  }
+
+  for (const standing of input.standings) {
+    if (!teamCodes.has(standing.team_code)) {
+      throw new Error(
+        `Provider payload is missing standing team data for ${standing.team_code}.`,
+      );
+    }
+  }
+}
+
 async function loadProviderData(
   provider: WorldCupProvider,
 ) {
@@ -160,6 +190,12 @@ async function loadProviderData(
     provider.getMatches(),
     provider.getStandings(),
   ]);
+
+  validateProviderPayload({
+    matches,
+    standings,
+    teams,
+  });
 
   return {
     matches,

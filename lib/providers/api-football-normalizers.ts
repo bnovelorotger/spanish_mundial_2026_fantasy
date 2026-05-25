@@ -7,6 +7,7 @@ import type {
   QualificationStatus,
   TeamDTO,
 } from "../types/worldcup.ts";
+import { getFlagUrlForTeamCode } from "./team-flags.ts";
 
 export const API_FOOTBALL_BASE_URL = "https://v3.football.api-sports.io";
 export const WORLD_CUP_LEAGUE_ID = 1;
@@ -336,7 +337,8 @@ export function normalizeApiFootballTeams(
     return [
       {
         code,
-        flag_url: normalizeText(entry.team?.logo) ?? undefined,
+        flag_url:
+          getFlagUrlForTeamCode(code) ?? normalizeText(entry.team?.logo) ?? undefined,
         group_letter: groupLetter,
         is_tbd: false,
         name,

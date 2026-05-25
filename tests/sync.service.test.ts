@@ -7,6 +7,7 @@ import {
   ProviderChainError,
   resolveRequestedProviderName,
   resolveProviderPayload,
+  validateProviderPayload,
 } from "@/lib/services/sync.service";
 import type { WorldCupProvider } from "@/lib/providers/worldcup-provider.types";
 import { StaticWorldCupProvider } from "@/lib/providers/static-worldcup-provider";
@@ -127,6 +128,35 @@ describe("resolveProviderPayload", () => {
     ]);
   });
 
+  it("falls back when a provider returns inconsistent team references", async () => {
+    const providerByName = {
+      apifootball: createProvider({
+        matches: async () => [
+          {
+            away_team_code: "MEX",
+            home_team_code: "DEU",
+            kickoff: "2026-06-11T19:00:00Z",
+            match_number: 1,
+            phase: "GROUP_STAGE",
+            status: "SCHEDULED",
+          },
+        ],
+      }),
+      mock: createProvider({}),
+      static: createProvider({}),
+    } satisfies Record<string, WorldCupProvider>;
+
+    const payload = await resolveProviderPayload(
+      "apifootball",
+      (providerName) => providerByName[providerName],
+    );
+
+    expect(payload.providerUsed).toBe("static");
+    expect(payload.providerFailures[0]?.message).toContain(
+      "Provider payload is missing team data for DEU.",
+    );
+  });
+
   it("throws a ProviderChainError when every provider fails", async () => {
     await expect(
       resolveProviderPayload("apifootball", (providerName) =>
@@ -144,6 +174,33 @@ describe("resolveProviderPayload", () => {
       ],
       name: "ProviderChainError",
     } satisfies Partial<ProviderChainError>);
+  });
+});
+
+describe("validateProviderPayload", () => {
+  it("rejects matches that reference teams missing from the provider teams list", () => {
+    expect(() =>
+      validateProviderPayload({
+        matches: [
+          {
+            away_team_code: "MEX",
+            home_team_code: "CAN",
+            kickoff: "2026-06-11T19:00:00Z",
+            match_number: 1,
+            phase: "GROUP_STAGE",
+            status: "SCHEDULED",
+          },
+        ],
+        standings: [],
+        teams: [
+          {
+            code: "MEX",
+            group_letter: "A",
+            name: "Mexico",
+          },
+        ],
+      }),
+    ).toThrow("Provider payload is missing team data for CAN.");
   });
 });
 
