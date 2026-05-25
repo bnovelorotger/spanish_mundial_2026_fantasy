@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ApiFootballProvider } from "../providers/api-football-provider.ts";
+import { FootballDataProvider } from "../providers/football-data-provider.ts";
 import { MockWorldCupProvider } from "../providers/mock-worldcup-provider.ts";
 import { StaticWorldCupProvider } from "../providers/static-worldcup-provider.ts";
 import type {
@@ -26,6 +27,11 @@ interface TeamRow {
   id: string;
   is_tbd: boolean;
   name: string;
+}
+
+interface ExistingTeamGroupRow {
+  code: string;
+  group_letter: string;
 }
 
 interface MatchRow {
@@ -119,7 +125,11 @@ function normalizeNullableString(value: string | null | undefined) {
 export function resolveRequestedProviderName(
   rawProvider = process.env.WORLD_CUP_API_PROVIDER,
 ): WorldCupProviderName {
-  if (rawProvider === "apifootball" || rawProvider === "static") {
+  if (
+    rawProvider === "apifootball" ||
+    rawProvider === "footballdata" ||
+    rawProvider === "static"
+  ) {
     return rawProvider;
   }
 
@@ -130,6 +140,8 @@ export function getProviderFallbackChain(
   providerName: WorldCupProviderName,
 ): WorldCupProviderName[] {
   switch (providerName) {
+    case "footballdata":
+      return ["footballdata", "apifootball", "static", "mock"];
     case "apifootball":
       return ["apifootball", "static", "mock"];
     case "static":
@@ -143,6 +155,8 @@ function instantiateProvider(
   providerName: WorldCupProviderName,
 ): WorldCupProvider {
   switch (providerName) {
+    case "footballdata":
+      return new FootballDataProvider();
     case "apifootball":
       return new ApiFootballProvider();
     case "static":
@@ -365,6 +379,57 @@ async function ensureTeamMap(supabase: SupabaseClient, teams: TeamDTO[]) {
   return new Map(rows.map((team) => [team.code, team]));
 }
 
+async function clearGroupStandingsForTeamDrift(
+  supabase: SupabaseClient,
+  teams: TeamDTO[],
+) {
+  const codes = teams.map((team) => team.code);
+  const existingTeamsResponse = await supabase
+    .from("teams")
+    .select("code, group_letter")
+    .in("code", codes);
+
+  if (existingTeamsResponse.error) {
+    throw new Error(
+      `Could not inspect existing teams before sync: ${existingTeamsResponse.error.message}`,
+    );
+  }
+
+  const incomingGroupByCode = new Map(
+    teams.map((team) => [team.code, team.group_letter] as const),
+  );
+  const existingTeams = existingTeamsResponse.data as ExistingTeamGroupRow[];
+  const driftedGroups = new Set<string>();
+
+  for (const existingTeam of existingTeams) {
+    const incomingGroup = incomingGroupByCode.get(existingTeam.code);
+
+    if (!incomingGroup || incomingGroup === existingTeam.group_letter) {
+      continue;
+    }
+
+    driftedGroups.add(existingTeam.group_letter);
+    driftedGroups.add(incomingGroup);
+  }
+
+  if (driftedGroups.size === 0) {
+    return false;
+  }
+
+  const clearResponse = await supabase
+    .from("group_standings")
+    .delete()
+    .in("group_letter", [...driftedGroups]);
+
+  if (clearResponse.error) {
+    throw new Error(
+      `Could not clear group standings before team regrouping: ${clearResponse.error.message}`,
+    );
+  }
+
+  return true;
+}
+
 function resolveTeamId(teamMap: Map<string, TeamRow>, teamCode?: string) {
   if (!teamCode) {
     return null;
@@ -517,6 +582,17 @@ async function syncStandings(
     return row;
   });
 
+  const deleteResponse = await supabase
+    .from("group_standings")
+    .delete()
+    .in("group_letter", groupLetters);
+
+  if (deleteResponse.error) {
+    throw new Error(
+      `Could not clear existing standings before sync: ${deleteResponse.error.message}`,
+    );
+  }
+
   const upsertResponse = await supabase
     .from("group_standings")
     .upsert(payload, { onConflict: "group_letter,team_id" });
@@ -576,6 +652,10 @@ export async function syncWorldCupData(
 
   try {
     const providerPayload = await resolveProviderPayload(providerRequested);
+    const standingsPrecleared = await clearGroupStandingsForTeamDrift(
+      client,
+      providerPayload.teams,
+    );
     const teamMap = await ensureTeamMap(client, providerPayload.teams);
     const matchesSummary = await syncMatches(
       client,
@@ -589,7 +669,11 @@ export async function syncWorldCupData(
     );
 
     const shouldRecalculate =
-      matchesSummary.matchesChanged || standingsSummary.standingsChanged;
+      matchesSummary.matchesChanged ||
+      standingsSummary.standingsChanged ||
+      standingsPrecleared;
+    const standingsChanged =
+      standingsSummary.standingsChanged || standingsPrecleared;
     const recalculateSummary = shouldRecalculate
       ? await recalculateAllPoints(client)
       : null;
@@ -611,7 +695,7 @@ export async function syncWorldCupData(
             rowsScored: recalculateSummary.rowsScored,
           }
         : null,
-      standingsChanged: standingsSummary.standingsChanged,
+      standingsChanged,
       standingsSynced: standingsSummary.standingsSynced,
       status,
       teamsSynced: providerPayload.teams.length,

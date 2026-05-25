@@ -20,10 +20,20 @@ describe("resolveRequestedProviderName", () => {
   it("keeps a valid explicit provider", () => {
     expect(resolveRequestedProviderName("static")).toBe("static");
     expect(resolveRequestedProviderName("apifootball")).toBe("apifootball");
+    expect(resolveRequestedProviderName("footballdata")).toBe("footballdata");
   });
 });
 
 describe("getProviderFallbackChain", () => {
+  it("uses the approved footballdata -> apifootball -> static -> mock order", () => {
+    expect(getProviderFallbackChain("footballdata")).toEqual([
+      "footballdata",
+      "apifootball",
+      "static",
+      "mock",
+    ]);
+  });
+
   it("uses the approved apifootball -> static -> mock order", () => {
     expect(getProviderFallbackChain("apifootball")).toEqual([
       "apifootball",
@@ -105,6 +115,11 @@ describe("resolveProviderPayload", () => {
 
   it("falls back to the next provider and records failures", async () => {
     const providerByName = {
+      footballdata: createProvider({
+        teams: async () => {
+          throw new Error("football-data unavailable");
+        },
+      }),
       apifootball: createProvider({
         teams: async () => {
           throw new Error("Api provider unavailable");
@@ -115,12 +130,16 @@ describe("resolveProviderPayload", () => {
     } satisfies Record<string, WorldCupProvider>;
 
     const payload = await resolveProviderPayload(
-      "apifootball",
+      "footballdata",
       (providerName) => providerByName[providerName],
     );
 
     expect(payload.providerUsed).toBe("static");
     expect(payload.providerFailures).toEqual([
+      {
+        message: "football-data unavailable",
+        provider: "footballdata",
+      },
       {
         message: "Api provider unavailable",
         provider: "apifootball",
@@ -130,6 +149,11 @@ describe("resolveProviderPayload", () => {
 
   it("falls back when a provider returns inconsistent team references", async () => {
     const providerByName = {
+      footballdata: createProvider({
+        teams: async () => {
+          throw new Error("football-data unavailable");
+        },
+      }),
       apifootball: createProvider({
         matches: async () => [
           {
@@ -147,19 +171,19 @@ describe("resolveProviderPayload", () => {
     } satisfies Record<string, WorldCupProvider>;
 
     const payload = await resolveProviderPayload(
-      "apifootball",
+      "footballdata",
       (providerName) => providerByName[providerName],
     );
 
     expect(payload.providerUsed).toBe("static");
-    expect(payload.providerFailures[0]?.message).toContain(
+    expect(payload.providerFailures[1]?.message).toContain(
       "Provider payload is missing team data for DEU.",
     );
   });
 
   it("throws a ProviderChainError when every provider fails", async () => {
     await expect(
-      resolveProviderPayload("apifootball", (providerName) =>
+      resolveProviderPayload("footballdata", (providerName) =>
         createProvider({
           teams: async () => {
             throw new Error(`${providerName} failed`);
@@ -168,6 +192,7 @@ describe("resolveProviderPayload", () => {
       ),
     ).rejects.toMatchObject({
       failures: [
+        { message: "footballdata failed", provider: "footballdata" },
         { message: "apifootball failed", provider: "apifootball" },
         { message: "static failed", provider: "static" },
         { message: "mock failed", provider: "mock" },

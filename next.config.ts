@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    dangerouslyAllowSVG: true,
     remotePatterns: [
+      {
+        hostname: "crests.football-data.org",
+        pathname: "/**",
+        protocol: "https",
+      },
       {
         hostname: "flagcdn.com",
         pathname: "/w80/**",
