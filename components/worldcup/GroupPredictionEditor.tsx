@@ -100,6 +100,33 @@ function moveTeam(
   }));
 }
 
+function reorderTeams(
+  teams: GroupPredictionTeamViewModel[],
+  activeTeamId: string,
+  targetTeamId: string,
+) {
+  const fromIndex = teams.findIndex((team) => team.id === activeTeamId);
+  const toIndex = teams.findIndex((team) => team.id === targetTeamId);
+
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+    return teams;
+  }
+
+  const nextTeams = [...teams];
+  const [movedTeam] = nextTeams.splice(fromIndex, 1);
+
+  if (!movedTeam) {
+    return teams;
+  }
+
+  nextTeams.splice(toIndex, 0, movedTeam);
+
+  return nextTeams.map((team, index) => ({
+    ...team,
+    predictedPosition: index + 1,
+  }));
+}
+
 function formatLockCopy(lockAt: string | null) {
   if (!lockAt) {
     return "Group stage order stays open until kickoff.";
@@ -220,6 +247,11 @@ export function GroupPredictionEditor({
           isLocked={group.lock.isLocked}
           onMoveDown={(teamId) => setTeams((currentTeams) => moveTeam(currentTeams, teamId, 1))}
           onMoveUp={(teamId) => setTeams((currentTeams) => moveTeam(currentTeams, teamId, -1))}
+          onReorder={(activeTeamId, targetTeamId) =>
+            setTeams((currentTeams) =>
+              reorderTeams(currentTeams, activeTeamId, targetTeamId),
+            )
+          }
           teams={teams}
         />
       </div>
