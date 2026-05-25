@@ -28,7 +28,9 @@
 - [x] Phase 9: Bracket MVP visual.
 
 ### Block 7 (Day 7)
-- [ ] Phase 11: Real provider chain.
+- [x] Phase 11: Real provider chain.
+
+> **MVP 1 complete.** All 11 phases plus deployment landed on `main`.
 
 ---
 
