@@ -10,5 +10,5 @@ export async function signOut() {
   await supabase.auth.signOut();
 
   revalidatePath("/", "layout");
-  redirect("/login?message=You%20have%20been%20signed%20out.");
+  redirect("/login?message=Has%20cerrado%20sesi%C3%B3n.");
 }

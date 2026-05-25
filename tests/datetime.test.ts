@@ -7,7 +7,7 @@ describe("formatKickoff", () => {
     expect(
       formatKickoff("2026-06-11T19:00:00Z", "Europe/Madrid"),
     ).toEqual({
-      date: "Jun 11",
+      date: "11 jun",
       time: "21:00",
     });
   });
@@ -16,7 +16,7 @@ describe("formatKickoff", () => {
     expect(
       formatKickoff("2026-06-11T19:00:00Z", "America/Mexico_City"),
     ).toEqual({
-      date: "Jun 11",
+      date: "11 jun",
       time: "13:00",
     });
   });

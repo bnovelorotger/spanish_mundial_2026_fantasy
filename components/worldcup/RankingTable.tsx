@@ -30,10 +30,10 @@ function initialsFromEntry(entry: RankingEntry) {
 
 function podiumGapCopy(entry: RankingEntry, leaderPoints: number) {
   if (entry.position === 1) {
-    return "Sets the pace under the stadium lights.";
+    return "Marca el ritmo bajo los focos.";
   }
 
-  return `${leaderPoints - entry.totalPoints} pts behind the leader.`;
+  return `A ${leaderPoints - entry.totalPoints} pts del líder.`;
 }
 
 const podiumToneStyles: Record<number, string> = {
@@ -58,10 +58,10 @@ export function RankingTable({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-podium-gold">
-              League ranking
+              Clasificación de la liga
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-text-primary">
-              The trophy board is live.
+              El tablero del trofeo ya está en juego.
             </h2>
           </div>
           <Trophy className="size-5 text-podium-gold" strokeWidth={2} />
@@ -89,7 +89,7 @@ export function RankingTable({
                     {isCurrentUser ? (
                       <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
                         <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
-                        You
+                        Tú
                       </div>
                     ) : (
                       <Medal className="size-5 text-text-primary" strokeWidth={2} />
@@ -108,7 +108,7 @@ export function RankingTable({
                   <div className="mt-5 flex items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                        Total points
+                        Puntos totales
                       </p>
                       <p className="mt-1 font-numeric text-3xl font-bold text-text-primary">
                         {entry.totalPoints}
@@ -116,7 +116,7 @@ export function RankingTable({
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                       <ArrowUpRight className="size-4 text-status-success" strokeWidth={2} />
-                      Gap {entry.gapToLeader}
+                      A {entry.gapToLeader} pts
                     </div>
                   </div>
                 </article>
@@ -126,9 +126,9 @@ export function RankingTable({
         ) : (
           <div className="mt-5">
             <StateCard
-              description="The ranking board fills up as soon as league profiles and points are on the table."
-              eyebrow="Your tournament starts here."
-              title="The podium is ready for the first scored picks."
+              description="La clasificación se llenará en cuanto entren en juego los perfiles de la liga y los primeros puntos."
+              eyebrow="Tu torneo empieza aquí."
+              title="El podio está listo para los primeros pronósticos puntuados."
               tone="default"
             />
           </div>
@@ -140,10 +140,10 @@ export function RankingTable({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-                Pinned row
+                Tu fila fijada
               </p>
               <p className="mt-1 text-sm text-text-secondary">
-                Your league line stays visible even when the table gets crowded.
+                Tu línea en la liga sigue visible incluso cuando la tabla se aprieta.
               </p>
             </div>
             <Sparkles className="size-5 text-accent-primary" strokeWidth={2} />
@@ -161,7 +161,7 @@ export function RankingTable({
                   </p>
                   <div className="mt-1 inline-flex items-center gap-2 rounded-pill border border-accent-primary/25 bg-accent-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-primary">
                     <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
-                    You
+                    Tú
                   </div>
                 </div>
               </div>
@@ -170,7 +170,7 @@ export function RankingTable({
                   {currentUserEntry.totalPoints}
                 </p>
                 <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                  Gap {currentUserEntry.gapToLeader}
+                  A {currentUserEntry.gapToLeader} pts
                 </p>
               </div>
             </div>
@@ -182,10 +182,10 @@ export function RankingTable({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-              Full table
+              Tabla completa
             </p>
             <h3 className="mt-2 text-lg font-semibold text-text-primary">
-              Top 10 with your line highlighted.
+              Top 10 con tu fila destacada.
             </h3>
           </div>
           <Medal className="size-5 text-accent-secondary" strokeWidth={2} />
@@ -221,12 +221,12 @@ export function RankingTable({
                         {isCurrentUser ? (
                           <span className="inline-flex items-center gap-1 rounded-pill border border-accent-primary/25 bg-accent-primary/10 px-2 py-0.5 text-text-primary">
                             <Crown className="size-3 text-accent-primary" strokeWidth={2} />
-                            You
+                            Tú
                           </span>
                         ) : null}
                         <span className="inline-flex items-center gap-1">
                           <ArrowUpRight className="size-3 text-status-success" strokeWidth={2} />
-                          Gap {entry.gapToLeader}
+                          A {entry.gapToLeader} pts
                         </span>
                       </div>
                     </div>
@@ -237,7 +237,7 @@ export function RankingTable({
                       {entry.totalPoints}
                     </p>
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                      {entry.groupPoints} group
+                      {entry.groupPoints} grupos
                     </p>
                   </div>
                 </article>
@@ -245,9 +245,9 @@ export function RankingTable({
             })
           ) : (
             <StateCard
-              description="Once the first predictions are scored, this table becomes the daily race to watch."
-              eyebrow="Your tournament starts here."
-              title="The full table opens up with the first recalculation."
+              description="En cuanto se puntúen los primeros pronósticos, esta tabla se convertirá en la carrera diaria que mirar."
+              eyebrow="Tu torneo empieza aquí."
+              title="La tabla completa se abre con el primer recálculo."
               tone="default"
             />
           )}

@@ -20,12 +20,12 @@ type CalendarPageProps = {
 
 const phaseLabels: Record<MatchPhase, string> = {
   FINAL: "Final",
-  GROUP_STAGE: "Group Stage",
-  QUARTER_FINALS: "Quarter-finals",
-  ROUND_OF_16: "Round of 16",
-  ROUND_OF_32: "Round of 32",
-  SEMI_FINALS: "Semi-finals",
-  THIRD_PLACE: "Third place",
+  GROUP_STAGE: "Fase de grupos",
+  QUARTER_FINALS: "Cuartos de final",
+  ROUND_OF_16: "Octavos de final",
+  ROUND_OF_32: "Dieciseisavos de final",
+  SEMI_FINALS: "Semifinales",
+  THIRD_PLACE: "Tercer puesto",
 };
 
 function getQueryValue(
@@ -96,26 +96,26 @@ export default async function CalendarPage({
     <section className="space-y-6">
       <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
         <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-          Match calendar
+          Partidos
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-          Every fixture, one mobile-first scoreboard at a time.
+          Todos los cruces, uno a uno, con marcador pensado para móvil.
         </h1>
         <p className="mt-3 text-sm leading-6 text-text-secondary">
-          Track kickoff times, venues, live states, and group context directly
-          from Supabase without leaving the tournament shell.
+          Sigue horarios, sedes, estados en directo y contexto de grupos
+          directamente desde Supabase sin salir del torneo.
         </p>
 
         <div className="mt-5 space-y-4">
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Phase
+              Fase
             </p>
             <div className="flex flex-wrap gap-2">
               <FilterLink
                 activeValue={filters.phase ?? "ALL"}
                 currentFilters={filters}
-                label="All phases"
+                label="Todas las fases"
                 nextValue="ALL"
                 param="phase"
               />
@@ -134,13 +134,13 @@ export default async function CalendarPage({
 
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Group
+              Grupo
             </p>
             <div className="flex flex-wrap gap-2">
               <FilterLink
                 activeValue={filters.group ?? "ALL"}
                 currentFilters={filters}
-                label="All groups"
+                label="Todos los grupos"
                 nextValue="ALL"
                 param="group"
               />
@@ -149,7 +149,7 @@ export default async function CalendarPage({
                   key={group}
                   activeValue={filters.group ?? "ALL"}
                   currentFilters={filters}
-                  label={`Group ${group}`}
+                  label={`Grupo ${group}`}
                   nextValue={group}
                   param="group"
                 />
@@ -171,9 +171,9 @@ export default async function CalendarPage({
         </div>
       ) : (
         <StateCard
-          description="Try a different phase or group and come back once more fixtures are synced into the calendar."
-          eyebrow="Your tournament starts here."
-          title="No matches fit this filter yet."
+          description="Prueba con otra fase o grupo y vuelve cuando se sincronicen más partidos en el calendario."
+          eyebrow="Tu torneo empieza aquí."
+          title="Todavía no hay partidos para este filtro."
           tone="default"
         />
       )}

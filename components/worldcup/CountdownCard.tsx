@@ -25,9 +25,9 @@ const urgencyStyles: Record<CountdownUrgency, string> = {
 };
 
 const urgencyCopy: Record<CountdownUrgency, string> = {
-  critical: "Less than two hours remain before picks lock.",
-  normal: "Plenty of time, but the ranking always rewards early moves.",
-  warning: "The deadline is getting close. Review your picks before it locks.",
+  critical: "Quedan menos de dos horas para que se cierren las predicciones.",
+  normal: "Todavía vas bien de tiempo, pero la clasificación siempre premia moverse pronto.",
+  warning: "La hora límite se acerca. Revisa tus pronósticos antes de que se cierre.",
 };
 
 const finishedStyle =
@@ -89,7 +89,7 @@ export function CountdownCard({
               )}
               strokeWidth={2}
             />
-            {isFinished ? "Lock complete" : "Deadline watch"}
+            {isFinished ? "Cierre completado" : "Cuenta atrás"}
           </div>
         </div>
       </div>

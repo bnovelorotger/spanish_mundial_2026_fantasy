@@ -37,15 +37,15 @@ function validateAuthPayload(formData: FormData): AuthPayload {
   const password = String(formData.get("password") ?? "");
 
   if (intent !== "login" && intent !== "signup") {
-    return { error: "Choose whether you want to log in or create an account." };
+    return { error: "Elige si quieres iniciar sesión o crear una cuenta." };
   }
 
   if (!email.includes("@")) {
-    return { error: "Enter a valid email address." };
+    return { error: "Introduce una dirección de correo válida." };
   }
 
   if (password.length < 8) {
-    return { error: "Password must be at least 8 characters long." };
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
   }
 
   return {
@@ -75,7 +75,7 @@ export async function authenticate(formData: FormData) {
 
     if (error || !data.user) {
       redirectWithMessage({
-        error: "We couldn't sign you in with that email and password.",
+        error: "No hemos podido iniciar sesión con ese correo y esa contraseña.",
       });
     }
 
@@ -84,10 +84,10 @@ export async function authenticate(formData: FormData) {
     revalidatePath("/", "layout");
 
     if (!isProfileComplete(profile)) {
-      redirect("/profile?message=Finish%20setting%20up%20your%20profile.");
+      redirect("/profile?message=Termina%20de%20configurar%20tu%20perfil.");
     }
 
-    redirect("/home?message=Welcome%20back.");
+    redirect("/home?message=Ya%20est%C3%A1s%20de%20vuelta.");
   }
 
   const { data, error } = await supabase.auth.signUp({
@@ -98,7 +98,7 @@ export async function authenticate(formData: FormData) {
   if (error || !data.user) {
     redirectWithMessage({
       error:
-        "We couldn't create your account. Try again with a different email address.",
+        "No hemos podido crear tu cuenta. Prueba de nuevo con otra dirección de correo.",
     });
   }
 
@@ -108,9 +108,9 @@ export async function authenticate(formData: FormData) {
   if (!data.session) {
     redirectWithMessage({
       message:
-        "Account created. Check your email to confirm your address before signing in.",
+        "Cuenta creada. Revisa tu correo para confirmar la dirección antes de iniciar sesión.",
     });
   }
 
-  redirect("/profile?message=Finish%20setting%20up%20your%20profile.");
+  redirect("/profile?message=Termina%20de%20configurar%20tu%20perfil.");
 }

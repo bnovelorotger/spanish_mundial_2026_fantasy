@@ -21,11 +21,11 @@ function redirectToPredictions(params: Record<string, string>): never {
 
 function toSafePredictionErrorMessage(error: unknown) {
   if (!(error instanceof Error)) {
-    return "We couldn't save your picks. Try again.";
+    return "No hemos podido guardar tu pronóstico. Inténtalo de nuevo.";
   }
 
   if (error.message.startsWith("Could not")) {
-    return "We couldn't save your picks. Try again.";
+    return "No hemos podido guardar tu pronóstico. Inténtalo de nuevo.";
   }
 
   return error.message;
@@ -38,7 +38,7 @@ export async function saveGroupPredictionAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20save%20your%20picks.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20guardar%20tu%20pron%C3%B3stico.");
   }
 
   await ensureProfileForUser(user);
@@ -82,7 +82,7 @@ export async function saveKnockoutPredictionAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20save%20your%20knockout%20pick.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20guardar%20tu%20pron%C3%B3stico%20de%20eliminatorias.");
   }
 
   await ensureProfileForUser(user);

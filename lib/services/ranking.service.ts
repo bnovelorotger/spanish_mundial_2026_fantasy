@@ -201,11 +201,11 @@ export function getUserGapCopy(
   const currentUserEntry = ranking.find((entry) => entry.userId === userId);
 
   if (!currentUserEntry) {
-    return "Your ranking board will light up once points are on the table.";
+    return "Tu tabla de clasificación se iluminará en cuanto entren puntos en juego.";
   }
 
   if (currentUserEntry.position === 1) {
-    return "You're setting the pace for the whole league.";
+    return "Marcas el ritmo de toda la liga.";
   }
 
   const leader = ranking[0];
@@ -215,9 +215,9 @@ export function getUserGapCopy(
     display_name: leader.displayName,
     id: leader.userId,
     username: leader.username,
-  }) : "the leader";
+  }) : "el líder";
 
-  return `You're ${currentUserEntry.gapToLeader} pts behind ${leaderName}.`;
+  return `Estás a ${currentUserEntry.gapToLeader} pts de ${leaderName}.`;
 }
 
 export function getRankingStamps(
@@ -231,17 +231,17 @@ export function getRankingStamps(
 
     if (stampValue === "Exact") {
       return [
-        { label: "Exact", tone: "exact" as const },
+        { label: "Exacto", tone: "exact" as const },
         { label: "+3 pts", tone: "points" as const },
       ];
     }
 
     if (stampValue === "Miss") {
-      return [{ label: "Miss", tone: "miss" as const }];
+      return [{ label: "Fallo", tone: "miss" as const }];
     }
 
     if (detail.pointsAwarded === 1) {
-      return [{ label: "+1 pt", tone: "points" as const }];
+      return [{ label: "+1 pto", tone: "points" as const }];
     }
 
     if (detail.pointsAwarded === 2) {
@@ -252,7 +252,7 @@ export function getRankingStamps(
       return [{ label: "+3 pts", tone: "points" as const }];
     }
 
-    return [{ label: "Miss", tone: "miss" as const }];
+    return [{ label: "Fallo", tone: "miss" as const }];
   });
 
   return stamps.slice(0, limit);

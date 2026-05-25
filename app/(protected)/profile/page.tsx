@@ -27,7 +27,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20continue.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20continuar.");
   }
 
   const profile = await ensureProfileForUser(user);
@@ -42,19 +42,19 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent-secondary">
-            Profile setup
+            Perfil
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-text-primary">
-            Complete your tournament identity
+            Completa tu identidad en el torneo
           </h2>
           <p className="mt-2 text-sm leading-6 text-text-secondary">
-            Pick the username and display name your friends will see in the
-            ranking table later in the tournament.
+            Elige el nombre de usuario y el nombre visible que verán tus amigos
+            en la clasificación durante el torneo.
           </p>
         </div>
 
         <span className="rounded-pill border border-border-subtle bg-background-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-          {profileComplete ? "Ready" : "Needs attention"}
+          {profileComplete ? "Listo" : "Necesita atención"}
         </span>
       </div>
 
@@ -79,15 +79,15 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       <dl className="mt-6 grid gap-4 rounded-card border border-border-subtle bg-background-secondary/70 p-4 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            Email
+            Correo electrónico
           </dt>
           <dd className="mt-1 text-sm text-text-primary">
-            {user.email ?? "Unavailable"}
+            {user.email ?? "No disponible"}
           </dd>
         </div>
         <div>
           <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            Current username
+            Nombre de usuario actual
           </dt>
           <dd className="mt-1 text-sm text-text-primary">{profile.username}</dd>
         </div>
@@ -99,7 +99,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             className="mb-2 block text-sm font-medium text-text-secondary"
             htmlFor="username"
           >
-            Username
+            Nombre de usuario
           </label>
           <input
             className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
@@ -112,7 +112,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             type="text"
           />
           <p className="mt-2 text-xs text-text-muted">
-            Use 3-24 lowercase characters, numbers, or underscores.
+            Usa entre 3 y 24 caracteres en minúscula, números o guiones bajos.
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             className="mb-2 block text-sm font-medium text-text-secondary"
             htmlFor="display_name"
           >
-            Display name
+            Nombre visible
           </label>
           <input
             className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
@@ -139,7 +139,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           className="inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
           type="submit"
         >
-          Save profile
+          Guardar perfil
         </button>
       </form>
     </section>

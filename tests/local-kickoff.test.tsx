@@ -14,7 +14,7 @@ describe("LocalKickoff", () => {
     );
 
     expect(markup).toContain("<span");
-    expect(markup).toContain("Jun 11");
+    expect(markup).toContain("11 jun");
     expect(markup).toContain("21:00");
   });
 });

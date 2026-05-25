@@ -109,7 +109,7 @@ export function parseGroupPredictionFormData(formData: FormData):
 
   if (!GROUP_LETTER_OPTIONS.includes(rawGroupLetter as GroupLetter)) {
     return {
-      error: "That group could not be resolved.",
+      error: "No hemos podido identificar ese grupo.",
     };
   }
 
@@ -131,13 +131,13 @@ export function validateGroupPredictionInput(input: {
   | { data?: undefined; error: string } {
   if (input.isLocked) {
     return {
-      error: "Group stage locked. Picks are no longer editable.",
+      error: "La fase de grupos ya está cerrada. Ya no puedes editar este pronóstico.",
     };
   }
 
   if (input.teamIds.length !== 4) {
     return {
-      error: "Every group prediction must contain exactly 4 teams.",
+      error: "Cada grupo debe incluir exactamente 4 equipos.",
     };
   }
 
@@ -145,7 +145,7 @@ export function validateGroupPredictionInput(input: {
 
   if (uniqueTeamIds.size !== 4) {
     return {
-      error: "Each team can only appear once in the group order.",
+      error: "Cada equipo solo puede aparecer una vez en el orden del grupo.",
     };
   }
 
@@ -155,7 +155,7 @@ export function validateGroupPredictionInput(input: {
 
   if (!allTeamsBelongToGroup) {
     return {
-      error: "One or more teams do not belong to that group.",
+      error: "Uno o más equipos no pertenecen a ese grupo.",
     };
   }
 
@@ -166,7 +166,7 @@ export function validateGroupPredictionInput(input: {
 
   if (!hasValidPositions) {
     return {
-      error: "Prediction positions must stay between 1 and 4.",
+      error: "Las posiciones del pronóstico deben mantenerse entre la 1 y la 4.",
     };
   }
 

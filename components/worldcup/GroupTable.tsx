@@ -109,7 +109,7 @@ export function GroupTable({
             </div>
 
             <button
-              aria-label={`Drag ${team.name} into another position`}
+              aria-label={`Arrastra a ${team.name} a otra posición`}
               className={cn(
                 "flex shrink-0 touch-none items-center justify-center rounded-pill border px-2 py-2 text-text-muted transition duration-200",
                 isLocked
@@ -148,7 +148,7 @@ export function GroupTable({
 
             <div className="flex shrink-0 items-center gap-2">
               <button
-                aria-label={`Move ${team.name} up`}
+                aria-label={`Subir a ${team.name}`}
                 className={cn(
                   "inline-flex size-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card text-text-secondary transition duration-200 active:scale-[0.98]",
                   !isLocked && !isFirst && "hover:border-accent-secondary/35 hover:bg-surface-active hover:text-text-primary",
@@ -163,7 +163,7 @@ export function GroupTable({
               </button>
 
               <button
-                aria-label={`Move ${team.name} down`}
+                aria-label={`Bajar a ${team.name}`}
                 className={cn(
                   "inline-flex size-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card text-text-secondary transition duration-200 active:scale-[0.98]",
                   !isLocked && !isLast && "hover:border-accent-primary/35 hover:bg-surface-active hover:text-text-primary",

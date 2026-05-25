@@ -37,7 +37,7 @@ export function TeamBadge({
     <div className="flex min-w-0 items-center gap-3">
       {showFlag ? (
         <Image
-          alt={`${name} flag`}
+          alt={`Bandera de ${name}`}
           className="size-10 rounded-full border border-border-subtle object-cover"
           height={40}
           onError={() => setFailedFlagUrl(flagUrl ?? null)}

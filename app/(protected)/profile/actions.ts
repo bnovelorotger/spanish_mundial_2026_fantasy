@@ -22,7 +22,7 @@ export async function updateProfile(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20update%20your%20profile.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20actualizar%20tu%20perfil.");
   }
 
   await ensureProfileForUser(user);
@@ -44,7 +44,7 @@ export async function updateProfile(formData: FormData) {
 
   if (usernameTaken) {
     redirectToProfile({
-      error: "That username is already taken. Choose a different one.",
+      error: "Ese nombre de usuario ya está en uso. Elige otro distinto.",
     });
   }
 
@@ -58,10 +58,10 @@ export async function updateProfile(formData: FormData) {
 
   if (error) {
     redirectToProfile({
-      error: "We couldn't save your profile. Try again.",
+      error: "No hemos podido guardar tu perfil. Inténtalo de nuevo.",
     });
   }
 
   revalidatePath("/profile");
-  redirectToProfile({ success: "Profile saved." });
+  redirectToProfile({ success: "Perfil guardado." });
 }

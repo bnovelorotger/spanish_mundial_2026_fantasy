@@ -16,12 +16,12 @@ export default function ProtectedError({
           onClick={() => reset()}
           type="button"
         >
-          Try again
+          Reintentar
         </button>
       }
-      description="Try again in a moment. Your private tournament view should be back under the lights shortly."
-      eyebrow="Protected view offline"
-      title="Couldn't load this screen."
+      description="Tu torneo privado volverá a estar en marcha en un momento. Prueba otra vez enseguida."
+      eyebrow="Pantalla protegida fuera de juego"
+      title="No hemos podido cargar esta pantalla."
       tone="error"
     />
   );

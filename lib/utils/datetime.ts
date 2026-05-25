@@ -3,7 +3,7 @@ export const SERVER_TIME_ZONE_FALLBACK = "Europe/Madrid";
 export function formatKickoff(
   isoUtc: string,
   timeZone: string,
-  locale = "en-US",
+  locale = "es-ES",
 ) {
   const date = new Date(isoUtc);
 

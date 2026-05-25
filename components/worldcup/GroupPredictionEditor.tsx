@@ -62,11 +62,11 @@ const groupTextStyles: Record<GroupPredictionGroupViewModel["groupLetter"], stri
 function badgeForState(state: PredictionState) {
   switch (state) {
     case "COMPLETED":
-      return { label: "Completed", variant: "saved" as const };
+      return { label: "Completado", variant: "saved" as const };
     case "LOCKED":
-      return { label: "Locked", variant: "locked" as const };
+      return { label: "Cerrado", variant: "locked" as const };
     case "PENDING":
-      return { label: "Pending", variant: "pending" as const };
+      return { label: "Pendiente", variant: "pending" as const };
     default:
       return { label: "Editable", variant: "editable" as const };
   }
@@ -133,12 +133,12 @@ function reorderTeams(
 
 function formatLockCopy(lockAt: string | null) {
   if (!lockAt) {
-    return "Group stage order stays open until kickoff.";
+    return "El orden de la fase de grupos seguirá abierto hasta el primer saque inicial.";
   }
 
   const kickoff = formatKickoff(lockAt, SERVER_TIME_ZONE_FALLBACK);
 
-  return `First group stage kickoff: ${kickoff.date} - ${kickoff.time}.`;
+  return `Primer partido de la fase de grupos: ${kickoff.date} · ${kickoff.time}.`;
 }
 
 function SaveButton({ disabled }: { disabled: boolean }) {
@@ -155,7 +155,7 @@ function SaveButton({ disabled }: { disabled: boolean }) {
       disabled={disabled || pending}
       type="submit"
     >
-      {pending ? "Saving picks..." : "Save predictions"}
+      {pending ? "Guardando pronóstico..." : "Guardar pronóstico"}
     </button>
   );
 }
@@ -199,10 +199,10 @@ export function GroupPredictionEditor({
               groupTextStyles[group.groupLetter],
             )}
           >
-            Group {group.groupLetter}
+            Grupo {group.groupLetter}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-text-primary">
-            Set your 1-4 finish before the board locks.
+            Define tu 1-4 antes de que se cierre el tablero.
           </h2>
         </div>
         <PhaseBadge label={badge.label} variant={badge.variant} />
@@ -221,14 +221,14 @@ export function GroupPredictionEditor({
         <div className="space-y-1">
           <p className="font-medium text-text-primary">
             {group.lock.isLocked
-              ? "Group stage locked. Your saved order stays on the board."
+              ? "La fase de grupos está cerrada. Tu orden guardado se mantiene en juego."
               : flash?.tone === "error"
-                ? "That save did not make it onto the board."
-              : state === "PENDING"
-                ? "Unsaved changes are in play."
-                : state === "COMPLETED"
-                  ? "Saved order locked into your tournament board."
-                  : "Editable now. Move teams into your predicted finish."}
+                ? "Ese guardado no ha llegado al tablero."
+                : state === "PENDING"
+                  ? "Tienes cambios sin guardar en juego."
+                  : state === "COMPLETED"
+                    ? "Tu orden guardado ya está colocado en el tablero del torneo."
+                    : "Está editable. Mueve los equipos hasta tu orden final previsto."}
           </p>
           <p
             className={cn(
@@ -257,7 +257,7 @@ export function GroupPredictionEditor({
 
       <div className="mt-5 flex items-center justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-          {group.savedCount === 4 ? "Saved picks ready" : "Four teams required"}
+          {group.savedCount === 4 ? "Pronóstico guardado" : "Se necesitan cuatro equipos"}
         </p>
         <SaveButton disabled={!canSave} />
       </div>

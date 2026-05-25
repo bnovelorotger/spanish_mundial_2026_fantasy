@@ -22,13 +22,14 @@ export function BracketView({
     <section className="space-y-4">
       <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
         <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-          Knockout bracket
+          Cuadro de eliminatorias
         </p>
         <h2 className="mt-2 text-2xl font-semibold text-text-primary">
-          Scroll the rounds, pick winners, keep the race moving.
+          Recorre las rondas, elige ganadores y mantén viva la carrera.
         </h2>
         <p className="mt-3 text-sm leading-6 text-text-secondary">
-          One round per column, mobile-first by default, and no giant static image hiding the bracket from a 360px screen.
+          Una ronda por columna, pensado primero para móvil y sin una imagen
+          gigante que esconda el cuadro en una pantalla de 360px.
         </p>
       </div>
 
@@ -44,7 +45,7 @@ export function BracketView({
                   {round.label}
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {round.matches.length} match{round.matches.length === 1 ? "" : "es"}
+                  {round.matches.length} partido{round.matches.length === 1 ? "" : "s"}
                 </p>
               </div>
 
@@ -62,7 +63,7 @@ export function BracketView({
                               }
                             : saved
                               ? {
-                                  message: "Saved. Your winner is now on the bracket board.",
+                                  message: "Guardado. Tu ganador ya está en el cuadro.",
                                   tone: "success" as const,
                                 }
                               : null
@@ -74,9 +75,9 @@ export function BracketView({
                   ))
                 ) : (
                   <StateCard
-                    description="This round column is ready. Knockout fixtures appear here as soon as they land in Supabase."
-                    eyebrow="Your tournament starts here."
-                    title="This bracket round is waiting for its first match card."
+                    description="Esta columna ya está preparada. Los cruces de eliminatorias aparecerán aquí en cuanto entren en Supabase."
+                    eyebrow="Tu torneo empieza aquí."
+                    title="Esta ronda del cuadro espera su primera tarjeta de partido."
                     tone="default"
                   />
                 )}

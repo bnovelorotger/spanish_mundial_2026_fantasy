@@ -64,22 +64,22 @@ function PredictionsHeader({
   return (
     <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
       <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-        Predictions board
+        Predicciones
       </p>
       <h1 className="mt-2 text-2xl font-semibold text-text-primary">
         {tab === "groups"
-          ? "Move every group into your exact 1-4 finish."
-          : "Read the bracket column by column and lock in your winners."}
+          ? "Ordena cada grupo hasta clavar tu 1-4."
+          : "Lee el cuadro ronda a ronda y deja cerrados tus ganadores."}
       </h1>
       <p className="mt-3 text-sm leading-6 text-text-secondary">
         {tab === "groups"
-          ? "Reorder four teams in each group, save the board with one tap, and beat the lock before the first group stage kickoff lands."
-          : "The knockout bracket stays readable on mobile, one round per column, with safe winner picks only when both teams are known."}
+          ? "Reordena los cuatro equipos de cada grupo, guarda con un toque y adelántate al cierre antes del primer partido de la fase de grupos."
+          : "El cuadro de eliminatorias sigue siendo legible en móvil, una ronda por columna, y solo deja elegir ganador cuando ya se conocen ambos equipos."}
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <PredictionTabLink currentTab={tab} label="Groups" tab="groups" />
-        <PredictionTabLink currentTab={tab} label="Knockout" tab="knockout" />
+        <PredictionTabLink currentTab={tab} label="Grupos" tab="groups" />
+        <PredictionTabLink currentTab={tab} label="Eliminatorias" tab="knockout" />
       </div>
     </div>
   );
@@ -92,8 +92,8 @@ function PredictionsErrorState({
 }) {
   return (
     <StateCard
-      description="Try again in a moment. Your tournament board should be back under the lights shortly."
-      eyebrow="Prediction board offline"
+      description="Prueba de nuevo en un momento. Tu tablero del torneo debería volver a encenderse enseguida."
+      eyebrow="Predicciones fuera de juego"
       title={title}
       tone="error"
     />
@@ -116,7 +116,7 @@ export default async function PredictionsPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20make%20your%20picks.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20hacer%20tus%20pron%C3%B3sticos.");
   }
 
   if (activeTab === "knockout") {
@@ -141,7 +141,7 @@ export default async function PredictionsPage({
             saved={saved}
           />
         ) : (
-          <PredictionsErrorState title="Couldn't load knockout predictions." />
+          <PredictionsErrorState title="No hemos podido cargar las predicciones de eliminatorias." />
         )}
       </section>
     );
@@ -173,7 +173,7 @@ export default async function PredictionsPage({
                       }
                     : saved
                       ? {
-                          message: "Saved. Your group order is back on the board.",
+                          message: "Guardado. El orden de tu grupo ya vuelve a estar en juego.",
                           tone: "success" as const,
                         }
                       : null
@@ -185,7 +185,7 @@ export default async function PredictionsPage({
           ))}
         </div>
       ) : (
-        <PredictionsErrorState title="Couldn't load group predictions." />
+        <PredictionsErrorState title="No hemos podido cargar las predicciones de grupos." />
       )}
     </section>
   );

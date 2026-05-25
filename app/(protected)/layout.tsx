@@ -22,7 +22,7 @@ export default async function ProtectedLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20continue.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20continuar.");
   }
 
   const profile = await ensureProfileForUser(user);
@@ -34,10 +34,10 @@ export default async function ProtectedLayout({
       banner={
         !profileComplete ? (
           <div className="rounded-card border border-status-warning/35 bg-status-warning/10 px-4 py-3 text-sm text-text-primary">
-            Your account is in, but your profile still needs a username and
-            display name.{" "}
+            Ya estás dentro, pero tu perfil todavía necesita un nombre de
+            usuario y un nombre visible.{" "}
             <Link className="font-semibold text-accent-primary" href="/profile">
-              Finish profile setup
+              Terminar perfil
             </Link>
             .
           </div>
@@ -51,13 +51,13 @@ export default async function ProtectedLayout({
                 className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
                 type="submit"
               >
-                Log out
+                Cerrar sesión
               </button>
             </form>
           }
-          leagueName="App Mundial League"
-          subtitle="A private World Cup race with broadcast energy, daily ranking tension, and every pick under the lights."
-          userEmail={user.email ?? "Signed-in player"}
+          leagueName="Liga App Mundial"
+          subtitle="Una carrera privada del Mundial con energía de retransmisión, tensión diaria en la clasificación y cada pronóstico bajo los focos."
+          userEmail={user.email ?? "Jugador conectado"}
           userLabel={label}
         />
       }

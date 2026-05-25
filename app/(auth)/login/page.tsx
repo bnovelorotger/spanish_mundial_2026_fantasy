@@ -35,14 +35,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10 sm:px-6">
       <section className="w-full rounded-cardLg border border-border-subtle bg-surface-card/90 p-6 shadow-card">
         <p className="text-sm font-medium uppercase tracking-[0.28em] text-accent-primary">
-          Private Tournament Mode
+          Modo Torneo Privado
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-text-primary">
-          Sign in to your tournament
+          Inicia sesión en tu torneo
         </h1>
         <p className="mt-3 text-sm leading-6 text-text-secondary">
-          Use your email and password to enter the World Cup 2026 Pick&apos;em.
-          New players can create their account from the same form.
+          Usa tu correo y tu contraseña para entrar en la quiniela del Mundial
+          2026. Los jugadores nuevos también pueden crear su cuenta desde este
+          mismo formulario.
         </p>
 
         {error ? (
@@ -63,7 +64,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               className="mb-2 block text-sm font-medium text-text-secondary"
               htmlFor="email"
             >
-              Email
+              Correo electrónico
             </label>
             <input
               className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
@@ -80,14 +81,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               className="mb-2 block text-sm font-medium text-text-secondary"
               htmlFor="password"
             >
-              Password
+              Contraseña
             </label>
             <input
               className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
               id="password"
               minLength={8}
               name="password"
-              placeholder="At least 8 characters"
+              placeholder="Mínimo 8 caracteres"
               required
               type="password"
             />
@@ -100,7 +101,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               type="submit"
               value="login"
             >
-              Log in
+              Iniciar sesión
             </button>
             <button
               className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-6 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
@@ -108,18 +109,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               type="submit"
               value="signup"
             >
-              Create account
+              Crear cuenta
             </button>
           </div>
         </form>
 
         <p className="mt-5 text-sm text-text-muted">
-          Tournament access is handled with secure Supabase server-side auth.
-          You can go back to the{" "}
+          El acceso al torneo se gestiona con autenticación segura de Supabase
+          en servidor. Puedes volver a la{" "}
           <Link className="text-accent-primary" href="/">
-            landing page
+            página inicial
           </Link>{" "}
-          at any time.
+          cuando quieras.
         </p>
       </section>
     </main>

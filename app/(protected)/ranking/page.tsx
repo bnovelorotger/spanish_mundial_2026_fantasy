@@ -19,7 +19,7 @@ export default async function RankingPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Sign%20in%20to%20view%20the%20ranking.");
+    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20ver%20la%20clasificaci%C3%B3n.");
   }
 
   let ranking = null;
@@ -38,9 +38,9 @@ export default async function RankingPage() {
   if (!ranking || !breakdown) {
     return (
       <StateCard
-        description="Try again in a moment. The podium should be back under the lights shortly."
-        eyebrow="Ranking board offline"
-        title="Couldn't load the league ranking."
+        description="Prueba de nuevo en un momento. El podio debería volver bajo los focos enseguida."
+        eyebrow="Clasificación fuera de juego"
+        title="No hemos podido cargar la clasificación de la liga."
         tone="error"
       />
     );
@@ -57,14 +57,14 @@ export default async function RankingPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-podium-gold">
-              Ranking hero
+              Clasificación
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-              Every point now hits the trophy board.
+              Cada punto ya golpea el tablero del trofeo.
             </h1>
             <p className="mt-3 text-sm leading-6 text-text-secondary">
-              Group-stage scoring is now live, the top 3 podium is lit, and
-              your own row stays pinned in the race.
+              La puntuación de la fase de grupos ya está en juego, el podio top
+              3 se ha encendido y tu propia fila sigue fijada en la carrera.
             </p>
           </div>
           <Trophy className="size-6 text-podium-gold" strokeWidth={2} />
@@ -73,7 +73,7 @@ export default async function RankingPage() {
 
       {userEntry ? (
         <RankingCard
-          accentLabel="My ranking position"
+          accentLabel="Mi posición"
           breakdown={{
             champion: breakdown.champion,
             groupStage: breakdown.groupStage,
@@ -84,13 +84,13 @@ export default async function RankingPage() {
           points={userEntry.totalPoints}
           position={userEntry.position}
           stamps={stamps}
-          title="Your tournament pulse"
+          title="Tu pulso en el torneo"
         />
       ) : (
         <StateCard
-          description="Lock in predictions, wait for final standings, and your first point stamps will show up here."
-          eyebrow="Your tournament starts here."
-          title="Your ranking row appears as soon as your profile joins the board."
+          description="Deja listos tus pronósticos, espera a las clasificaciones finales y tus primeros sellos de puntos aparecerán aquí."
+          eyebrow="Tu torneo empieza aquí."
+          title="Tu fila en la clasificación aparecerá en cuanto tu perfil entre en el tablero."
           tone="default"
         />
       )}

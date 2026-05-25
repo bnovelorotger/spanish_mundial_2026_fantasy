@@ -49,35 +49,35 @@ interface DashboardCountdownModel {
 const activityFeed = [
   {
     id: "a1",
-    text: "The first group-stage points are now driving the friends-only race.",
-    timestamp: "Live",
+    text: "Los primeros puntos de la fase de grupos ya están moviendo la carrera entre amigos.",
+    timestamp: "Ahora",
   },
   {
     id: "a2",
-    text: "Every saved group order is now one step closer to the podium board.",
-    timestamp: "Today",
+    text: "Cada orden de grupo guardado os acerca un poco más al podio de la clasificación.",
+    timestamp: "Hoy",
   },
 ] satisfies ActivityItem[];
 
 const matchPhaseLabels: Record<MatchPhase, string> = {
   FINAL: "Final",
-  GROUP_STAGE: "Group Stage",
-  QUARTER_FINALS: "Quarter-finals",
-  ROUND_OF_16: "Round of 16",
-  ROUND_OF_32: "Round of 32",
-  SEMI_FINALS: "Semi-finals",
-  THIRD_PLACE: "Third place",
+  GROUP_STAGE: "Fase de grupos",
+  QUARTER_FINALS: "Cuartos de final",
+  ROUND_OF_16: "Octavos de final",
+  ROUND_OF_32: "Dieciseisavos de final",
+  SEMI_FINALS: "Semifinales",
+  THIRD_PLACE: "Tercer puesto",
 };
 
 const lockPhaseLabels: Record<LockPhase, string> = {
-  CHAMPION: "Champion",
+  CHAMPION: "Campeón",
   FINAL: "Final",
-  GROUP_STAGE: "Group stage",
-  QUARTER_FINALS: "Quarter-finals",
-  ROUND_OF_16: "Round of 16",
-  ROUND_OF_32: "Round of 32",
-  SEMI_FINALS: "Semi-finals",
-  THIRD_PLACE: "Third place",
+  GROUP_STAGE: "Fase de grupos",
+  QUARTER_FINALS: "Cuartos de final",
+  ROUND_OF_16: "Octavos de final",
+  ROUND_OF_32: "Dieciseisavos de final",
+  SEMI_FINALS: "Semifinales",
+  THIRD_PLACE: "Tercer puesto",
 };
 
 function entryName(entry: {
@@ -91,7 +91,7 @@ function teamName(
   team: MatchCardViewModel["homeTeam"],
   placeholder: string | null,
 ) {
-  return team?.name ?? placeholder ?? "TBD";
+  return team?.name ?? placeholder ?? "Por decidir";
 }
 
 function formatRemainingLockTime(remainingMs: number) {
@@ -132,11 +132,11 @@ async function getDashboardCountdown(
   if (!nextOpenLock?.lock_at) {
     return {
       description:
-        "Every prediction window is now closed. The live table moves again when fresh results land.",
-      label: "Predictions close in",
-      phaseLabel: "Finished",
+        "Ahora mismo todas las ventanas de pronóstico están cerradas. La tabla volverá a moverse cuando entren nuevos resultados.",
+      label: "Las predicciones cierran en",
+      phaseLabel: "Finalizado",
       state: "finished",
-      timeDisplay: "All locked",
+      timeDisplay: "Todo cerrado",
     } satisfies DashboardCountdownModel;
   }
 
@@ -144,8 +144,8 @@ async function getDashboardCountdown(
     new Date(nextOpenLock.lock_at).getTime() - now.getTime();
 
   return {
-    description: `Next lock window: ${lockPhaseLabels[nextOpenLock.phase]}.`,
-    label: "Predictions close in",
+    description: `Siguiente cierre: ${lockPhaseLabels[nextOpenLock.phase]}.`,
+    label: "Las predicciones cierran en",
     phaseLabel: lockPhaseLabels[nextOpenLock.phase],
     state: "active",
     timeDisplay: formatRemainingLockTime(remainingMs),
@@ -165,11 +165,11 @@ export default async function DashboardPage() {
   let nextMatch = null;
   let countdown: DashboardCountdownModel = {
     description:
-      "Every prediction window is now closed. The live table moves again when fresh results land.",
-    label: "Predictions close in",
-    phaseLabel: "Finished",
+      "Ahora mismo todas las ventanas de pronóstico están cerradas. La tabla volverá a moverse cuando entren nuevos resultados.",
+    label: "Las predicciones cierran en",
+    phaseLabel: "Finalizado",
     state: "finished",
-    timeDisplay: "All locked",
+    timeDisplay: "Todo cerrado",
   };
 
   try {
@@ -180,9 +180,9 @@ export default async function DashboardPage() {
   } catch {
     countdown = {
       description:
-        "The next prediction deadline is loading from the tournament board. Refresh in a moment.",
-      label: "Predictions close in",
-      phaseLabel: "Error",
+        "La próxima fecha límite se está cargando desde el tablero del torneo. Vuelve a refrescar en un momento.",
+      label: "Las predicciones cierran en",
+      phaseLabel: "Aviso",
       state: "finished",
       timeDisplay: "--",
     };
@@ -206,7 +206,7 @@ export default async function DashboardPage() {
   const gapCopy =
     user && ranking
       ? getUserGapCopy(ranking, user.id)
-      : "Your ranking board will light up once points are on the table.";
+      : "Tu tabla de clasificación se iluminará en cuanto entren puntos en juego.";
   const stamps = breakdown ? getRankingStamps(breakdown, 3) : [];
   const topThree = ranking?.slice(0, 3) ?? [];
 
@@ -216,7 +216,7 @@ export default async function DashboardPage() {
 
       {userEntry && breakdown ? (
         <RankingCard
-          accentLabel="My ranking position"
+          accentLabel="Mi posición"
           breakdown={{
             champion: breakdown.champion,
             groupStage: breakdown.groupStage,
@@ -227,13 +227,13 @@ export default async function DashboardPage() {
           points={userEntry.totalPoints}
           position={userEntry.position}
           stamps={stamps}
-          title="Your tournament pulse"
+          title="Tu pulso en el torneo"
         />
       ) : (
         <StateCard
-          description="Final group standings and recalculated points turn this panel into your daily tournament pulse."
-          eyebrow="My ranking position"
-          title="Your ranking card lights up once points hit the table."
+          description="Cuando lleguen las clasificaciones finales de grupo y se recalculen los puntos, este panel se convertirá en tu resumen diario del torneo."
+          eyebrow="Mi posición"
+          title="Tu tarjeta de clasificación se encenderá cuando entren puntos en juego."
           tone="default"
         />
       )}
@@ -243,14 +243,14 @@ export default async function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-                Next match
+                Próximo partido
               </p>
               <h2 className="mt-2 text-lg font-semibold text-text-primary">
                 {teamName(nextMatch.homeTeam, nextMatch.homePlaceholder)} vs{" "}
                 {teamName(nextMatch.awayTeam, nextMatch.awayPlaceholder)}
               </h2>
             </div>
-            <PhaseBadge label="Scheduled" variant="scheduled" />
+            <PhaseBadge label="Programado" variant="scheduled" />
           </div>
 
           <div className="mt-5 grid gap-3 rounded-card border border-border-subtle bg-background-secondary/75 p-4">
@@ -260,19 +260,19 @@ export default async function DashboardPage() {
             </div>
             <p className="text-sm text-text-secondary">
               {matchPhaseLabels[nextMatch.phase]}
-              {nextMatch.city ? ` - ${nextMatch.city}` : ""}
+              {nextMatch.city ? ` · ${nextMatch.city}` : ""}
             </p>
             <p className="text-sm text-text-muted">
-              The live calendar is now wired to tournament data. Venue:{" "}
-              {nextMatch.venue ?? "TBA"}.
+              El calendario en directo ya está conectado al torneo. Sede:{" "}
+              {nextMatch.venue ?? "Por decidir"}.
             </p>
           </div>
         </section>
       ) : (
         <StateCard
-          description="The next scheduled kickoff will appear here as soon as the live tournament calendar has another open match."
-          eyebrow="Next match"
-          title="No upcoming kickoff is on the board right now."
+          description="El próximo saque inicial aparecerá aquí en cuanto el calendario del torneo tenga otro partido programado."
+          eyebrow="Próximo partido"
+          title="No hay próximos partidos programados."
           tone="default"
         />
       )}
@@ -281,25 +281,25 @@ export default async function DashboardPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-status-warning">
-              Pending predictions
+              Predicciones pendientes
             </p>
             <h2 className="mt-2 text-lg font-semibold text-text-primary">
-              Group picks are live. Keep stacking locked-in order before kickoff.
+              Los grupos ya están en juego. Deja cerrado tu orden antes del primer partido.
             </h2>
           </div>
           <Sparkles className="size-5 text-accent-primary" strokeWidth={2} />
         </div>
 
         <p className="mt-3 text-sm leading-6 text-text-secondary">
-          The editor is open, the lock rules are active, and every saved group
-          now feeds straight into the ranking race.
+          El editor está abierto, las reglas de cierre ya mandan y cada grupo
+          guardado alimenta directamente la carrera por la clasificación.
         </p>
 
         <Link
           className="mt-5 inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
           href="/predictions"
         >
-          Make your picks
+          Haz tus pronósticos
         </Link>
       </section>
 
@@ -307,10 +307,10 @@ export default async function DashboardPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-              Top ranking
+              Top de la clasificación
             </p>
             <h2 className="mt-2 text-lg font-semibold text-text-primary">
-              The trophy board is now driving the league.
+              El tablero del trofeo ya está marcando el ritmo de la liga.
             </h2>
           </div>
           <Trophy className="size-5 text-podium-gold" strokeWidth={2} />
@@ -328,7 +328,7 @@ export default async function DashboardPage() {
                     #{entry.position} {entryName(entry)}
                   </p>
                   <p className="text-xs text-text-muted">
-                    Gap {entry.gapToLeader} - {entry.groupPoints} group pts
+                    A {entry.gapToLeader} pts · {entry.groupPoints} pts en grupos
                   </p>
                 </div>
                 <p className="font-numeric text-xl font-bold text-text-primary">
@@ -339,11 +339,10 @@ export default async function DashboardPage() {
           ) : (
             <div className="rounded-card border border-border-subtle bg-background-secondary/75 p-4">
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-                Your tournament starts here.
+                Tu torneo empieza aquí.
               </p>
               <p className="mt-2 text-sm leading-6 text-text-secondary">
-                The podium fills up once final standings and scored picks hit the
-                board.
+                El podio se llenará en cuanto entren en juego las clasificaciones finales y los pronósticos puntuados.
               </p>
             </div>
           )}
@@ -354,10 +353,10 @@ export default async function DashboardPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-              Activity feed
+              Actividad reciente
             </p>
             <h2 className="mt-2 text-lg font-semibold text-text-primary">
-              Your friends-only tournament is heating up.
+              Tu torneo entre amigos empieza a calentarse.
             </h2>
           </div>
           <Users className="size-5 text-accent-secondary" strokeWidth={2} />

@@ -56,14 +56,14 @@ export function RankingCard({
         </div>
         <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
           <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
-          You
+          Tú
         </div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Position
+            Posición
           </p>
           <p className="mt-1 font-numeric text-4xl font-bold text-text-primary">
             #{position}
@@ -71,7 +71,7 @@ export function RankingCard({
         </div>
         <div className="text-right">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Points
+            Puntos
           </p>
           <p className="mt-1 font-numeric text-3xl font-bold text-text-primary">
             {points}
@@ -90,7 +90,7 @@ export function RankingCard({
       <div className="mt-5 grid grid-cols-3 gap-3">
         <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Group
+            Grupos
           </p>
           <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
             {breakdown.groupStage}
@@ -98,7 +98,7 @@ export function RankingCard({
         </div>
         <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Knockout
+            Eliminatorias
           </p>
           <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
             {breakdown.knockout}
@@ -106,7 +106,7 @@ export function RankingCard({
         </div>
         <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Champion
+            Campeón
           </p>
           <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
             {breakdown.champion}
@@ -129,7 +129,7 @@ export function RankingCard({
           ))
         ) : (
           <span className="inline-flex items-center rounded-pill border border-border-subtle bg-background-secondary/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Your first score stamp lands with the next recalculation.
+            Tu primer sello de puntos llegará con el próximo recálculo.
           </span>
         )}
       </div>

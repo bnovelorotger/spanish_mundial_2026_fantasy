@@ -35,7 +35,7 @@ describe("validateGroupPredictionInput", () => {
       teamIds: ["team-1", "team-1", "team-3", "team-4"],
     });
 
-    expect(result.error).toBe("Each team can only appear once in the group order.");
+    expect(result.error).toBe("Cada equipo solo puede aparecer una vez en el orden del grupo.");
   });
 
   it("rejects a submission with fewer than four teams", () => {
@@ -47,7 +47,7 @@ describe("validateGroupPredictionInput", () => {
     });
 
     expect(result.error).toBe(
-      "Every group prediction must contain exactly 4 teams.",
+      "Cada grupo debe incluir exactamente 4 equipos.",
     );
   });
 
@@ -59,7 +59,7 @@ describe("validateGroupPredictionInput", () => {
       teamIds: ["team-1", "team-2", "team-3", "outsider"],
     });
 
-    expect(result.error).toBe("One or more teams do not belong to that group.");
+    expect(result.error).toBe("Uno o más equipos no pertenecen a ese grupo.");
   });
 
   it("rejects saves when the phase is locked", () => {
@@ -71,7 +71,7 @@ describe("validateGroupPredictionInput", () => {
     });
 
     expect(result.error).toBe(
-      "Group stage locked. Picks are no longer editable.",
+      "La fase de grupos ya está cerrada. Ya no puedes editar este pronóstico.",
     );
   });
 

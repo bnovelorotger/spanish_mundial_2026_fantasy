@@ -7,9 +7,9 @@ type StateCardTone = "default" | "error" | "success" | "warning";
 
 interface StateCardProps {
   action?: ReactNode;
-  description: string;
-  eyebrow: string;
-  title: string;
+  description?: string;
+  eyebrow?: string;
+  title?: string;
   tone?: StateCardTone;
 }
 
@@ -36,9 +36,9 @@ const icons: Record<StateCardTone, typeof Sparkles> = {
 
 export function StateCard({
   action,
-  description,
-  eyebrow,
-  title,
+  description = "En cuanto lleguen más partidos, puntos o movimientos, esta tarjeta volverá a encenderse.",
+  eyebrow = "Tu torneo empieza aquí.",
+  title = "El marcador espera su próximo movimiento.",
   tone = "default",
 }: StateCardProps) {
   const Icon = icons[tone];

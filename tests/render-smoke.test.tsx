@@ -143,9 +143,9 @@ describe("render smoke", () => {
   it("renders the dashboard without throwing when nextMatch exists", async () => {
     const markup = renderToStaticMarkup(await DashboardPage());
 
-    expect(markup).toContain("Next match");
+    expect(markup).toContain("Próximo partido");
     expect(markup).toContain("Mexico");
-    expect(markup).toContain("Jun 11");
+    expect(markup).toContain("11 jun");
     expect(markup).toContain("21:00");
   });
 
@@ -155,7 +155,7 @@ describe("render smoke", () => {
     );
 
     expect(markup).toContain("Mexico");
-    expect(markup).toContain("Jun 11");
+    expect(markup).toContain("11 jun");
   });
 
   it("renders BracketPredictionEditor without throwing", () => {
@@ -166,7 +166,7 @@ describe("render smoke", () => {
       />,
     );
 
-    expect(markup).toContain("Match #65");
-    expect(markup).toContain("Jul 1");
+    expect(markup).toContain("Partido #65");
+    expect(markup).toContain("21:00");
   });
 });

@@ -306,7 +306,12 @@ export interface PointsBreakdown {
   total: number;
 }
 
-export type PredictionStamp = "+1 pt" | "+2 pts" | "+3 pts" | "Exact" | "Miss";
+export type PredictionStamp =
+  | "+1 pto"
+  | "+2 pts"
+  | "+3 pts"
+  | "Exacto"
+  | "Fallo";
 
 export interface RankingStamp {
   label: PredictionStamp;

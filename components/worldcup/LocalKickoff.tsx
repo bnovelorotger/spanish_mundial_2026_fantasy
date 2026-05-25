@@ -21,7 +21,7 @@ export function LocalKickoff({
   className,
   dateClassName,
   isoUtc,
-  locale = "en-US",
+  locale = "es-ES",
   separator = " · ",
   timeClassName,
 }: LocalKickoffProps) {

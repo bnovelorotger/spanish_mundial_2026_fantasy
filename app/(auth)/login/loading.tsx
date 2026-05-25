@@ -1,5 +1,5 @@
 import { ScreenSkeleton } from "@/components/ui/ScreenSkeleton";
 
 export default function LoginLoading() {
-  return <ScreenSkeleton accent="violet" cards={1} title="Loading the login tunnel." />;
+  return <ScreenSkeleton accent="violet" cards={1} title="Cargando la entrada al torneo." />;
 }

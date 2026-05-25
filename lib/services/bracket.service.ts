@@ -71,10 +71,10 @@ export const KNOCKOUT_PHASES: KnockoutRoundPhase[] = [
 
 export const KNOCKOUT_PHASE_LABELS: Record<KnockoutRoundPhase, string> = {
   FINAL: "Final",
-  QUARTER_FINALS: "Quarter-finals",
-  ROUND_OF_16: "Round of 16",
-  ROUND_OF_32: "Round of 32",
-  SEMI_FINALS: "Semi-finals",
+  QUARTER_FINALS: "Cuartos de final",
+  ROUND_OF_16: "Octavos de final",
+  ROUND_OF_32: "Dieciseisavos de final",
+  SEMI_FINALS: "Semifinales",
 };
 
 function normalizeTeam(team: TeamRow | TeamRow[] | null) {
@@ -110,7 +110,7 @@ function toSlot(
     id: null,
     isKnown: false,
     isTbd: true,
-    name: placeholder ?? "TBD",
+    name: placeholder ?? "Por decidir",
   };
 }
 
@@ -239,7 +239,7 @@ export function parseKnockoutPredictionFormData(formData: FormData):
 
   if (!matchId || !predictedWinnerTeamId || !isKnockoutRoundPhase(phase)) {
     return {
-      error: "That knockout pick could not be resolved.",
+      error: "No hemos podido resolver ese pronóstico de eliminatorias.",
     };
   }
 
@@ -268,13 +268,13 @@ export function validateKnockoutPredictionInput(input: {
 
   if (input.isLocked) {
     return {
-      error: "That knockout round is locked.",
+      error: "Esa ronda de eliminatorias ya está cerrada.",
     };
   }
 
   if (!canPredict) {
     return {
-      error: "Pick a winner once both knockout teams are known.",
+      error: "Elige un ganador cuando ya se conozcan los dos equipos del cruce.",
     };
   }
 
@@ -284,7 +284,7 @@ export function validateKnockoutPredictionInput(input: {
 
   if (!validWinnerIds.includes(input.predictedWinnerTeamId)) {
     return {
-      error: "Choose one of the teams on the bracket card.",
+      error: "Elige uno de los equipos que aparecen en la tarjeta del cruce.",
     };
   }
 
@@ -321,7 +321,7 @@ export async function saveKnockoutPrediction(
   const match = matchResponse.data as SaveKnockoutPredictionMatchRow | null;
 
   if (!match) {
-    throw new Error("That knockout match could not be found.");
+    throw new Error("No hemos podido encontrar ese partido de eliminatorias.");
   }
 
   const homeSlot = toSlot(normalizeTeam(match.home_team), null);

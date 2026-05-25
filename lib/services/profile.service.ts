@@ -75,7 +75,7 @@ function resolveDisplayNameSeed(user: User) {
     .replace(/[._-]+/g, " ")
     .trim();
 
-  return titleCase((metadataDisplayName || fallback || "World Cup Player").trim());
+  return titleCase((metadataDisplayName || fallback || "Jugador del Mundial").trim());
 }
 
 export function normalizeUsername(value: string) {
@@ -200,13 +200,13 @@ export function validateProfileFormData(
   if (!USERNAME_PATTERN.test(normalizedUsername)) {
     return {
       error:
-        "Username must be 3-24 characters and use only letters, numbers, or underscores.",
+        "El nombre de usuario debe tener entre 3 y 24 caracteres y usar solo letras, números o guiones bajos.",
     };
   }
 
   if (normalizedDisplayName.length < 2 || normalizedDisplayName.length > 50) {
     return {
-      error: "Display name must be between 2 and 50 characters.",
+      error: "El nombre visible debe tener entre 2 y 50 caracteres.",
     };
   }
 

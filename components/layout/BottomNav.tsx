@@ -25,31 +25,31 @@ const navItems: NavItem[] = [
     activePaths: ["/dashboard", "/home"],
     href: "/home",
     icon: House,
-    label: "Home",
+    label: "Inicio",
   },
   {
     activePaths: ["/predictions"],
     href: "/predictions",
     icon: Target,
-    label: "Predictions",
+    label: "Predicciones",
   },
   {
     activePaths: ["/calendar", "/matches"],
     href: "/matches",
     icon: Calendar,
-    label: "Matches",
+    label: "Partidos",
   },
   {
     activePaths: ["/ranking"],
     href: "/ranking",
     icon: Trophy,
-    label: "Ranking",
+    label: "Clasificación",
   },
   {
     activePaths: ["/profile"],
     href: "/profile",
     icon: UserRound,
-    label: "Profile",
+    label: "Perfil",
   },
 ];
 

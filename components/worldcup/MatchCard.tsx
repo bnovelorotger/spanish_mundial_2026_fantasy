@@ -35,25 +35,26 @@ const groupAccentStyles: Record<string, string> = {
 
 const phaseLabels: Record<MatchPhase, string> = {
   FINAL: "Final",
-  GROUP_STAGE: "Group Stage",
-  QUARTER_FINALS: "Quarter-finals",
-  ROUND_OF_16: "Round of 16",
-  ROUND_OF_32: "Round of 32",
-  SEMI_FINALS: "Semi-finals",
-  THIRD_PLACE: "Third place",
+  GROUP_STAGE: "Fase de grupos",
+  QUARTER_FINALS: "Cuartos de final",
+  ROUND_OF_16: "Octavos de final",
+  ROUND_OF_32: "Dieciseisavos de final",
+  SEMI_FINALS: "Semifinales",
+  THIRD_PLACE: "Tercer puesto",
 };
 
 function badgeVariantForStatus(status: MatchStatus) {
   switch (status) {
     case "LIVE":
-      return { label: "LIVE", variant: "live" as const };
+      return { label: "EN DIRECTO", variant: "live" as const };
     case "FINISHED":
-      return { label: "Finished", variant: "finished" as const };
+      return { label: "Finalizado", variant: "finished" as const };
     case "POSTPONED":
+      return { label: "Aplazado", variant: "locked" as const };
     case "CANCELLED":
-      return { label: "Locked", variant: "locked" as const };
+      return { label: "Cancelado", variant: "locked" as const };
     default:
-      return { label: "Scheduled", variant: "scheduled" as const };
+      return { label: "Programado", variant: "scheduled" as const };
   }
 }
 
@@ -75,7 +76,7 @@ function teamDisplay(match: MatchCardViewModel, side: "away" | "home") {
     code: undefined,
     flagUrl: null,
     isPlaceholder: true,
-    name: placeholder ?? "TBD",
+    name: placeholder ?? "Por decidir",
   };
 }
 
@@ -106,7 +107,7 @@ export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
             </p>
             {match.groupLetter ? (
               <span className="rounded-pill border border-border-subtle bg-background-secondary/75 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                Group {match.groupLetter}
+                Grupo {match.groupLetter}
               </span>
             ) : null}
           </div>
@@ -159,11 +160,12 @@ export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
         <div className="mt-4 rounded-card border border-border-subtle bg-background-secondary/65 px-4 py-3">
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             <Shield className="size-4 text-accent-primary" strokeWidth={2} />
-            Match #{match.matchNumber}
+            Partido #{match.matchNumber}
           </div>
           <p className="mt-2 text-sm leading-6 text-text-muted">
-            Prediction and points overlays arrive in later phases. For now this
-            premium card focuses on match time, place, status, and score.
+            Las capas de pronóstico y puntos llegarán en fases posteriores. Por
+            ahora, esta tarjeta premium se centra en la hora, el lugar, el
+            estado y el marcador del partido.
           </p>
         </div>
       ) : null}

@@ -73,7 +73,7 @@ describe("validateKnockoutPredictionInput", () => {
       predictedWinnerTeamId: "team-1",
     });
 
-    expect(result.error).toBe("That knockout round is locked.");
+    expect(result.error).toBe("Esa ronda de eliminatorias ya está cerrada.");
   });
 
   it("rejects picks when both teams are not known", () => {
@@ -85,7 +85,7 @@ describe("validateKnockoutPredictionInput", () => {
     });
 
     expect(result.error).toBe(
-      "Pick a winner once both knockout teams are known.",
+      "Elige un ganador cuando ya se conozcan los dos equipos del cruce.",
     );
   });
 
@@ -97,7 +97,7 @@ describe("validateKnockoutPredictionInput", () => {
       predictedWinnerTeamId: "outsider",
     });
 
-    expect(result.error).toBe("Choose one of the teams on the bracket card.");
+    expect(result.error).toBe("Elige uno de los equipos que aparecen en la tarjeta del cruce.");
   });
 
   it("accepts a valid winner selection", () => {
@@ -136,7 +136,7 @@ describe("parseKnockoutPredictionFormData", () => {
     formData.set("phase", "GROUP_STAGE");
 
     expect(parseKnockoutPredictionFormData(formData)).toEqual({
-      error: "That knockout pick could not be resolved.",
+      error: "No hemos podido resolver ese pronóstico de eliminatorias.",
     });
   });
 });

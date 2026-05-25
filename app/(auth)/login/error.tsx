@@ -17,12 +17,12 @@ export default function LoginError({
             onClick={() => reset()}
             type="button"
           >
-            Reload login
+            Volver a cargar el acceso
           </button>
         }
-        description="Try again in a moment. The tournament sign-in tunnel should be back shortly."
-        eyebrow="Login offline"
-        title="Couldn't load the sign-in screen."
+        description="Vuelve a intentarlo en un momento. La entrada al torneo debería volver a encenderse enseguida."
+        eyebrow="Acceso fuera de juego"
+        title="No hemos podido cargar la pantalla de inicio de sesión."
         tone="error"
       />
     </main>

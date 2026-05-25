@@ -31,7 +31,7 @@ describe("validateProfileFormData", () => {
   it("rejects invalid usernames", () => {
     expect(validateProfileFormData("??", "Ana Maria")).toEqual({
       error:
-        "Username must be 3-24 characters and use only letters, numbers, or underscores.",
+        "El nombre de usuario debe tener entre 3 y 24 caracteres y usar solo letras, números o guiones bajos.",
     });
   });
 });

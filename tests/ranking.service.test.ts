@@ -190,13 +190,13 @@ describe("getUserGapCopy", () => {
 
   it("celebrates the league leader", () => {
     expect(getUserGapCopy(ranking, "user-1")).toBe(
-      "You're setting the pace for the whole league.",
+      "Marcas el ritmo de toda la liga.",
     );
   });
 
   it("shows the exact point gap behind the leader", () => {
     expect(getUserGapCopy(ranking, "user-2")).toBe(
-      "You're 4 pts behind Ana.",
+      "Estás a 4 pts de Ana.",
     );
   });
 });
@@ -230,9 +230,9 @@ describe("getRankingStamps", () => {
     );
 
     expect(stamps).toEqual([
-      { label: "Exact", tone: "exact" },
+      { label: "Exacto", tone: "exact" },
       { label: "+3 pts", tone: "points" },
-      { label: "Miss", tone: "miss" },
+      { label: "Fallo", tone: "miss" },
     ]);
   });
 });
