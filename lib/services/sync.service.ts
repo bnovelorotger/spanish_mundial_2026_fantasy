@@ -62,13 +62,20 @@ interface StandingRow {
 
 interface ProviderSyncPayload {
   matches: MatchDTO[];
+  providerFailures: ProviderFailure[];
   providerUsed: WorldCupProviderName;
   standings: GroupStandingDTO[];
   teams: TeamDTO[];
 }
 
+export interface ProviderFailure {
+  message: string;
+  provider: WorldCupProviderName;
+}
+
 interface SyncRunSummaryPayload {
   matches_changed: boolean;
+  provider_failures: ProviderFailure[];
   provider_requested: WorldCupProviderName;
   provider_used: WorldCupProviderName;
   recalculate_summary: {
@@ -82,6 +89,7 @@ export interface SyncSummary {
   matchesChanged: boolean;
   matchesSynced: number;
   pointsRecalculated: boolean;
+  providerFailures: ProviderFailure[];
   providerRequested: WorldCupProviderName;
   providerUsed: WorldCupProviderName;
   recalculateSummary: {
@@ -92,6 +100,16 @@ export interface SyncSummary {
   standingsSynced: number;
   status: SyncRunStatus;
   teamsSynced: number;
+}
+
+export class ProviderChainError extends Error {
+  readonly failures: ProviderFailure[];
+
+  constructor(message: string, failures: ProviderFailure[]) {
+    super(message);
+    this.name = "ProviderChainError";
+    this.failures = failures;
+  }
 }
 
 function normalizeNullableString(value: string | null | undefined) {
@@ -134,37 +152,57 @@ function instantiateProvider(
   }
 }
 
-async function loadProviderPayload(
+async function loadProviderData(
+  provider: WorldCupProvider,
+) {
+  const [teams, matches, standings] = await Promise.all([
+    provider.getTeams(),
+    provider.getMatches(),
+    provider.getStandings(),
+  ]);
+
+  return {
+    matches,
+    standings,
+    teams,
+  };
+}
+
+export async function resolveProviderPayload(
   providerRequested: WorldCupProviderName,
+  instantiate: (providerName: WorldCupProviderName) => WorldCupProvider = instantiateProvider,
 ): Promise<ProviderSyncPayload> {
   const providerChain = getProviderFallbackChain(providerRequested);
-  let lastError: Error | null = null;
+  const providerFailures: ProviderFailure[] = [];
 
   for (const providerName of providerChain) {
-    const provider = instantiateProvider(providerName);
+    const provider = instantiate(providerName);
 
     try {
-      const [teams, matches, standings] = await Promise.all([
-        provider.getTeams(),
-        provider.getMatches(),
-        provider.getStandings(),
-      ]);
+      const providerData = await loadProviderData(provider);
 
       return {
-        matches,
+        matches: providerData.matches,
+        providerFailures,
         providerUsed: providerName,
-        standings,
-        teams,
+        standings: providerData.standings,
+        teams: providerData.teams,
       };
     } catch (error) {
-      lastError =
-        error instanceof Error
-          ? error
-          : new Error("Unknown provider failure.");
+      providerFailures.push({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unknown provider failure.",
+        provider: providerName,
+      });
     }
   }
 
-  throw lastError ?? new Error("No World Cup provider could return data.");
+  throw new ProviderChainError(
+    "No World Cup provider could return data.",
+    providerFailures,
+  );
 }
 
 function toTeamUpsertPayload(teams: TeamDTO[]) {
@@ -188,8 +226,11 @@ function toMatchKey(matchNumber: number) {
 function toSyncRunStatus(
   providerRequested: WorldCupProviderName,
   providerUsed: WorldCupProviderName,
+  providerFailures: ProviderFailure[],
 ): SyncRunStatus {
-  return providerRequested === providerUsed ? "SUCCESS" : "PARTIAL";
+  return providerRequested === providerUsed && providerFailures.length === 0
+    ? "SUCCESS"
+    : "PARTIAL";
 }
 
 export function hasMatchPayloadChanged(
@@ -498,7 +539,7 @@ export async function syncWorldCupData(
     supabase ?? (await import("../supabase/admin.ts")).createAdminClient();
 
   try {
-    const providerPayload = await loadProviderPayload(providerRequested);
+    const providerPayload = await resolveProviderPayload(providerRequested);
     const teamMap = await ensureTeamMap(client, providerPayload.teams);
     const matchesSummary = await syncMatches(
       client,
@@ -519,11 +560,13 @@ export async function syncWorldCupData(
     const status = toSyncRunStatus(
       providerRequested,
       providerPayload.providerUsed,
+      providerPayload.providerFailures,
     );
     const summary = {
       matchesChanged: matchesSummary.matchesChanged,
       matchesSynced: matchesSummary.matchesSynced,
       pointsRecalculated: recalculateSummary !== null,
+      providerFailures: providerPayload.providerFailures,
       providerRequested,
       providerUsed: providerPayload.providerUsed,
       recalculateSummary: recalculateSummary
@@ -548,6 +591,7 @@ export async function syncWorldCupData(
       status,
       summary: {
         matches_changed: summary.matchesChanged,
+        provider_failures: summary.providerFailures,
         provider_requested: summary.providerRequested,
         provider_used: summary.providerUsed,
         recalculate_summary: summary.recalculateSummary
@@ -574,7 +618,17 @@ export async function syncWorldCupData(
         startedAt,
         standingsSynced: 0,
         status: "FAILED",
-        summary: null,
+        summary:
+          error instanceof ProviderChainError
+            ? {
+                matches_changed: false,
+                provider_failures: error.failures,
+                provider_requested: providerRequested,
+                provider_used: providerRequested,
+                recalculate_summary: null,
+                standings_changed: false,
+              }
+            : null,
         teamsSynced: 0,
       });
     } catch {

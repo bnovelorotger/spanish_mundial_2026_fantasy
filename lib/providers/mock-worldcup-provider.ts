@@ -5,7 +5,7 @@ import type {
 } from "../types/worldcup.ts";
 import type { WorldCupProvider } from "./worldcup-provider.types.ts";
 
-const teams = [
+export const mockTeams = [
   { code: "CAN", group_letter: "A", is_tbd: false, name: "Canada" },
   { code: "MEX", group_letter: "A", is_tbd: false, name: "Mexico" },
   { code: "USA", group_letter: "A", is_tbd: false, name: "United States" },
@@ -56,7 +56,7 @@ const teams = [
   { code: "TBD", group_letter: "L", is_tbd: true, name: "TBD Group L Slot 4" },
 ] satisfies TeamDTO[];
 
-const matches = [
+export const mockMatches = [
   { away_team_code: "MEX", city: "Toronto", group_letter: "A", home_score: 1, home_team_code: "CAN", away_score: 1, kickoff: "2026-06-11T19:00:00Z", match_number: 1, phase: "GROUP_STAGE", status: "FINISHED", venue: "BMO Field" },
   { away_team_code: "CRC", city: "Los Angeles", group_letter: "A", home_score: 2, home_team_code: "USA", away_score: 0, kickoff: "2026-06-12T02:00:00Z", match_number: 2, phase: "GROUP_STAGE", status: "FINISHED", venue: "SoFi Stadium" },
   { away_team_code: "USA", city: "Vancouver", group_letter: "A", home_score: 0, home_team_code: "CAN", away_score: 2, kickoff: "2026-06-16T19:00:00Z", match_number: 3, phase: "GROUP_STAGE", status: "FINISHED", venue: "BC Place" },
@@ -95,7 +95,7 @@ const matches = [
   { away_placeholder: "Semi-final Winner 2", city: "New York", home_placeholder: "Semi-final Winner 1", kickoff: "2026-07-19T19:00:00Z", match_number: 36, phase: "FINAL", status: "SCHEDULED", venue: "MetLife Stadium" },
 ] satisfies MatchDTO[];
 
-const standings = [
+export const mockStandings = [
   { goals_against: 2, goals_for: 5, goal_difference: 3, group_letter: "A", is_final: true, lost: 0, played: 3, points: 7, position: 1, qualification_status: "QUALIFIED_FIRST", team_code: "MEX", won: 2, drawn: 1 },
   { goals_against: 2, goals_for: 4, goal_difference: 2, group_letter: "A", is_final: true, lost: 1, played: 3, points: 6, position: 2, qualification_status: "QUALIFIED_SECOND", team_code: "USA", won: 2, drawn: 0 },
   { goals_against: 2, goals_for: 2, goal_difference: 0, group_letter: "A", is_final: true, lost: 1, played: 3, points: 4, position: 3, qualification_status: "ELIMINATED", team_code: "CAN", won: 1, drawn: 1 },
@@ -116,14 +116,14 @@ function cloneList<T extends Record<string, unknown>>(items: T[]) {
 
 export class MockWorldCupProvider implements WorldCupProvider {
   async getMatches() {
-    return cloneList(matches);
+    return cloneList(mockMatches);
   }
 
   async getStandings() {
-    return cloneList(standings);
+    return cloneList(mockStandings);
   }
 
   async getTeams() {
-    return cloneList(teams);
+    return cloneList(mockTeams);
   }
 }

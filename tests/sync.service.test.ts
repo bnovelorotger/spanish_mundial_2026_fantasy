@@ -4,8 +4,12 @@ import {
   getProviderFallbackChain,
   hasMatchPayloadChanged,
   hasStandingPayloadChanged,
+  ProviderChainError,
   resolveRequestedProviderName,
+  resolveProviderPayload,
 } from "@/lib/services/sync.service";
+import type { WorldCupProvider } from "@/lib/providers/worldcup-provider.types";
+import { StaticWorldCupProvider } from "@/lib/providers/static-worldcup-provider";
 
 describe("resolveRequestedProviderName", () => {
   it("defaults to mock for unknown values", () => {
@@ -29,6 +33,135 @@ describe("getProviderFallbackChain", () => {
 
   it("uses mock only when mock is requested", () => {
     expect(getProviderFallbackChain("mock")).toEqual(["mock"]);
+  });
+});
+
+describe("resolveProviderPayload", () => {
+  function createProvider(
+    behavior: Partial<Record<"teams" | "matches" | "standings", () => Promise<unknown>>>,
+  ): WorldCupProvider {
+    return {
+      async getMatches() {
+        if (behavior.matches) {
+          return behavior.matches() as Promise<Awaited<ReturnType<WorldCupProvider["getMatches"]>>>;
+        }
+
+        return [
+          {
+            away_team_code: "MEX",
+            home_team_code: "CAN",
+            kickoff: "2026-06-11T19:00:00Z",
+            match_number: 1,
+            phase: "GROUP_STAGE",
+            status: "SCHEDULED",
+          },
+        ];
+      },
+      async getStandings() {
+        if (behavior.standings) {
+          return behavior.standings() as Promise<
+            Awaited<ReturnType<WorldCupProvider["getStandings"]>>
+          >;
+        }
+
+        return [
+          {
+            drawn: 0,
+            goal_difference: 1,
+            goals_against: 0,
+            goals_for: 1,
+            group_letter: "A",
+            is_final: false,
+            lost: 0,
+            played: 1,
+            points: 3,
+            position: 1,
+            team_code: "CAN",
+            won: 1,
+          },
+        ];
+      },
+      async getTeams() {
+        if (behavior.teams) {
+          return behavior.teams() as Promise<Awaited<ReturnType<WorldCupProvider["getTeams"]>>>;
+        }
+
+        return [
+          {
+            code: "CAN",
+            group_letter: "A",
+            name: "Canada",
+          },
+          {
+            code: "MEX",
+            group_letter: "A",
+            name: "Mexico",
+          },
+        ];
+      },
+    };
+  }
+
+  it("falls back to the next provider and records failures", async () => {
+    const providerByName = {
+      apifootball: createProvider({
+        teams: async () => {
+          throw new Error("Api provider unavailable");
+        },
+      }),
+      mock: createProvider({}),
+      static: createProvider({}),
+    } satisfies Record<string, WorldCupProvider>;
+
+    const payload = await resolveProviderPayload(
+      "apifootball",
+      (providerName) => providerByName[providerName],
+    );
+
+    expect(payload.providerUsed).toBe("static");
+    expect(payload.providerFailures).toEqual([
+      {
+        message: "Api provider unavailable",
+        provider: "apifootball",
+      },
+    ]);
+  });
+
+  it("throws a ProviderChainError when every provider fails", async () => {
+    await expect(
+      resolveProviderPayload("apifootball", (providerName) =>
+        createProvider({
+          teams: async () => {
+            throw new Error(`${providerName} failed`);
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      failures: [
+        { message: "apifootball failed", provider: "apifootball" },
+        { message: "static failed", provider: "static" },
+        { message: "mock failed", provider: "mock" },
+      ],
+      name: "ProviderChainError",
+    } satisfies Partial<ProviderChainError>);
+  });
+});
+
+describe("StaticWorldCupProvider", () => {
+  it("returns a normalized bundled tournament snapshot", async () => {
+    const provider = new StaticWorldCupProvider();
+    const [teams, matches, standings] = await Promise.all([
+      provider.getTeams(),
+      provider.getMatches(),
+      provider.getStandings(),
+    ]);
+
+    expect(teams.length).toBeGreaterThan(0);
+    expect(matches.length).toBeGreaterThan(0);
+    expect(standings.length).toBeGreaterThan(0);
+    expect(teams[0]).toHaveProperty("group_letter");
+    expect(matches[0]).toHaveProperty("phase");
+    expect(standings[0]).toHaveProperty("position");
   });
 });
 
