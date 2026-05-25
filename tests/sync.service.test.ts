@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyStaleTeamPrunePlan,
+  buildGameLockSyncRows,
+  buildStaleTeamPrunePlan,
   getProviderFallbackChain,
   hasMatchPayloadChanged,
   hasStandingPayloadChanged,
@@ -306,5 +309,184 @@ describe("hasStandingPayloadChanged", () => {
         points: 6,
       }),
     ).toBe(true);
+  });
+});
+
+describe("buildStaleTeamPrunePlan", () => {
+  const snapshot = {
+    championPredictions: [
+      { id: "champion-1", team_id: "team-stale" },
+      { id: "champion-2", team_id: "team-keep" },
+    ],
+    groupPredictions: [
+      { id: "group-pred-1", team_id: "team-stale" },
+      { id: "group-pred-2", team_id: "team-keep" },
+    ],
+    groupStandings: [
+      { id: "standing-1", team_id: "team-stale" },
+      { id: "standing-2", team_id: "team-keep" },
+    ],
+    knockoutPredictions: [
+      { id: "knockout-1", predicted_winner_team_id: "team-stale" },
+      { id: "knockout-2", predicted_winner_team_id: "team-keep" },
+    ],
+    matches: [
+      {
+        away_placeholder: null,
+        away_score: null,
+        away_team_id: "team-keep",
+        city: "Toronto",
+        group_letter: "A",
+        home_placeholder: null,
+        home_score: null,
+        home_team_id: "team-stale",
+        id: "match-1",
+        kickoff: "2026-06-11T19:00:00Z",
+        match_number: 1,
+        phase: "GROUP_STAGE" as const,
+        status: "SCHEDULED" as const,
+        venue: "BMO Field",
+      },
+      {
+        away_placeholder: null,
+        away_score: null,
+        away_team_id: "team-stale",
+        city: "Vancouver",
+        group_letter: "A",
+        home_placeholder: null,
+        home_score: null,
+        home_team_id: "team-keep",
+        id: "match-2",
+        kickoff: "2026-06-12T19:00:00Z",
+        match_number: 2,
+        phase: "GROUP_STAGE" as const,
+        status: "SCHEDULED" as const,
+        venue: "BC Place",
+      },
+    ],
+    points: [
+      {
+        id: "point-1",
+        metadata: { teamId: "team-stale" },
+        source_id: "group_A_team_team-stale",
+        source_type: "GROUP_POSITION" as const,
+      },
+      {
+        id: "point-2",
+        metadata: { teamId: "team-keep" },
+        source_id: "group_A_team_team-keep",
+        source_type: "GROUP_POSITION" as const,
+      },
+    ],
+    teams: [
+      { code: "STA", id: "team-stale" },
+      { code: "KEP", id: "team-keep" },
+    ],
+  };
+
+  it("removes teams not in the provider response", () => {
+    const plan = buildStaleTeamPrunePlan(snapshot, ["KEP"]);
+    const pruned = applyStaleTeamPrunePlan(snapshot, plan);
+
+    expect(plan.staleTeamCodes).toEqual(["STA"]);
+    expect(pruned.teams).toEqual([{ code: "KEP", id: "team-keep" }]);
+  });
+
+  it("is a no-op when the provider response matches the database", () => {
+    const plan = buildStaleTeamPrunePlan(snapshot, ["STA", "KEP"]);
+    const pruned = applyStaleTeamPrunePlan(snapshot, plan);
+
+    expect(plan.staleTeamIds).toEqual([]);
+    expect(pruned).toEqual(snapshot);
+  });
+
+  it("cascades into predictions, standings, points, and neutralized matches", () => {
+    const plan = buildStaleTeamPrunePlan(snapshot, ["KEP"]);
+    const pruned = applyStaleTeamPrunePlan(snapshot, plan);
+
+    expect(pruned.groupPredictions).toEqual([{ id: "group-pred-2", team_id: "team-keep" }]);
+    expect(pruned.knockoutPredictions).toEqual([
+      { id: "knockout-2", predicted_winner_team_id: "team-keep" },
+    ]);
+    expect(pruned.championPredictions).toEqual([
+      { id: "champion-2", team_id: "team-keep" },
+    ]);
+    expect(pruned.groupStandings).toEqual([{ id: "standing-2", team_id: "team-keep" }]);
+    expect(pruned.points).toEqual([
+      {
+        id: "point-2",
+        metadata: { teamId: "team-keep" },
+        source_id: "group_A_team_team-keep",
+        source_type: "GROUP_POSITION",
+      },
+    ]);
+    expect(pruned.matches).toEqual([
+      expect.objectContaining({
+        away_team_id: "team-keep",
+        home_placeholder: "Team unavailable",
+        home_team_id: null,
+      }),
+      expect.objectContaining({
+        away_placeholder: "Team unavailable",
+        away_team_id: null,
+        home_team_id: "team-keep",
+      }),
+    ]);
+  });
+});
+
+describe("buildGameLockSyncRows", () => {
+  it("pins each phase to its first kickoff and reuses the final for champion", () => {
+    const rows = buildGameLockSyncRows([
+      { kickoff: "2026-06-11T19:00:00Z", phase: "GROUP_STAGE" },
+      { kickoff: "2026-06-10T19:00:00Z", phase: "GROUP_STAGE" },
+      { kickoff: "2026-07-01T19:00:00Z", phase: "ROUND_OF_32" },
+      { kickoff: "2026-07-12T19:00:00Z", phase: "FINAL" },
+      { kickoff: "2026-07-08T19:00:00Z", phase: "SEMI_FINALS" },
+    ]);
+
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        {
+          lock_at: "2026-06-10T19:00:00Z",
+          locked: false,
+          locked_by: "AUTOMATIC",
+          phase: "GROUP_STAGE",
+        },
+        {
+          lock_at: "2026-07-01T19:00:00Z",
+          locked: false,
+          locked_by: "AUTOMATIC",
+          phase: "ROUND_OF_32",
+        },
+        {
+          lock_at: "2026-07-12T19:00:00Z",
+          locked: false,
+          locked_by: "AUTOMATIC",
+          phase: "FINAL",
+        },
+        {
+          lock_at: "2026-07-12T19:00:00Z",
+          locked: false,
+          locked_by: "AUTOMATIC",
+          phase: "CHAMPION",
+        },
+      ]),
+    );
+  });
+
+  it("keeps manual lock rows untouched", () => {
+    const rows = buildGameLockSyncRows(
+      [{ kickoff: "2026-07-12T19:00:00Z", phase: "FINAL" }],
+      [{ locked: true, locked_by: "MANUAL", phase: "FINAL" }],
+    );
+
+    expect(rows.find((row) => row.phase === "FINAL")).toBeUndefined();
+    expect(rows.find((row) => row.phase === "CHAMPION")).toEqual({
+      lock_at: "2026-07-12T19:00:00Z",
+      locked: false,
+      locked_by: "AUTOMATIC",
+      phase: "CHAMPION",
+    });
   });
 });

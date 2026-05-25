@@ -12,9 +12,12 @@ import { recalculateAllPoints } from "./scoring.service.ts";
 
 import type {
   GroupStandingDTO,
+  LockPhase,
+  LockType,
   MatchDTO,
   MatchPhase,
   MatchStatus,
+  PointsSourceType,
   QualificationStatus,
   SyncRunStatus,
   TeamDTO,
@@ -35,6 +38,7 @@ interface ExistingTeamGroupRow {
 }
 
 interface MatchRow {
+  id?: string;
   away_placeholder: string | null;
   away_score: number | null;
   away_team_id: string | null;
@@ -48,6 +52,39 @@ interface MatchRow {
   phase: MatchPhase;
   status: MatchStatus;
   venue: string | null;
+}
+
+interface GroupPredictionRow {
+  id: string;
+  team_id: string;
+}
+
+interface KnockoutPredictionRow {
+  id: string;
+  predicted_winner_team_id: string | null;
+}
+
+interface ChampionPredictionRow {
+  id: string;
+  team_id: string;
+}
+
+interface GroupStandingDependencyRow {
+  id: string;
+  team_id: string;
+}
+
+interface PointDependencyRow {
+  id: string;
+  metadata: Record<string, unknown> | null;
+  source_id: string;
+  source_type: PointsSourceType;
+}
+
+interface GameLockRow {
+  locked: boolean;
+  locked_by: LockType | null;
+  phase: LockPhase;
 }
 
 interface StandingRow {
@@ -106,6 +143,28 @@ export interface SyncSummary {
   standingsSynced: number;
   status: SyncRunStatus;
   teamsSynced: number;
+}
+
+export interface StaleTeamPruneSnapshot {
+  championPredictions: ChampionPredictionRow[];
+  groupPredictions: GroupPredictionRow[];
+  groupStandings: GroupStandingDependencyRow[];
+  knockoutPredictions: KnockoutPredictionRow[];
+  matches: MatchRow[];
+  points: PointDependencyRow[];
+  teams: Array<Pick<TeamRow, "code" | "id">>;
+}
+
+export interface StaleTeamPrunePlan {
+  awayMatchIds: string[];
+  championPredictionIds: string[];
+  groupPredictionIds: string[];
+  groupStandingIds: string[];
+  homeMatchIds: string[];
+  knockoutPredictionIds: string[];
+  pointIds: string[];
+  staleTeamCodes: string[];
+  staleTeamIds: string[];
 }
 
 export class ProviderChainError extends Error {
@@ -283,6 +342,213 @@ function toSyncRunStatus(
     : "PARTIAL";
 }
 
+const STALE_TEAM_PLACEHOLDER = "Team unavailable";
+
+const SYNCABLE_LOCK_PHASES: readonly LockPhase[] = [
+  "GROUP_STAGE",
+  "ROUND_OF_32",
+  "ROUND_OF_16",
+  "QUARTER_FINALS",
+  "SEMI_FINALS",
+  "THIRD_PLACE",
+  "FINAL",
+  "CHAMPION",
+] as const;
+
+function pointRowTouchesStaleTeam(
+  point: PointDependencyRow,
+  staleTeamIds: Set<string>,
+  deletedPredictionIds: Set<string>,
+) {
+  const metadata = point.metadata;
+  const metadataTeamId =
+    metadata && typeof metadata.teamId === "string" ? metadata.teamId : null;
+  const metadataPredictionId =
+    metadata && typeof metadata.predictionId === "string"
+      ? metadata.predictionId
+      : null;
+
+  if (metadataTeamId && staleTeamIds.has(metadataTeamId)) {
+    return true;
+  }
+
+  if (metadataPredictionId && deletedPredictionIds.has(metadataPredictionId)) {
+    return true;
+  }
+
+  for (const staleTeamId of staleTeamIds) {
+    if (point.source_id.includes(staleTeamId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function buildStaleTeamPrunePlan(
+  snapshot: StaleTeamPruneSnapshot,
+  activeProviderCodes: string[],
+): StaleTeamPrunePlan {
+  const activeCodes = new Set(activeProviderCodes);
+  const staleTeams = snapshot.teams.filter((team) => !activeCodes.has(team.code));
+  const staleTeamIds = staleTeams.map((team) => team.id);
+  const staleTeamCodes = staleTeams.map((team) => team.code);
+  const staleTeamIdSet = new Set(staleTeamIds);
+  const groupPredictionIds = snapshot.groupPredictions
+    .filter((prediction) => staleTeamIdSet.has(prediction.team_id))
+    .map((prediction) => prediction.id);
+  const knockoutPredictionIds = snapshot.knockoutPredictions
+    .filter(
+      (prediction) =>
+        prediction.predicted_winner_team_id !== null &&
+        staleTeamIdSet.has(prediction.predicted_winner_team_id),
+    )
+    .map((prediction) => prediction.id);
+  const championPredictionIds = snapshot.championPredictions
+    .filter((prediction) => staleTeamIdSet.has(prediction.team_id))
+    .map((prediction) => prediction.id);
+  const deletedPredictionIds = new Set([
+    ...groupPredictionIds,
+    ...knockoutPredictionIds,
+    ...championPredictionIds,
+  ]);
+  const pointIds = snapshot.points
+    .filter((point) =>
+      pointRowTouchesStaleTeam(point, staleTeamIdSet, deletedPredictionIds),
+    )
+    .map((point) => point.id);
+  const groupStandingIds = snapshot.groupStandings
+    .filter((standing) => staleTeamIdSet.has(standing.team_id))
+    .map((standing) => standing.id);
+  const homeMatchIds = snapshot.matches
+    .filter(
+      (match) =>
+        !!match.id &&
+        match.home_team_id !== null &&
+        staleTeamIdSet.has(match.home_team_id),
+    )
+    .map((match) => match.id as string);
+  const awayMatchIds = snapshot.matches
+    .filter(
+      (match) =>
+        !!match.id &&
+        match.away_team_id !== null &&
+        staleTeamIdSet.has(match.away_team_id),
+    )
+    .map((match) => match.id as string);
+
+  return {
+    awayMatchIds,
+    championPredictionIds,
+    groupPredictionIds,
+    groupStandingIds,
+    homeMatchIds,
+    knockoutPredictionIds,
+    pointIds,
+    staleTeamCodes,
+    staleTeamIds,
+  };
+}
+
+export function applyStaleTeamPrunePlan(
+  snapshot: StaleTeamPruneSnapshot,
+  plan: StaleTeamPrunePlan,
+): StaleTeamPruneSnapshot {
+  const groupPredictionIds = new Set(plan.groupPredictionIds);
+  const knockoutPredictionIds = new Set(plan.knockoutPredictionIds);
+  const championPredictionIds = new Set(plan.championPredictionIds);
+  const groupStandingIds = new Set(plan.groupStandingIds);
+  const pointIds = new Set(plan.pointIds);
+  const staleTeamIds = new Set(plan.staleTeamIds);
+  const homeMatchIds = new Set(plan.homeMatchIds);
+  const awayMatchIds = new Set(plan.awayMatchIds);
+
+  return {
+    championPredictions: snapshot.championPredictions.filter(
+      (prediction) => !championPredictionIds.has(prediction.id),
+    ),
+    groupPredictions: snapshot.groupPredictions.filter(
+      (prediction) => !groupPredictionIds.has(prediction.id),
+    ),
+    groupStandings: snapshot.groupStandings.filter(
+      (standing) => !groupStandingIds.has(standing.id),
+    ),
+    knockoutPredictions: snapshot.knockoutPredictions.filter(
+      (prediction) => !knockoutPredictionIds.has(prediction.id),
+    ),
+    matches: snapshot.matches.map((match) => {
+      const matchId = match.id ?? "";
+
+      return {
+        ...match,
+        away_placeholder: awayMatchIds.has(matchId)
+          ? STALE_TEAM_PLACEHOLDER
+          : match.away_placeholder,
+        away_team_id: awayMatchIds.has(matchId) ? null : match.away_team_id,
+        home_placeholder: homeMatchIds.has(matchId)
+          ? STALE_TEAM_PLACEHOLDER
+          : match.home_placeholder,
+        home_team_id: homeMatchIds.has(matchId) ? null : match.home_team_id,
+      };
+    }),
+    points: snapshot.points.filter((point) => !pointIds.has(point.id)),
+    teams: snapshot.teams.filter((team) => !staleTeamIds.has(team.id)),
+  };
+}
+
+interface PhaseKickoffInput {
+  kickoff: string;
+  phase: MatchPhase;
+}
+
+interface GameLockSyncRow {
+  lock_at: string;
+  locked: boolean;
+  locked_by: LockType;
+  phase: LockPhase;
+}
+
+export function buildGameLockSyncRows(
+  matches: PhaseKickoffInput[],
+  existingLocks: GameLockRow[] = [],
+): GameLockSyncRow[] {
+  const earliestKickoffByPhase = new Map<MatchPhase, string>();
+
+  for (const match of matches) {
+    const currentKickoff = earliestKickoffByPhase.get(match.phase);
+
+    if (!currentKickoff || match.kickoff < currentKickoff) {
+      earliestKickoffByPhase.set(match.phase, match.kickoff);
+    }
+  }
+
+  const championKickoff = earliestKickoffByPhase.get("FINAL");
+  const existingLockByPhase = new Map(
+    existingLocks.map((lock) => [lock.phase, lock] as const),
+  );
+
+  return SYNCABLE_LOCK_PHASES.flatMap((phase) => {
+    const kickoff =
+      phase === "CHAMPION"
+        ? championKickoff
+        : earliestKickoffByPhase.get(phase);
+    const existingLock = existingLockByPhase.get(phase);
+
+    if (!kickoff || existingLock?.locked_by === "MANUAL") {
+      return [];
+    }
+
+    return [
+      {
+        lock_at: kickoff,
+        locked: false,
+        locked_by: "AUTOMATIC" as const,
+        phase,
+      },
+    ];
+  });
+}
+
 export function hasMatchPayloadChanged(
   existingMatch: MatchRow | undefined,
   payload: {
@@ -377,6 +643,141 @@ async function ensureTeamMap(supabase: SupabaseClient, teams: TeamDTO[]) {
 
   const rows = teamsResponse.data as TeamRow[];
   return new Map(rows.map((team) => [team.code, team]));
+}
+
+async function deleteRowsByIds(
+  supabase: SupabaseClient,
+  table: string,
+  ids: string[],
+) {
+  if (ids.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.from(table).delete().in("id", ids);
+
+  if (error) {
+    throw new Error(`Could not delete ${table}: ${error.message}`);
+  }
+}
+
+async function pruneStaleTeams(
+  supabase: SupabaseClient,
+  teams: TeamDTO[],
+) {
+  const [teamsResponse, groupPredictionsResponse, knockoutPredictionsResponse, championPredictionsResponse, pointsResponse, groupStandingsResponse, matchesResponse] =
+    await Promise.all([
+      supabase.from("teams").select("id, code"),
+      supabase.from("group_predictions").select("id, team_id"),
+      supabase
+        .from("knockout_predictions")
+        .select("id, predicted_winner_team_id"),
+      supabase.from("champion_predictions").select("id, team_id"),
+      supabase.from("points").select("id, source_id, source_type, metadata"),
+      supabase.from("group_standings").select("id, team_id"),
+      supabase
+        .from("matches")
+        .select(
+          "id, match_number, phase, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, home_score, away_score, status, venue, city, kickoff",
+        ),
+    ]);
+
+  if (teamsResponse.error) {
+    throw new Error(`Could not load existing teams before pruning: ${teamsResponse.error.message}`);
+  }
+
+  if (groupPredictionsResponse.error) {
+    throw new Error(
+      `Could not load group predictions before pruning: ${groupPredictionsResponse.error.message}`,
+    );
+  }
+
+  if (knockoutPredictionsResponse.error) {
+    throw new Error(
+      `Could not load knockout predictions before pruning: ${knockoutPredictionsResponse.error.message}`,
+    );
+  }
+
+  if (championPredictionsResponse.error) {
+    throw new Error(
+      `Could not load champion predictions before pruning: ${championPredictionsResponse.error.message}`,
+    );
+  }
+
+  if (pointsResponse.error) {
+    throw new Error(`Could not load points before pruning: ${pointsResponse.error.message}`);
+  }
+
+  if (groupStandingsResponse.error) {
+    throw new Error(
+      `Could not load group standings before pruning: ${groupStandingsResponse.error.message}`,
+    );
+  }
+
+  if (matchesResponse.error) {
+    throw new Error(`Could not load matches before pruning: ${matchesResponse.error.message}`);
+  }
+
+  const plan = buildStaleTeamPrunePlan(
+    {
+      championPredictions: championPredictionsResponse.data as ChampionPredictionRow[],
+      groupPredictions: groupPredictionsResponse.data as GroupPredictionRow[],
+      groupStandings: groupStandingsResponse.data as GroupStandingDependencyRow[],
+      knockoutPredictions: knockoutPredictionsResponse.data as KnockoutPredictionRow[],
+      matches: matchesResponse.data as MatchRow[],
+      points: pointsResponse.data as PointDependencyRow[],
+      teams: teamsResponse.data as Array<Pick<TeamRow, "code" | "id">>,
+    },
+    teams.map((team) => team.code),
+  );
+
+  if (plan.staleTeamIds.length === 0) {
+    return {
+      prunedTeamCodes: [] as string[],
+      prunedTeams: 0,
+    };
+  }
+
+  await deleteRowsByIds(supabase, "group_predictions", plan.groupPredictionIds);
+  await deleteRowsByIds(supabase, "knockout_predictions", plan.knockoutPredictionIds);
+  await deleteRowsByIds(supabase, "champion_predictions", plan.championPredictionIds);
+  await deleteRowsByIds(supabase, "points", plan.pointIds);
+  await deleteRowsByIds(supabase, "group_standings", plan.groupStandingIds);
+
+  if (plan.homeMatchIds.length > 0) {
+    const { error } = await supabase
+      .from("matches")
+      .update({
+        home_placeholder: STALE_TEAM_PLACEHOLDER,
+        home_team_id: null,
+      })
+      .in("id", plan.homeMatchIds);
+
+    if (error) {
+      throw new Error(`Could not detach stale home teams from matches: ${error.message}`);
+    }
+  }
+
+  if (plan.awayMatchIds.length > 0) {
+    const { error } = await supabase
+      .from("matches")
+      .update({
+        away_placeholder: STALE_TEAM_PLACEHOLDER,
+        away_team_id: null,
+      })
+      .in("id", plan.awayMatchIds);
+
+    if (error) {
+      throw new Error(`Could not detach stale away teams from matches: ${error.message}`);
+    }
+  }
+
+  await deleteRowsByIds(supabase, "teams", plan.staleTeamIds);
+
+  return {
+    prunedTeamCodes: plan.staleTeamCodes,
+    prunedTeams: plan.staleTeamIds.length,
+  };
 }
 
 async function clearGroupStandingsForTeamDrift(
@@ -525,6 +926,42 @@ async function syncMatches(
   };
 }
 
+async function syncGameLocksFromMatches(supabase: SupabaseClient) {
+  const [matchesResponse, existingLocksResponse] = await Promise.all([
+    supabase.from("matches").select("phase, kickoff"),
+    supabase.from("game_locks").select("phase, locked, locked_by"),
+  ]);
+
+  if (matchesResponse.error) {
+    throw new Error(`Could not load matches for game locks: ${matchesResponse.error.message}`);
+  }
+
+  if (existingLocksResponse.error) {
+    throw new Error(
+      `Could not load existing game locks: ${existingLocksResponse.error.message}`,
+    );
+  }
+
+  const rows = buildGameLockSyncRows(
+    (matchesResponse.data as Array<Pick<MatchRow, "kickoff" | "phase">>) ?? [],
+    (existingLocksResponse.data as GameLockRow[]) ?? [],
+  );
+
+  if (rows.length === 0) {
+    return 0;
+  }
+
+  const { error } = await supabase.from("game_locks").upsert(rows, {
+    onConflict: "phase",
+  });
+
+  if (error) {
+    throw new Error(`Could not sync game locks: ${error.message}`);
+  }
+
+  return rows.length;
+}
+
 async function syncStandings(
   supabase: SupabaseClient,
   standings: GroupStandingDTO[],
@@ -652,6 +1089,21 @@ export async function syncWorldCupData(
 
   try {
     const providerPayload = await resolveProviderPayload(providerRequested);
+    let pruningChanged = false;
+
+    try {
+      const pruneSummary = await pruneStaleTeams(client, providerPayload.teams);
+      pruningChanged = pruneSummary.prunedTeams > 0;
+    } catch (error) {
+      providerPayload.providerFailures.push({
+        message:
+          error instanceof Error
+            ? `Stale team pruning failed: ${error.message}`
+            : "Stale team pruning failed.",
+        provider: providerPayload.providerUsed,
+      });
+    }
+
     const standingsPrecleared = await clearGroupStandingsForTeamDrift(
       client,
       providerPayload.teams,
@@ -662,6 +1114,7 @@ export async function syncWorldCupData(
       providerPayload.matches,
       teamMap,
     );
+    await syncGameLocksFromMatches(client);
     const standingsSummary = await syncStandings(
       client,
       providerPayload.standings,
@@ -669,11 +1122,12 @@ export async function syncWorldCupData(
     );
 
     const shouldRecalculate =
+      pruningChanged ||
       matchesSummary.matchesChanged ||
       standingsSummary.standingsChanged ||
       standingsPrecleared;
     const standingsChanged =
-      standingsSummary.standingsChanged || standingsPrecleared;
+      standingsSummary.standingsChanged || standingsPrecleared || pruningChanged;
     const recalculateSummary = shouldRecalculate
       ? await recalculateAllPoints(client)
       : null;
