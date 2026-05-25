@@ -7,6 +7,7 @@ import type {
 } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
+import { LocalKickoff } from "./LocalKickoff";
 import { PhaseBadge } from "./PhaseBadge";
 import { TeamBadge } from "./TeamBadge";
 
@@ -41,21 +42,6 @@ const phaseLabels: Record<MatchPhase, string> = {
   SEMI_FINALS: "Semi-finals",
   THIRD_PLACE: "Third place",
 };
-
-function formatKickoffParts(kickoff: string) {
-  const date = new Date(kickoff);
-
-  return {
-    date: new Intl.DateTimeFormat("en-US", {
-      day: "numeric",
-      month: "short",
-    }).format(date),
-    time: new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(date),
-  };
-}
 
 function badgeVariantForStatus(status: MatchStatus) {
   switch (status) {
@@ -94,7 +80,6 @@ function teamDisplay(match: MatchCardViewModel, side: "away" | "home") {
 }
 
 export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
-  const kickoff = formatKickoffParts(match.kickoff);
   const statusBadge = badgeVariantForStatus(match.status);
   const home = teamDisplay(match, "home");
   const away = teamDisplay(match, "away");
@@ -126,10 +111,15 @@ export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
             ) : null}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarClock className="size-3.5 text-accent-primary" strokeWidth={2} />
-              {kickoff.date} · {kickoff.time}
-            </span>
+            <LocalKickoff isoUtc={match.kickoff}>
+              {({ date, time }) => (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarClock className="size-3.5 text-accent-primary" strokeWidth={2} />
+                  <span suppressHydrationWarning>{date}</span>{" · "}
+                  <span suppressHydrationWarning>{time}</span>
+                </span>
+              )}
+            </LocalKickoff>
             {match.city || match.venue ? (
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-3.5 text-accent-secondary" strokeWidth={2} />

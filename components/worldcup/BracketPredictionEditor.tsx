@@ -3,6 +3,7 @@ import { Crown, Lock, Shuffle, Sparkles } from "lucide-react";
 import type { BracketMatchViewModel } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
+import { LocalKickoff } from "./LocalKickoff";
 import { PhaseBadge } from "./PhaseBadge";
 import { TeamBadge } from "./TeamBadge";
 
@@ -13,15 +14,6 @@ interface BracketPredictionEditorProps {
   } | null;
   match: BracketMatchViewModel;
   saveAction: (formData: FormData) => void | Promise<void>;
-}
-
-function formatKickoff(kickoff: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    month: "short",
-  }).format(new Date(kickoff));
 }
 
 function matchStateLabel(match: BracketMatchViewModel) {
@@ -86,7 +78,18 @@ export function BracketPredictionEditor({
             Match #{match.matchNumber}
           </p>
           <h3 className="mt-1 text-base font-semibold text-text-primary">
-            {match.isFinal ? "Final under the lights" : formatKickoff(match.kickoff)}
+            {match.isFinal ? (
+              "Final under the lights"
+            ) : (
+              <LocalKickoff isoUtc={match.kickoff}>
+                {({ date, time }) => (
+                  <>
+                    <span suppressHydrationWarning>{date}</span>{" · "}
+                    <span suppressHydrationWarning>{time}</span>
+                  </>
+                )}
+              </LocalKickoff>
+            )}
           </h3>
         </div>
 

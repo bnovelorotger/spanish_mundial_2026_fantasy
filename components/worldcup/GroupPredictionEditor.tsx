@@ -9,6 +9,10 @@ import type {
   GroupPredictionTeamViewModel,
   PredictionState,
 } from "@/lib/types/worldcup";
+import {
+  formatKickoff,
+  SERVER_TIME_ZONE_FALLBACK,
+} from "@/lib/utils/datetime";
 import { resolvePredictionState } from "@/lib/utils/locks";
 import { cn } from "@/lib/utils";
 
@@ -132,14 +136,9 @@ function formatLockCopy(lockAt: string | null) {
     return "Group stage order stays open until kickoff.";
   }
 
-  const date = new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    month: "short",
-  }).format(new Date(lockAt));
+  const kickoff = formatKickoff(lockAt, SERVER_TIME_ZONE_FALLBACK);
 
-  return `First group stage kickoff: ${date}.`;
+  return `First group stage kickoff: ${kickoff.date} - ${kickoff.time}.`;
 }
 
 function SaveButton({ disabled }: { disabled: boolean }) {
