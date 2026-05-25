@@ -64,7 +64,7 @@ function FilterLink({
     params.set("group", nextFilters.group);
   }
 
-  const href = params.size > 0 ? `/calendar?${params.toString()}` : "/calendar";
+  const href = params.size > 0 ? `/matches?${params.toString()}` : "/matches";
 
   return (
     <Link

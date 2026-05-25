@@ -9,6 +9,8 @@ import {
 const protectedPrefixes = [
   "/calendar",
   "/dashboard",
+  "/home",
+  "/matches",
   "/predictions",
   "/profile",
   "/ranking",
@@ -76,7 +78,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && pathname === "/login") {
     const profileUrl = request.nextUrl.clone();
-    profileUrl.pathname = "/dashboard";
+    profileUrl.pathname = "/home";
     const redirectResponse = NextResponse.redirect(profileUrl);
     copyCookies(supabaseResponse, redirectResponse);
     return redirectResponse;

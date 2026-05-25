@@ -14,17 +14,43 @@ import {
 import { cn } from "@/lib/utils";
 
 interface NavItem {
+  activePaths: string[];
   href: string;
   icon: LucideIcon;
   label: string;
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", icon: House, label: "Home" },
-  { href: "/predictions", icon: Target, label: "Predictions" },
-  { href: "/calendar", icon: Calendar, label: "Matches" },
-  { href: "/ranking", icon: Trophy, label: "Ranking" },
-  { href: "/profile", icon: UserRound, label: "Profile" },
+  {
+    activePaths: ["/dashboard", "/home"],
+    href: "/home",
+    icon: House,
+    label: "Home",
+  },
+  {
+    activePaths: ["/predictions"],
+    href: "/predictions",
+    icon: Target,
+    label: "Predictions",
+  },
+  {
+    activePaths: ["/calendar", "/matches"],
+    href: "/matches",
+    icon: Calendar,
+    label: "Matches",
+  },
+  {
+    activePaths: ["/ranking"],
+    href: "/ranking",
+    icon: Trophy,
+    label: "Ranking",
+  },
+  {
+    activePaths: ["/profile"],
+    href: "/profile",
+    icon: UserRound,
+    label: "Profile",
+  },
 ];
 
 export function BottomNav() {
@@ -33,8 +59,11 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-subtle bg-[rgba(8,13,24,0.86)] backdrop-blur-[16px]">
       <div className="mx-auto grid w-full max-w-3xl grid-cols-5 px-2 py-2">
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href;
+        {navItems.map(({ activePaths, href, icon: Icon, label }) => {
+          const isActive = activePaths.some(
+            (activePath) =>
+              pathname === activePath || pathname.startsWith(`${activePath}/`),
+          );
 
           return (
             <Link

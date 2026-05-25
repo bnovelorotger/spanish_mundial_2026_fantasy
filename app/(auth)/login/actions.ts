@@ -87,7 +87,7 @@ export async function authenticate(formData: FormData) {
       redirect("/profile?message=Finish%20setting%20up%20your%20profile.");
     }
 
-    redirect("/dashboard?message=Welcome%20back.");
+    redirect("/home?message=Welcome%20back.");
   }
 
   const { data, error } = await supabase.auth.signUp({
