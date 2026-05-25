@@ -17,6 +17,26 @@ interface CachedTournamentData {
   teams: TeamDTO[];
 }
 
+function readApiFootballErrors(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("errors" in payload)) {
+    return [];
+  }
+
+  const errors = (payload as { errors?: unknown }).errors;
+
+  if (Array.isArray(errors)) {
+    return errors.filter((value): value is string => typeof value === "string");
+  }
+
+  if (errors && typeof errors === "object") {
+    return Object.values(errors).filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0,
+    );
+  }
+
+  return [];
+}
+
 export class ApiFootballProvider implements WorldCupProvider {
   private readonly apiKey: string | undefined;
   private cachedTournamentData: Promise<CachedTournamentData> | null = null;
@@ -48,7 +68,16 @@ export class ApiFootballProvider implements WorldCupProvider {
       );
     }
 
-    return response.json();
+    const payload = await response.json();
+    const apiErrors = readApiFootballErrors(payload);
+
+    if (apiErrors.length > 0) {
+      throw new Error(
+        `ApiFootballProvider request rejected for ${pathname}: ${apiErrors.join(" | ")}`,
+      );
+    }
+
+    return payload;
   }
 
   private async loadTournamentData() {
