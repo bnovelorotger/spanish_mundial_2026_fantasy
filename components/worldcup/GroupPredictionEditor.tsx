@@ -84,11 +84,7 @@ function moveTeam(
   const currentIndex = teams.findIndex((team) => team.id === teamId);
   const nextIndex = currentIndex + direction;
 
-  if (
-    currentIndex < 0 ||
-    nextIndex < 0 ||
-    nextIndex >= teams.length
-  ) {
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= teams.length) {
     return teams;
   }
 
@@ -179,88 +175,94 @@ export function GroupPredictionEditor({
   const canSave = !group.lock.isLocked && (hasDirtyChanges || group.savedCount < 4);
 
   return (
-    <form
-      action={saveAction}
-      className={cn(
-        "rounded-cardLg border border-border-subtle border-t-4 bg-surface-card/90 p-5 shadow-card",
-        groupAccentStyles[group.groupLetter],
-      )}
+    <section
+      className="scroll-mt-36 sm:scroll-mt-40"
+      data-group-section={group.groupLetter}
+      id={`grupo-${group.groupLetter.toLowerCase()}`}
     >
-      <input name="group_letter" type="hidden" value={group.groupLetter} />
-      {teams.map((team) => (
-        <input key={team.id} name="team_ids" type="hidden" value={team.id} />
-      ))}
-
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p
-            className={cn(
-              "text-sm font-medium uppercase tracking-[0.18em]",
-              groupTextStyles[group.groupLetter],
-            )}
-          >
-            Grupo {group.groupLetter}
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-text-primary">
-            Define tu 1-4 antes de que se cierre el tablero.
-          </h2>
-        </div>
-        <PhaseBadge label={badge.label} variant={badge.variant} />
-      </div>
-
-      <div className="mt-4 flex items-start gap-3 rounded-card border border-border-subtle bg-background-secondary/70 px-4 py-3 text-sm text-text-secondary">
-        {group.lock.isLocked ? (
-          <Lock className="mt-0.5 size-4 shrink-0 text-status-warning" strokeWidth={2} />
-        ) : flash?.tone === "error" ? (
-          <AlertCircle className="mt-0.5 size-4 shrink-0 text-status-live" strokeWidth={2} />
-        ) : flash?.tone === "success" ? (
-          <Check className="mt-0.5 size-4 shrink-0 text-status-success" strokeWidth={2} />
-        ) : (
-          <Clock3 className="mt-0.5 size-4 shrink-0 text-accent-primary" strokeWidth={2} />
+      <form
+        action={saveAction}
+        className={cn(
+          "rounded-cardLg border border-border-subtle border-t-4 bg-surface-card/90 p-5 shadow-card",
+          groupAccentStyles[group.groupLetter],
         )}
-        <div className="space-y-1">
-          <p className="font-medium text-text-primary">
-            {group.lock.isLocked
-              ? "La fase de grupos está cerrada. Tu orden guardado se mantiene en juego."
-              : flash?.tone === "error"
-                ? "Ese guardado no ha llegado al tablero."
-                : state === "PENDING"
-                  ? "Tienes cambios sin guardar en juego."
-                  : state === "COMPLETED"
-                    ? "Tu orden guardado ya está colocado en el tablero del torneo."
-                    : "Está editable. Mueve los equipos hasta tu orden final previsto."}
-          </p>
-          <p
-            className={cn(
-              "text-sm",
-              flash?.tone === "error" ? "text-status-live" : "text-text-muted",
-            )}
-          >
-            {flash?.message ?? formatLockCopy(group.lock.effectiveLockAt)}
-          </p>
+      >
+        <input name="group_letter" type="hidden" value={group.groupLetter} />
+        {teams.map((team) => (
+          <input key={team.id} name="team_ids" type="hidden" value={team.id} />
+        ))}
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p
+              className={cn(
+                "text-sm font-medium uppercase tracking-[0.18em]",
+                groupTextStyles[group.groupLetter],
+              )}
+            >
+              Grupo {group.groupLetter}
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-text-primary">
+              Define tu 1-4 antes de que se cierre el tablero.
+            </h2>
+          </div>
+          <PhaseBadge label={badge.label} variant={badge.variant} />
         </div>
-      </div>
 
-      <div className="mt-5">
-        <GroupTable
-          isLocked={group.lock.isLocked}
-          onMoveDown={(teamId) => setTeams((currentTeams) => moveTeam(currentTeams, teamId, 1))}
-          onMoveUp={(teamId) => setTeams((currentTeams) => moveTeam(currentTeams, teamId, -1))}
-          onReorder={(activeTeamId, targetTeamId) =>
-            setTeams((currentTeams) =>
-              reorderTeams(currentTeams, activeTeamId, targetTeamId),
-            )
-          }
-          teams={teams}
-        />
-      </div>
+        <div className="mt-4 flex items-start gap-3 rounded-card border border-border-subtle bg-background-secondary/70 px-4 py-3 text-sm text-text-secondary">
+          {group.lock.isLocked ? (
+            <Lock className="mt-0.5 size-4 shrink-0 text-status-warning" strokeWidth={2} />
+          ) : flash?.tone === "error" ? (
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-status-live" strokeWidth={2} />
+          ) : flash?.tone === "success" ? (
+            <Check className="mt-0.5 size-4 shrink-0 text-status-success" strokeWidth={2} />
+          ) : (
+            <Clock3 className="mt-0.5 size-4 shrink-0 text-accent-primary" strokeWidth={2} />
+          )}
+          <div className="space-y-1">
+            <p className="font-medium text-text-primary">
+              {group.lock.isLocked
+                ? "La fase de grupos está cerrada. Tu orden guardado se mantiene en juego."
+                : flash?.tone === "error"
+                  ? "Ese guardado no ha llegado al tablero."
+                  : state === "PENDING"
+                    ? "Tienes cambios sin guardar en juego."
+                    : state === "COMPLETED"
+                      ? "Tu orden guardado ya está colocado en el tablero del torneo."
+                      : "Está editable. Mueve los equipos hasta tu orden final previsto."}
+            </p>
+            <p
+              className={cn(
+                "text-sm",
+                flash?.tone === "error" ? "text-status-live" : "text-text-muted",
+              )}
+            >
+              {flash?.message ?? formatLockCopy(group.lock.effectiveLockAt)}
+            </p>
+          </div>
+        </div>
 
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-          {group.savedCount === 4 ? "Pronóstico guardado" : "Se necesitan cuatro equipos"}
-        </p>
-        <SaveButton disabled={!canSave} />
-      </div>
-    </form>
+        <div className="mt-5">
+          <GroupTable
+            isLocked={group.lock.isLocked}
+            onMoveDown={(teamId) => setTeams((currentTeams) => moveTeam(currentTeams, teamId, 1))}
+            onMoveUp={(teamId) => setTeams((currentTeams) => moveTeam(currentTeams, teamId, -1))}
+            onReorder={(activeTeamId, targetTeamId) =>
+              setTeams((currentTeams) =>
+                reorderTeams(currentTeams, activeTeamId, targetTeamId),
+              )
+            }
+            teams={teams}
+          />
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+            {group.savedCount === 4 ? "Pronóstico guardado" : "Se necesitan cuatro equipos"}
+          </p>
+          <SaveButton disabled={!canSave} />
+        </div>
+      </form>
+    </section>
   );
 }

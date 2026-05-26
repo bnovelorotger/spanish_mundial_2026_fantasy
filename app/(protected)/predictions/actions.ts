@@ -13,10 +13,10 @@ import {
   saveGroupPrediction,
 } from "@/lib/services/predictions.service";
 import { createClient } from "@/lib/supabase/server";
+import { buildPredictionsRedirectHref } from "./redirect";
 
-function redirectToPredictions(params: Record<string, string>): never {
-  const searchParams = new URLSearchParams(params);
-  redirect(`/predictions?${searchParams.toString()}`);
+function redirectToPredictions(params: Record<string, string>, hash?: string): never {
+  redirect(buildPredictionsRedirectHref(params, hash));
 }
 
 function toSafePredictionErrorMessage(error: unknown) {
@@ -46,13 +46,14 @@ export async function saveGroupPredictionAction(formData: FormData) {
   const parsed = parseGroupPredictionFormData(formData);
   const groupLetter =
     parsed.data?.groupLetter ?? String(formData.get("group_letter") ?? "A");
+  const groupHash = `grupo-${groupLetter.toLowerCase()}`;
 
   if (!parsed.data) {
     redirectToPredictions({
       error: parsed.error,
       group: groupLetter,
       tab: "groups",
-    });
+    }, groupHash);
   }
 
   const parsedData = parsed.data;
@@ -64,7 +65,7 @@ export async function saveGroupPredictionAction(formData: FormData) {
       error: toSafePredictionErrorMessage(error),
       group: parsedData.groupLetter,
       tab: "groups",
-    });
+    }, `grupo-${parsedData.groupLetter.toLowerCase()}`);
   }
 
   revalidatePath("/predictions");
@@ -72,7 +73,7 @@ export async function saveGroupPredictionAction(formData: FormData) {
     group: parsedData.groupLetter,
     saved: "1",
     tab: "groups",
-  });
+  }, `grupo-${parsedData.groupLetter.toLowerCase()}`);
 }
 
 export async function saveKnockoutPredictionAction(formData: FormData) {
@@ -89,13 +90,14 @@ export async function saveKnockoutPredictionAction(formData: FormData) {
 
   const parsed = parseKnockoutPredictionFormData(formData);
   const matchId = String(formData.get("match_id") ?? "").trim();
+  const matchHash = matchId ? `match-${matchId}` : undefined;
 
   if (!parsed.data) {
     redirectToPredictions({
       error: parsed.error,
       match: matchId,
       tab: "knockout",
-    });
+    }, matchHash);
   }
 
   const parsedData = parsed.data;
@@ -107,7 +109,7 @@ export async function saveKnockoutPredictionAction(formData: FormData) {
       error: toSafePredictionErrorMessage(error),
       match: parsedData.matchId,
       tab: "knockout",
-    });
+    }, `match-${parsedData.matchId}`);
   }
 
   revalidatePath("/predictions");
@@ -115,5 +117,5 @@ export async function saveKnockoutPredictionAction(formData: FormData) {
     match: parsedData.matchId,
     saved: "1",
     tab: "knockout",
-  });
+  }, `match-${parsedData.matchId}`);
 }

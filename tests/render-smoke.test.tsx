@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   BracketMatchViewModel,
+  BracketRoundViewModel,
+  GroupPredictionGroupViewModel,
   MatchCardViewModel,
   RankingEntry,
 } from "@/lib/types/worldcup";
+import { GROUP_LETTER_OPTIONS } from "@/lib/types/worldcup";
 
 const {
   mockCreateClient,
@@ -15,6 +18,8 @@ const {
   mockGetUserPointsBreakdown,
   mockGetUserGapCopy,
   mockGetRankingStamps,
+  mockGetGroupPredictionGroups,
+  mockGetBracketRounds,
 } = vi.hoisted(() => ({
   mockCreateClient: vi.fn(),
   mockGetNextOpenLock: vi.fn(),
@@ -23,7 +28,11 @@ const {
   mockGetUserPointsBreakdown: vi.fn(),
   mockGetUserGapCopy: vi.fn(),
   mockGetRankingStamps: vi.fn(),
+  mockGetGroupPredictionGroups: vi.fn(),
+  mockGetBracketRounds: vi.fn(),
 }));
+
+vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: mockCreateClient,
@@ -31,6 +40,10 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/services/locks.service", () => ({
   getNextOpenLock: mockGetNextOpenLock,
+}));
+
+vi.mock("@/lib/services/profile.service", () => ({
+  ensureProfileForUser: vi.fn(),
 }));
 
 vi.mock("@/lib/services/matches.service", async () => {
@@ -44,6 +57,28 @@ vi.mock("@/lib/services/matches.service", async () => {
   };
 });
 
+vi.mock("@/lib/services/predictions.service", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/services/predictions.service")>(
+    "@/lib/services/predictions.service",
+  );
+
+  return {
+    ...actual,
+    getGroupPredictionGroups: mockGetGroupPredictionGroups,
+  };
+});
+
+vi.mock("@/lib/services/bracket.service", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/services/bracket.service")>(
+    "@/lib/services/bracket.service",
+  );
+
+  return {
+    ...actual,
+    getBracketRounds: mockGetBracketRounds,
+  };
+});
+
 vi.mock("@/lib/services/ranking.service", () => ({
   getRankingByPhase: mockGetRankingByPhase,
   getRankingStamps: mockGetRankingStamps,
@@ -52,6 +87,7 @@ vi.mock("@/lib/services/ranking.service", () => ({
 }));
 
 import DashboardPage from "@/app/(protected)/dashboard/page";
+import PredictionsPage from "@/app/(protected)/predictions/page";
 import { BracketPredictionEditor } from "@/components/worldcup/BracketPredictionEditor";
 import { MatchCard } from "@/components/worldcup/MatchCard";
 import { RankingTable } from "@/components/worldcup/RankingTable";
@@ -151,6 +187,39 @@ const rankingEntries: RankingEntry[] = [
   },
 ];
 
+const predictionGroups: GroupPredictionGroupViewModel[] = GROUP_LETTER_OPTIONS.map(
+  (letter) => ({
+    groupLetter: letter,
+    lock: {
+      effectiveLockAt: "2026-06-11T19:00:00Z",
+      isLocked: letter === "D",
+      phase: "GROUP_STAGE",
+      source: "AUTOMATIC",
+    },
+    savedCount: letter === "A" ? 4 : 0,
+    state: letter === "D" ? "LOCKED" : letter === "A" ? "COMPLETED" : "PENDING",
+    teams:
+      letter === "L"
+        ? []
+        : Array.from({ length: 4 }, (_, teamIndex) => ({
+            code: `${letter}${teamIndex + 1}`,
+            flagUrl: null,
+            id: `${letter.toLowerCase()}-team-${teamIndex + 1}`,
+            isTbd: false,
+            name: `Team ${letter}${teamIndex + 1}`,
+            predictedPosition: teamIndex + 1,
+          })),
+  }),
+);
+
+const bracketRounds: BracketRoundViewModel[] = [
+  {
+    label: "Dieciseisavos de final",
+    matches: [bracketMatch],
+    phase: "ROUND_OF_32",
+  },
+];
+
 describe("render smoke", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -183,6 +252,8 @@ describe("render smoke", () => {
     });
     mockGetUserGapCopy.mockReturnValue("Marcas el ritmo de toda la liga.");
     mockGetRankingStamps.mockReturnValue([]);
+    mockGetGroupPredictionGroups.mockResolvedValue(predictionGroups);
+    mockGetBracketRounds.mockResolvedValue(bracketRounds);
   });
 
   it("renders the dashboard without throwing when nextMatch exists", async () => {
@@ -213,6 +284,7 @@ describe("render smoke", () => {
     );
 
     expect(markup).toContain("Partido #65");
+    expect(markup).toContain('id="match-bracket-match-1"');
     expect(markup).toContain("21:00");
   });
 
@@ -223,5 +295,36 @@ describe("render smoke", () => {
 
     expect(markup).toContain("dzvwgffjheyknrilwrvh.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Favatars%2Fuser-1%2Favatar.webp");
     expect(markup).toContain("crests.football-data.org/760.svg");
+  });
+
+  it("renders the groups tab with a 12-chip group navigator and anchored sections", async () => {
+    const markup = renderToStaticMarkup(
+      await PredictionsPage({
+        searchParams: Promise.resolve({
+          group: "C",
+          tab: "groups",
+        }),
+      }),
+    );
+
+    expect(markup).toContain('data-testid="group-navigator"');
+    expect(markup.match(/data-group-nav-chip=/g) ?? []).toHaveLength(12);
+    expect(markup).toContain('id="grupo-a"');
+    expect(markup).toContain('id="grupo-l"');
+    expect(markup).toContain('aria-current="true"');
+  });
+
+  it("does not render the group navigator on the knockout tab", async () => {
+    const markup = renderToStaticMarkup(
+      await PredictionsPage({
+        searchParams: Promise.resolve({
+          match: "bracket-match-1",
+          tab: "knockout",
+        }),
+      }),
+    );
+
+    expect(markup).not.toContain('data-testid="group-navigator"');
+    expect(markup).toContain('id="match-bracket-match-1"');
   });
 });

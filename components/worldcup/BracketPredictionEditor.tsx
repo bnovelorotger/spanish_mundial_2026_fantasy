@@ -75,116 +75,118 @@ export function BracketPredictionEditor({
   const stateBadge = matchStateLabel(match);
 
   return (
-    <form
-      action={saveAction}
-      className={cn(
-        "rounded-cardLg border p-4 shadow-card",
-        match.isFinal
-          ? "border-accent-primary/30 bg-linear-to-b from-surface-elevated to-surface-card shadow-glowCyan"
-          : "border-border-subtle bg-surface-card/90",
-      )}
-    >
-      <input name="match_id" type="hidden" value={match.id} />
-      <input name="phase" type="hidden" value={match.phase} />
-
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            Partido #{match.matchNumber}
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-text-primary">
-            {match.isFinal ? (
-              "La final bajo los focos"
-            ) : (
-              <LocalKickoff isoUtc={match.kickoff} separator=" · " />
-            )}
-          </h3>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {match.prediction?.isRandom ? (
-            <span className="inline-flex items-center gap-1 rounded-pill border border-status-warning/30 bg-status-warning/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-status-warning">
-              <Shuffle className="size-3.5" strokeWidth={2} />
-              Aleatorio
-            </span>
-          ) : null}
-          <PhaseBadge label={stateBadge.label} variant={stateBadge.variant} />
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-        <span>{match.isFinal ? "Tarjeta premium de la final" : phaseLabel(match)}</span>
-        {match.city ? <span>· {match.city}</span> : null}
-        {match.venue ? <span>· {match.venue}</span> : null}
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {[match.homeSlot, match.awaySlot].map((slot) => {
-          const isSelected = match.prediction?.predictedWinnerTeamId === slot.id;
-
-          return (
-            <button
-              key={`${match.id}-${slot.name}`}
-              className={cn(
-                "flex w-full items-center justify-between gap-3 rounded-card border px-3 py-3 text-left",
-                slotButtonClassName({
-                  canPredict: match.canPredict,
-                  isSelected,
-                }),
-              )}
-              disabled={!match.canPredict || !slot.id}
-              name="predicted_winner_team_id"
-              type="submit"
-              value={slot.id ?? ""}
-            >
-              <TeamBadge
-                code={slot.code ?? undefined}
-                flagUrl={slot.flagUrl}
-                highlighted={isSelected}
-                isPlaceholder={!slot.isKnown}
-                name={slot.name}
-              />
-
-              {isSelected ? (
-                <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
-                  <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
-                  Ganador
-                </div>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 rounded-card border border-border-subtle bg-background-secondary/65 px-4 py-3 text-sm">
-        {flash ? (
-          <p
-            className={cn(
-              "font-medium",
-              flash.tone === "error" ? "text-status-live" : "text-status-success",
-            )}
-          >
-            {flash.message}
-          </p>
-        ) : match.lock.isLocked ? (
-          <div className="flex items-start gap-2 text-text-secondary">
-            <Lock className="mt-0.5 size-4 shrink-0 text-status-warning" strokeWidth={2} />
-            <p>Esta ronda está cerrada. Tu ganador guardado se mantiene en el cuadro.</p>
-          </div>
-        ) : match.canPredict ? (
-          <div className="flex items-start gap-2 text-text-secondary">
-            <Sparkles
-              className="mt-0.5 size-4 shrink-0 text-accent-secondary"
-              strokeWidth={2}
-            />
-            <p>Elige el ganador directamente en la tarjeta. La propagación sigue siendo manual en este cuadro MVP.</p>
-          </div>
-        ) : (
-          <p className="text-text-secondary">
-            Elige un ganador cuando los dos huecos del cuadro estén ocupados por equipos ya conocidos.
-          </p>
+    <section className="scroll-mt-36 sm:scroll-mt-40" id={`match-${match.id}`}>
+      <form
+        action={saveAction}
+        className={cn(
+          "rounded-cardLg border p-4 shadow-card",
+          match.isFinal
+            ? "border-accent-primary/30 bg-linear-to-b from-surface-elevated to-surface-card shadow-glowCyan"
+            : "border-border-subtle bg-surface-card/90",
         )}
-      </div>
-    </form>
+      >
+        <input name="match_id" type="hidden" value={match.id} />
+        <input name="phase" type="hidden" value={match.phase} />
+
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              Partido #{match.matchNumber}
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-text-primary">
+              {match.isFinal ? (
+                "La final bajo los focos"
+              ) : (
+                <LocalKickoff isoUtc={match.kickoff} separator=" · " />
+              )}
+            </h3>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {match.prediction?.isRandom ? (
+              <span className="inline-flex items-center gap-1 rounded-pill border border-status-warning/30 bg-status-warning/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-status-warning">
+                <Shuffle className="size-3.5" strokeWidth={2} />
+                Aleatorio
+              </span>
+            ) : null}
+            <PhaseBadge label={stateBadge.label} variant={stateBadge.variant} />
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+          <span>{match.isFinal ? "Tarjeta premium de la final" : phaseLabel(match)}</span>
+          {match.city ? <span>· {match.city}</span> : null}
+          {match.venue ? <span>· {match.venue}</span> : null}
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {[match.homeSlot, match.awaySlot].map((slot) => {
+            const isSelected = match.prediction?.predictedWinnerTeamId === slot.id;
+
+            return (
+              <button
+                key={`${match.id}-${slot.name}`}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 rounded-card border px-3 py-3 text-left",
+                  slotButtonClassName({
+                    canPredict: match.canPredict,
+                    isSelected,
+                  }),
+                )}
+                disabled={!match.canPredict || !slot.id}
+                name="predicted_winner_team_id"
+                type="submit"
+                value={slot.id ?? ""}
+              >
+                <TeamBadge
+                  code={slot.code ?? undefined}
+                  flagUrl={slot.flagUrl}
+                  highlighted={isSelected}
+                  isPlaceholder={!slot.isKnown}
+                  name={slot.name}
+                />
+
+                {isSelected ? (
+                  <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
+                    <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
+                    Ganador
+                  </div>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 rounded-card border border-border-subtle bg-background-secondary/65 px-4 py-3 text-sm">
+          {flash ? (
+            <p
+              className={cn(
+                "font-medium",
+                flash.tone === "error" ? "text-status-live" : "text-status-success",
+              )}
+            >
+              {flash.message}
+            </p>
+          ) : match.lock.isLocked ? (
+            <div className="flex items-start gap-2 text-text-secondary">
+              <Lock className="mt-0.5 size-4 shrink-0 text-status-warning" strokeWidth={2} />
+              <p>Esta ronda está cerrada. Tu ganador guardado se mantiene en el cuadro.</p>
+            </div>
+          ) : match.canPredict ? (
+            <div className="flex items-start gap-2 text-text-secondary">
+              <Sparkles
+                className="mt-0.5 size-4 shrink-0 text-accent-secondary"
+                strokeWidth={2}
+              />
+              <p>Elige el ganador directamente en la tarjeta. La propagación sigue siendo manual en este cuadro MVP.</p>
+            </div>
+          ) : (
+            <p className="text-text-secondary">
+              Elige un ganador cuando los dos huecos del cuadro estén ocupados por equipos ya conocidos.
+            </p>
+          )}
+        </div>
+      </form>
+    </section>
   );
 }

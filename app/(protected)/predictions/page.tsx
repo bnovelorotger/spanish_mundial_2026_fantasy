@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { StateCard } from "@/components/ui/StateCard";
 import { BracketView } from "@/components/worldcup/BracketView";
 import { GroupPredictionEditor } from "@/components/worldcup/GroupPredictionEditor";
+import { GroupNavigator } from "@/components/worldcup/GroupNavigator";
 import { getBracketRounds } from "@/lib/services/bracket.service";
+import type { GroupLetter } from "@/lib/types/worldcup";
 import { getGroupPredictionGroups } from "@/lib/services/predictions.service";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,6 +31,16 @@ function getQueryValue(
 
 function resolveTab(value: string | undefined): PredictionsTab {
   return value === "knockout" ? "knockout" : "groups";
+}
+
+function resolveActiveGroup(value: string | undefined): GroupLetter | null {
+  if (!value) {
+    return null;
+  }
+
+  const nextValue = value.toUpperCase();
+
+  return nextValue >= "A" && nextValue <= "L" ? (nextValue as GroupLetter) : null;
 }
 
 function PredictionTabLink({
@@ -109,6 +121,7 @@ export default async function PredictionsPage({
   const activeTab = resolveTab(getQueryValue(params, "tab"));
   const error = getQueryValue(params, "error");
   const saved = getQueryValue(params, "saved") === "1";
+  const initialActiveGroup = resolveActiveGroup(activeGroup);
 
   const supabase = await createClient();
   const {
@@ -160,29 +173,40 @@ export default async function PredictionsPage({
       <PredictionsHeader tab="groups" />
 
       {groups ? (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {groups.map((group) => (
-            <GroupPredictionEditor
-              key={`${group.groupLetter}-${group.teams.map((team) => team.id).join("-")}`}
-              flash={
-                activeGroup === group.groupLetter
-                  ? error
-                    ? {
-                        message: error,
-                        tone: "error" as const,
-                      }
-                    : saved
+        <div className="space-y-4">
+          <GroupNavigator
+            groups={groups.map((group) => ({
+              isEmpty: group.teams.length === 0,
+              isLocked: group.lock.isLocked,
+              letter: group.groupLetter,
+            }))}
+            initialActiveLetter={initialActiveGroup}
+          />
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            {groups.map((group) => (
+              <GroupPredictionEditor
+                key={`${group.groupLetter}-${group.teams.map((team) => team.id).join("-")}`}
+                flash={
+                  activeGroup === group.groupLetter
+                    ? error
                       ? {
-                          message: "Guardado. El orden de tu grupo ya vuelve a estar en juego.",
-                          tone: "success" as const,
+                          message: error,
+                          tone: "error" as const,
                         }
-                      : null
-                  : null
-              }
-              group={group}
-              saveAction={saveGroupPredictionAction}
-            />
-          ))}
+                      : saved
+                        ? {
+                            message: "Guardado. El orden de tu grupo ya vuelve a estar en juego.",
+                            tone: "success" as const,
+                          }
+                        : null
+                    : null
+                }
+                group={group}
+                saveAction={saveGroupPredictionAction}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <PredictionsErrorState title="No hemos podido cargar las predicciones de grupos." />
