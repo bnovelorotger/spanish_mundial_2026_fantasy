@@ -217,6 +217,8 @@ export default async function DashboardPage() {
       {userEntry && breakdown ? (
         <RankingCard
           accentLabel="Mi posición"
+          avatarLabel={userEntry.displayName?.trim() || userEntry.username}
+          avatarUrl={userEntry.avatarUrl}
           breakdown={{
             champion: breakdown.champion,
             groupStage: breakdown.groupStage,

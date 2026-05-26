@@ -5,10 +5,39 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 import {
+  clearProfileAvatar,
   isProfileComplete,
   normalizeUsername,
+  setProfileAvatarFromTeam,
+  setProfileAvatarFromUpload,
   validateProfileFormData,
 } from "@/lib/services/profile.service";
+
+function createProfileUpdateClient() {
+  const eq = vi.fn().mockResolvedValue({ error: null });
+  const update = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ update }));
+  const getPublicUrl = vi.fn((path: string) => ({
+    data: {
+      publicUrl: `https://dzvwgffjheyknrilwrvh.supabase.co/storage/v1/object/public/avatars/${path}`,
+    },
+  }));
+  const storageFrom = vi.fn(() => ({ getPublicUrl }));
+
+  return {
+    client: {
+      from,
+      storage: {
+        from: storageFrom,
+      },
+    },
+    eq,
+    from,
+    getPublicUrl,
+    storageFrom,
+    update,
+  };
+}
 
 describe("normalizeUsername", () => {
   it("normalizes casing, spacing, and separators", () => {
@@ -36,10 +65,52 @@ describe("validateProfileFormData", () => {
   });
 });
 
+describe("profile avatar updates", () => {
+  it("setProfileAvatarFromTeam writes avatar_team_code and clears avatar_url", async () => {
+    const { client, eq, update } = createProfileUpdateClient();
+
+    await setProfileAvatarFromTeam(client, "user-1", "ESP");
+
+    expect(update).toHaveBeenCalledWith({
+      avatar_team_code: "ESP",
+      avatar_url: null,
+    });
+    expect(eq).toHaveBeenCalledWith("id", "user-1");
+  });
+
+  it("setProfileAvatarFromUpload writes avatar_url and clears avatar_team_code", async () => {
+    const { client, eq, getPublicUrl, storageFrom, update } = createProfileUpdateClient();
+
+    await setProfileAvatarFromUpload(client, "user-1", "user-1/avatar.webp");
+
+    expect(storageFrom).toHaveBeenCalledWith("avatars");
+    expect(getPublicUrl).toHaveBeenCalledWith("user-1/avatar.webp");
+    expect(update).toHaveBeenCalledWith({
+      avatar_team_code: null,
+      avatar_url:
+        "https://dzvwgffjheyknrilwrvh.supabase.co/storage/v1/object/public/avatars/user-1/avatar.webp",
+    });
+    expect(eq).toHaveBeenCalledWith("id", "user-1");
+  });
+
+  it("clearProfileAvatar clears both avatar fields", async () => {
+    const { client, eq, update } = createProfileUpdateClient();
+
+    await clearProfileAvatar(client, "user-1");
+
+    expect(update).toHaveBeenCalledWith({
+      avatar_team_code: null,
+      avatar_url: null,
+    });
+    expect(eq).toHaveBeenCalledWith("id", "user-1");
+  });
+});
+
 describe("isProfileComplete", () => {
   it("requires a valid username and non-empty display name", () => {
     expect(
       isProfileComplete({
+        avatar_team_code: null,
         avatar_url: null,
         created_at: "2026-06-01T00:00:00Z",
         display_name: "Ana Maria",
@@ -51,6 +122,7 @@ describe("isProfileComplete", () => {
 
     expect(
       isProfileComplete({
+        avatar_team_code: null,
         avatar_url: null,
         created_at: "2026-06-01T00:00:00Z",
         display_name: " ",

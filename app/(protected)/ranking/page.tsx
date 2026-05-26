@@ -74,6 +74,8 @@ export default async function RankingPage() {
       {userEntry ? (
         <RankingCard
           accentLabel="Mi posición"
+          avatarLabel={userEntry.displayName?.trim() || userEntry.username}
+          avatarUrl={userEntry.avatarUrl}
           breakdown={{
             champion: breakdown.champion,
             groupStage: breakdown.groupStage,

@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         pathname: "/w80/**",
         protocol: "https",
       },
+      {
+        hostname: "dzvwgffjheyknrilwrvh.supabase.co",
+        pathname: "/storage/v1/object/public/avatars/**",
+        protocol: "https",
+      },
     ],
   },
   async redirects() {

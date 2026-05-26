@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { Header } from "@/components/layout/Header";
+import { HeaderMinimal } from "@/components/layout/HeaderMinimal";
 import {
   ensureProfileForUser,
   isProfileComplete,
@@ -22,12 +22,11 @@ export default async function ProtectedLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20continuar.");
+    redirect("/login?error=Inicia%20sesión%20para%20continuar.");
   }
 
   const profile = await ensureProfileForUser(user);
   const profileComplete = isProfileComplete(profile);
-  const label = profile.display_name?.trim() || profile.username;
 
   return (
     <AppShell
@@ -44,22 +43,16 @@ export default async function ProtectedLayout({
         ) : undefined
       }
       header={
-        <Header
-          action={
-            <form action={signOut}>
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
-                type="submit"
-              >
-                Cerrar sesión
-              </button>
-            </form>
-          }
-          leagueName="Liga App Mundial"
-          subtitle="Una carrera privada del Mundial con energía de retransmisión, tensión diaria en la clasificación y cada pronóstico bajo los focos."
-          userEmail={user.email ?? "Jugador conectado"}
-          userLabel={label}
-        />
+        <HeaderMinimal leagueName="Liga App Mundial">
+          <form action={signOut}>
+            <button
+              className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
+              type="submit"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </HeaderMinimal>
       }
     >
       {children}

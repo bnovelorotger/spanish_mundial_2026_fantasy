@@ -3,8 +3,12 @@ import { ArrowUpRight, Crown, Medal } from "lucide-react";
 import type { RankingStamp } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
+import { RankingAvatar } from "./RankingAvatar";
+
 interface RankingCardProps {
   accentLabel: string;
+  avatarLabel: string;
+  avatarUrl: string | null;
   breakdown: {
     champion: number;
     groupStage: number;
@@ -26,8 +30,19 @@ const stampToneStyles: Record<RankingStamp["tone"], string> = {
     "border-accent-primary/30 bg-accent-primary/10 text-accent-primary",
 };
 
+function initialsFromLabel(label: string) {
+  return label
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 export function RankingCard({
   accentLabel,
+  avatarLabel,
+  avatarUrl,
   breakdown,
   gapCopy,
   highlighted = false,
@@ -55,6 +70,12 @@ export function RankingCard({
           </h2>
         </div>
         <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
+          <RankingAvatar
+            avatarUrl={avatarUrl}
+            className="size-7 border-accent-primary/30 bg-accent-primary/10 text-[10px] text-accent-primary"
+            fallback={initialsFromLabel(avatarLabel)}
+            name={avatarLabel}
+          />
           <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
           Tú
         </div>

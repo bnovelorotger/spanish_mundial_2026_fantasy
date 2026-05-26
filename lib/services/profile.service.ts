@@ -7,6 +7,7 @@ export interface ProfileRecord {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  avatar_team_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -17,7 +18,7 @@ export interface ProfileFormData {
 }
 
 const PROFILE_COLUMNS =
-  "id, username, display_name, avatar_url, created_at, updated_at";
+  "id, username, display_name, avatar_url, avatar_team_code, created_at, updated_at";
 const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/;
 
 function toProfileRecord(value: unknown): ProfileRecord | null {
@@ -43,6 +44,10 @@ function toProfileRecord(value: unknown): ProfileRecord | null {
       typeof candidate.display_name === "string" ? candidate.display_name : null,
     avatar_url:
       typeof candidate.avatar_url === "string" ? candidate.avatar_url : null,
+    avatar_team_code:
+      typeof candidate.avatar_team_code === "string"
+        ? candidate.avatar_team_code
+        : null,
     created_at: candidate.created_at,
     updated_at: candidate.updated_at,
   };
@@ -272,4 +277,58 @@ export async function usernameExistsForOtherUser(
 ) {
   const adminClient = createAdminClient();
   return !(await isUsernameAvailable(adminClient, username, userId));
+}
+
+async function updateProfileAvatarFields(
+  supabase: Pick<SupabaseClient, "from">,
+  userId: string,
+  values: {
+    avatar_team_code: string | null;
+    avatar_url: string | null;
+  },
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update(values)
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(`Could not update profile avatar: ${error.message}`);
+  }
+}
+
+export async function setProfileAvatarFromTeam(
+  supabase: Pick<SupabaseClient, "from">,
+  userId: string,
+  teamCode: string,
+) {
+  await updateProfileAvatarFields(supabase, userId, {
+    avatar_team_code: teamCode,
+    avatar_url: null,
+  });
+}
+
+export async function setProfileAvatarFromUpload(
+  supabase: Pick<SupabaseClient, "from" | "storage">,
+  userId: string,
+  storagePath: string,
+) {
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("avatars").getPublicUrl(storagePath);
+
+  await updateProfileAvatarFields(supabase, userId, {
+    avatar_team_code: null,
+    avatar_url: publicUrl,
+  });
+}
+
+export async function clearProfileAvatar(
+  supabase: Pick<SupabaseClient, "from">,
+  userId: string,
+) {
+  await updateProfileAvatarFields(supabase, userId, {
+    avatar_team_code: null,
+    avatar_url: null,
+  });
 }

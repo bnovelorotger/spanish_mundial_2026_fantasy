@@ -10,6 +10,8 @@ import { StateCard } from "@/components/ui/StateCard";
 import type { RankingEntry } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
+import { RankingAvatar } from "./RankingAvatar";
+
 interface RankingTableProps {
   currentUserId: string;
   entries: RankingEntry[];
@@ -152,9 +154,12 @@ export function RankingTable({
           <div className="mt-4 rounded-card border border-accent-primary/30 bg-background-secondary/70 px-4 py-3">
             <div className="flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-accent-primary/30 bg-accent-primary/10 font-semibold uppercase tracking-[0.12em] text-accent-primary">
-                  {initialsFromEntry(currentUserEntry)}
-                </div>
+                <RankingAvatar
+                  avatarUrl={currentUserEntry.avatarUrl}
+                  className="size-11 shrink-0 border-accent-primary/30 bg-accent-primary/10 text-accent-primary"
+                  fallback={initialsFromEntry(currentUserEntry)}
+                  name={entryName(currentUserEntry)}
+                />
                 <div className="min-w-0">
                   <p className="font-semibold text-text-primary">
                     #{currentUserEntry.position} {entryName(currentUserEntry)}
@@ -210,9 +215,12 @@ export function RankingTable({
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-surface-card font-numeric text-base font-bold text-text-primary">
                       #{entry.position}
                     </div>
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-surface-card text-sm font-semibold uppercase tracking-[0.12em] text-text-secondary">
-                      {initialsFromEntry(entry)}
-                    </div>
+                    <RankingAvatar
+                      avatarUrl={entry.avatarUrl}
+                      className="size-11 shrink-0"
+                      fallback={initialsFromEntry(entry)}
+                      name={entryName(entry)}
+                    />
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-text-primary">
                         {entryName(entry)}

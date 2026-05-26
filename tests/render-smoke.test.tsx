@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   BracketMatchViewModel,
   MatchCardViewModel,
+  RankingEntry,
 } from "@/lib/types/worldcup";
 
 const {
@@ -53,6 +54,7 @@ vi.mock("@/lib/services/ranking.service", () => ({
 import DashboardPage from "@/app/(protected)/dashboard/page";
 import { BracketPredictionEditor } from "@/components/worldcup/BracketPredictionEditor";
 import { MatchCard } from "@/components/worldcup/MatchCard";
+import { RankingTable } from "@/components/worldcup/RankingTable";
 
 const nextMatch: MatchCardViewModel = {
   awayPlaceholder: null,
@@ -115,6 +117,40 @@ const bracketMatch: BracketMatchViewModel = {
   venue: "SoFi Stadium",
 };
 
+const rankingEntries: RankingEntry[] = [
+  {
+    avatarSource: "photo",
+    avatarUrl:
+      "https://dzvwgffjheyknrilwrvh.supabase.co/storage/v1/object/public/avatars/user-1/avatar.webp",
+    championPoints: 0,
+    createdAt: "2026-06-01T00:00:00Z",
+    displayName: "Ana",
+    gapToLeader: 0,
+    gapToPrevious: null,
+    groupPoints: 9,
+    knockoutPoints: 0,
+    position: 1,
+    totalPoints: 9,
+    userId: "user-1",
+    username: "ana",
+  },
+  {
+    avatarSource: "team",
+    avatarUrl: "https://crests.football-data.org/760.svg",
+    championPoints: 0,
+    createdAt: "2026-06-02T00:00:00Z",
+    displayName: "Bruno",
+    gapToLeader: 3,
+    gapToPrevious: 3,
+    groupPoints: 6,
+    knockoutPoints: 0,
+    position: 2,
+    totalPoints: 6,
+    userId: "user-2",
+    username: "bruno",
+  },
+];
+
 describe("render smoke", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -122,7 +158,10 @@ describe("render smoke", () => {
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: {
-            user: null,
+            user: {
+              email: "ana@example.com",
+              id: "user-1",
+            },
           },
         }),
       },
@@ -134,9 +173,15 @@ describe("render smoke", () => {
       phase: "GROUP_STAGE",
     });
     mockGetNextScheduledMatch.mockResolvedValue(nextMatch);
-    mockGetRankingByPhase.mockResolvedValue(null);
-    mockGetUserPointsBreakdown.mockResolvedValue(null);
-    mockGetUserGapCopy.mockReturnValue("Gap copy");
+    mockGetRankingByPhase.mockResolvedValue(rankingEntries);
+    mockGetUserPointsBreakdown.mockResolvedValue({
+      champion: 0,
+      details: [],
+      groupStage: 9,
+      knockout: 0,
+      total: 9,
+    });
+    mockGetUserGapCopy.mockReturnValue("Marcas el ritmo de toda la liga.");
     mockGetRankingStamps.mockReturnValue([]);
   });
 
@@ -147,6 +192,7 @@ describe("render smoke", () => {
     expect(markup).toContain("Mexico");
     expect(markup).toContain("11 jun");
     expect(markup).toContain("21:00");
+    expect(markup).toContain("dzvwgffjheyknrilwrvh.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Favatars%2Fuser-1%2Favatar.webp");
   });
 
   it("renders MatchCard without throwing", () => {
@@ -168,5 +214,14 @@ describe("render smoke", () => {
 
     expect(markup).toContain("Partido #65");
     expect(markup).toContain("21:00");
+  });
+
+  it("renders ranking avatars for uploaded photos and team crests", () => {
+    const markup = renderToStaticMarkup(
+      <RankingTable currentUserId="user-1" entries={rankingEntries} />,
+    );
+
+    expect(markup).toContain("dzvwgffjheyknrilwrvh.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Favatars%2Fuser-1%2Favatar.webp");
+    expect(markup).toContain("crests.football-data.org/760.svg");
   });
 });

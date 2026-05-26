@@ -174,6 +174,7 @@ export interface Profile {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  avatar_team_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -279,6 +280,7 @@ export interface GroupPredictionGroupViewModel {
 
 export interface RankingEntry {
   avatarUrl: string | null;
+  avatarSource: "photo" | "team" | null;
   championPoints: number;
   createdAt: string;
   displayName: string | null;

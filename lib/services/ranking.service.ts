@@ -8,7 +8,13 @@ import type {
   RankingStamp,
 } from "../types/worldcup";
 
+interface TeamAvatarRow {
+  flag_url: string | null;
+}
+
 interface ProfileRow {
+  avatar_team: TeamAvatarRow | TeamAvatarRow[] | null;
+  avatar_team_code?: string | null;
   avatar_url: string | null;
   created_at: string;
   display_name: string | null;
@@ -28,6 +34,43 @@ interface PointRow {
 
 function displayName(profile: ProfileRow) {
   return profile.display_name?.trim() || profile.username;
+}
+
+function normalizeAvatarTeam(
+  value: TeamAvatarRow | TeamAvatarRow[] | null,
+) {
+  if (!value) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function resolveAvatar(profile: ProfileRow) {
+  if (profile.avatar_url) {
+    return {
+      avatarSource: "photo" as const,
+      avatarUrl: profile.avatar_url,
+    };
+  }
+
+  const teamAvatar = normalizeAvatarTeam(profile.avatar_team);
+
+  if (profile.avatar_team_code && teamAvatar?.flag_url) {
+    return {
+      avatarSource: "team" as const,
+      avatarUrl: teamAvatar.flag_url,
+    };
+  }
+
+  return {
+    avatarSource: null,
+    avatarUrl: null,
+  };
 }
 
 function sumPoints(
@@ -69,9 +112,11 @@ export function buildRankingEntries(
     const knockoutPoints = sumPoints(rows, "KNOCKOUT_WINNER");
     const championPoints = sumPoints(rows, "CHAMPION");
     const totalPoints = groupPoints + knockoutPoints + championPoints;
+    const avatar = resolveAvatar(profile);
 
     return {
-      avatarUrl: profile.avatar_url,
+      avatarSource: avatar.avatarSource,
+      avatarUrl: avatar.avatarUrl,
       championPoints,
       createdAt: profile.created_at,
       displayName: profile.display_name,
@@ -118,7 +163,9 @@ async function loadProfilesAndPoints(supabase: SupabaseClient) {
   const [profilesResponse, pointsResponse] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at")
+      .select(
+        "id, username, display_name, avatar_url, avatar_team_code, created_at, avatar_team:teams!profiles_avatar_team_code_fkey(flag_url)",
+      )
       .order("created_at", { ascending: true }),
     supabase
       .from("points")
@@ -210,6 +257,8 @@ export function getUserGapCopy(
 
   const leader = ranking[0];
   const leaderName = leader ? displayName({
+    avatar_team: null,
+    avatar_team_code: null,
     avatar_url: leader.avatarUrl,
     created_at: leader.createdAt,
     display_name: leader.displayName,
