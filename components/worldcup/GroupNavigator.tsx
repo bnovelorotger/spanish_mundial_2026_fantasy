@@ -115,7 +115,7 @@ export function GroupNavigator({
 
   return (
     <div
-      className="sticky top-4 z-20 -mx-1 overflow-x-auto rounded-card border border-border-subtle bg-background-main/88 px-1 py-1 shadow-card backdrop-blur-xl"
+      className="sticky top-0 z-20 -mx-4 overflow-x-auto border-b border-border-subtle bg-background-main px-4 py-3 sm:-mx-6 sm:px-6"
       data-testid="group-navigator"
     >
       <div className="flex min-w-max items-center gap-2">
