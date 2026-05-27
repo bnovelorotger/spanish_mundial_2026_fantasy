@@ -137,19 +137,28 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         />
 
         {error ? (
-          <div className="rounded-card border border-status-live/35 bg-status-live/10 px-4 py-3 text-sm text-text-primary">
+          <div
+            className="rounded-card border border-status-live/35 bg-status-live/10 px-4 py-3 text-sm text-text-primary"
+            role="alert"
+          >
             {error}
           </div>
         ) : null}
 
         {!error && success ? (
-          <div className="rounded-card border border-status-success/35 bg-status-success/10 px-4 py-3 text-sm text-text-primary">
+          <div
+            aria-live="polite"
+            className="rounded-card border border-status-success/35 bg-status-success/10 px-4 py-3 text-sm text-text-primary"
+          >
             {success}
           </div>
         ) : null}
 
         {!error && !success && message ? (
-          <div className="rounded-card border border-accent-primary/35 bg-accent-primary/10 px-4 py-3 text-sm text-text-primary">
+          <div
+            aria-live="polite"
+            className="rounded-card border border-accent-primary/35 bg-accent-primary/10 px-4 py-3 text-sm text-text-primary"
+          >
             {message}
           </div>
         ) : null}

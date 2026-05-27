@@ -220,7 +220,11 @@ export function GroupPredictionEditor({
           ) : (
             <Clock3 className="mt-0.5 size-4 shrink-0 text-accent-primary" strokeWidth={2} />
           )}
-          <div className="space-y-1">
+          <div
+            aria-live={flash?.tone === "success" ? "polite" : undefined}
+            className="space-y-1"
+            role={flash?.tone === "error" ? "alert" : undefined}
+          >
             <p className="font-medium text-text-primary">
               {group.lock.isLocked
                 ? "La fase de grupos está cerrada. Tu orden guardado se mantiene en juego."

@@ -23,7 +23,7 @@ export function AppToaster() {
     <Toaster
       closeButton={false}
       duration={3500}
-      offset={isDesktop ? "24px" : "96px"}
+      offset={isDesktop ? "24px" : "calc(96px + env(safe-area-inset-bottom))"}
       position={isDesktop ? "bottom-right" : "bottom-center"}
       richColors
       theme="dark"
