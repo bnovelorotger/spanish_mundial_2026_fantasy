@@ -148,6 +148,7 @@ function SaveButton({ disabled }: { disabled: boolean }) {
           ? "cursor-not-allowed bg-surface-active text-text-disabled shadow-none"
           : "bg-linear-to-r from-accent-primary to-accent-secondary",
       )}
+      data-tour="save-button"
       disabled={disabled || pending}
       type="submit"
     >

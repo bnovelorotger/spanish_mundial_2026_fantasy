@@ -19,6 +19,7 @@ interface RankingCardProps {
   points: number;
   position: number;
   stamps: RankingStamp[];
+  tourId?: string;
   title: string;
 }
 
@@ -49,6 +50,7 @@ export function RankingCard({
   points,
   position,
   stamps,
+  tourId,
   title,
 }: RankingCardProps) {
   return (
@@ -59,6 +61,7 @@ export function RankingCard({
           ? "border-accent-primary/35 bg-linear-to-b from-surface-elevated to-surface-card shadow-glowCyan"
           : "border-border-subtle",
       )}
+      data-tour={tourId}
     >
       <div className="flex items-start justify-between gap-4">
         <div>

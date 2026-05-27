@@ -70,7 +70,10 @@ export function RankingTable({
         </div>
 
         {podiumEntries.length > 0 ? (
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1.15fr_repeat(2,1fr)]">
+          <div
+            className="mt-5 grid gap-4 lg:grid-cols-[1.15fr_repeat(2,1fr)]"
+            data-tour="podium"
+          >
             {podiumEntries.map((entry) => {
               const isCurrentUser = entry.userId === currentUserId;
 
@@ -83,6 +86,7 @@ export function RankingTable({
                     isCurrentUser &&
                       "border-accent-primary/45 bg-linear-to-b from-surface-elevated to-surface-card shadow-glowCyan",
                   )}
+                  data-tour={isCurrentUser ? "your-row" : undefined}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="inline-flex size-11 items-center justify-center rounded-full border border-border-subtle bg-surface-card font-numeric text-lg font-bold text-text-primary">
@@ -138,7 +142,10 @@ export function RankingTable({
       </div>
 
       {currentUserIsOutsidePodium && currentUserEntry ? (
-        <div className="rounded-cardLg border border-accent-primary/35 bg-linear-to-b from-surface-elevated to-surface-card p-4 shadow-glowCyan">
+        <div
+          className="rounded-cardLg border border-accent-primary/35 bg-linear-to-b from-surface-elevated to-surface-card p-4 shadow-glowCyan"
+          data-tour="your-row"
+        >
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
@@ -210,6 +217,7 @@ export function RankingTable({
                       ? "border-accent-primary/35 bg-surface-active shadow-glowCyan"
                       : "border-border-subtle bg-background-secondary/70",
                   )}
+                  data-tour={isCurrentUser && !currentUserIsOutsidePodium ? "your-row" : undefined}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-surface-card font-numeric text-base font-bold text-text-primary">

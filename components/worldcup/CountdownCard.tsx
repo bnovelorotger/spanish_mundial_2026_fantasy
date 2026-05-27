@@ -7,6 +7,7 @@ import { PhaseBadge } from "./PhaseBadge";
 export type CountdownUrgency = "critical" | "normal" | "warning";
 
 interface CountdownCardProps {
+  dataTour?: string;
   description?: string;
   label: string;
   phaseLabel: string;
@@ -34,6 +35,7 @@ const finishedStyle =
   "border-border-subtle bg-linear-to-b from-surface-elevated to-surface-card shadow-card";
 
 export function CountdownCard({
+  dataTour,
   description,
   label,
   phaseLabel,
@@ -49,6 +51,7 @@ export function CountdownCard({
         "rounded-cardLg border p-5 shadow-card",
         isFinished ? finishedStyle : urgencyStyles[urgency],
       )}
+      data-tour={dataTour}
     >
       <div className="flex items-start justify-between gap-4">
         <div>

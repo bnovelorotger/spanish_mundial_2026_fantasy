@@ -1,9 +1,11 @@
 import { Trophy } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { StateCard } from "@/components/ui/StateCard";
 import { RankingCard } from "@/components/worldcup/RankingCard";
 import { RankingTable } from "@/components/worldcup/RankingTable";
+import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
 import {
   getRankingByPhase,
   getRankingStamps,
@@ -19,7 +21,7 @@ export default async function RankingPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20ver%20la%20clasificaci%C3%B3n.");
+    redirect("/login?error=Inicia%20sesión%20para%20ver%20la%20clasificación.");
   }
 
   let ranking = null;
@@ -52,52 +54,55 @@ export default async function RankingPage() {
   const topRanking = ranking.slice(0, 10);
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-podium-gold">
-              Clasificación
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-              Cada punto ya golpea el tablero del trofeo.
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-text-secondary">
-              La puntuación de la fase de grupos ya está en juego, el podio top
-              3 se ha encendido y tu propia fila sigue fijada en la carrera.
-            </p>
+    <OnboardingTour steps={ONBOARDING_TOURS.ranking} tourId="ranking">
+      <section className="space-y-6">
+        <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-podium-gold">
+                Clasificación
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold text-text-primary">
+                Cada punto ya golpea el tablero del trofeo.
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">
+                La puntuación de la fase de grupos ya está en juego, el podio top
+                3 se ha encendido y tu propia fila sigue fijada en la carrera.
+              </p>
+            </div>
+            <Trophy className="size-6 text-podium-gold" strokeWidth={2} />
           </div>
-          <Trophy className="size-6 text-podium-gold" strokeWidth={2} />
         </div>
-      </div>
 
-      {userEntry ? (
-        <RankingCard
-          accentLabel="Mi posición"
-          avatarLabel={userEntry.displayName?.trim() || userEntry.username}
-          avatarUrl={userEntry.avatarUrl}
-          breakdown={{
-            champion: breakdown.champion,
-            groupStage: breakdown.groupStage,
-            knockout: breakdown.knockout,
-          }}
-          gapCopy={gapCopy}
-          highlighted
-          points={userEntry.totalPoints}
-          position={userEntry.position}
-          stamps={stamps}
-          title="Tu pulso en el torneo"
-        />
-      ) : (
-        <StateCard
-          description="Deja listos tus pronósticos, espera a las clasificaciones finales y tus primeros sellos de puntos aparecerán aquí."
-          eyebrow="Tu torneo empieza aquí."
-          title="Tu fila en la clasificación aparecerá en cuanto tu perfil entre en el tablero."
-          tone="default"
-        />
-      )}
+        {userEntry ? (
+          <RankingCard
+            accentLabel="Mi posición"
+            avatarLabel={userEntry.displayName?.trim() || userEntry.username}
+            avatarUrl={userEntry.avatarUrl}
+            breakdown={{
+              champion: breakdown.champion,
+              groupStage: breakdown.groupStage,
+              knockout: breakdown.knockout,
+            }}
+            gapCopy={gapCopy}
+            highlighted
+            points={userEntry.totalPoints}
+            position={userEntry.position}
+            stamps={stamps}
+            title="Tu pulso en el torneo"
+            tourId="ranking-breakdown"
+          />
+        ) : (
+          <StateCard
+            description="Deja listos tus pronósticos, espera a las clasificaciones finales y tus primeros sellos de puntos aparecerán aquí."
+            eyebrow="Tu torneo empieza aquí."
+            title="Tu fila en la clasificación aparecerá en cuanto tu perfil entre en el tablero."
+            tone="default"
+          />
+        )}
 
-      <RankingTable currentUserId={user.id} entries={topRanking} />
-    </section>
+        <RankingTable currentUserId={user.id} entries={topRanking} />
+      </section>
+    </OnboardingTour>
   );
 }

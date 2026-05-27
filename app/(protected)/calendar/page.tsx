@@ -1,7 +1,9 @@
 import Link from "next/link";
 
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { StateCard } from "@/components/ui/StateCard";
 import { MatchCard } from "@/components/worldcup/MatchCard";
+import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
 import { createClient } from "@/lib/supabase/server";
 import {
   getMatches,
@@ -93,90 +95,93 @@ export default async function CalendarPage({
   const matches = await getMatches(supabase, filters);
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-          Partidos
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-text-primary">
-          Todos los cruces, uno a uno, con marcador pensado para móvil.
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-text-secondary">
-          Sigue horarios, sedes, estados en directo y contexto de grupos
-          directamente desde Supabase sin salir del torneo.
-        </p>
+    <OnboardingTour steps={ONBOARDING_TOURS.matches} tourId="matches">
+      <section className="space-y-6">
+        <div className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
+            Partidos
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold text-text-primary">
+            Todos los cruces, uno a uno, con marcador pensado para móvil.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-text-secondary">
+            Sigue horarios, sedes, estados en directo y contexto de grupos
+            directamente desde Supabase sin salir del torneo.
+          </p>
 
-        <div className="mt-5 space-y-4">
-          <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Fase
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <FilterLink
-                activeValue={filters.phase ?? "ALL"}
-                currentFilters={filters}
-                label="Todas las fases"
-                nextValue="ALL"
-                param="phase"
-              />
-              {MATCH_PHASE_OPTIONS.map((phase) => (
+          <div className="mt-5 space-y-4" data-tour="matches-filters">
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                Fase
+              </p>
+              <div className="flex flex-wrap gap-2">
                 <FilterLink
-                  key={phase}
                   activeValue={filters.phase ?? "ALL"}
                   currentFilters={filters}
-                  label={phaseLabels[phase]}
-                  nextValue={phase}
+                  label="Todas las fases"
+                  nextValue="ALL"
                   param="phase"
                 />
-              ))}
+                {MATCH_PHASE_OPTIONS.map((phase) => (
+                  <FilterLink
+                    key={phase}
+                    activeValue={filters.phase ?? "ALL"}
+                    currentFilters={filters}
+                    label={phaseLabels[phase]}
+                    nextValue={phase}
+                    param="phase"
+                  />
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Grupo
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <FilterLink
-                activeValue={filters.group ?? "ALL"}
-                currentFilters={filters}
-                label="Todos los grupos"
-                nextValue="ALL"
-                param="group"
-              />
-              {GROUP_LETTER_OPTIONS.map((group) => (
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                Grupo
+              </p>
+              <div className="flex flex-wrap gap-2">
                 <FilterLink
-                  key={group}
                   activeValue={filters.group ?? "ALL"}
                   currentFilters={filters}
-                  label={`Grupo ${group}`}
-                  nextValue={group}
+                  label="Todos los grupos"
+                  nextValue="ALL"
                   param="group"
                 />
-              ))}
+                {GROUP_LETTER_OPTIONS.map((group) => (
+                  <FilterLink
+                    key={group}
+                    activeValue={filters.group ?? "ALL"}
+                    currentFilters={filters}
+                    label={`Grupo ${group}`}
+                    nextValue={group}
+                    param="group"
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {matches.length > 0 ? (
-        <div className="grid gap-4">
-          {matches.map((match, index) => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              variant={index === 0 ? "premium" : "compact"}
-            />
-          ))}
-        </div>
-      ) : (
-        <StateCard
-          description="Prueba con otra fase o grupo y vuelve cuando se sincronicen más partidos en el calendario."
-          eyebrow="Tu torneo empieza aquí."
-          title="Todavía no hay partidos para este filtro."
-          tone="default"
-        />
-      )}
-    </section>
+        {matches.length > 0 ? (
+          <div className="grid gap-4">
+            {matches.map((match, index) => (
+              <MatchCard
+                dataTour={index === 0 ? "match-card" : undefined}
+                key={match.id}
+                match={match}
+                variant={index === 0 ? "premium" : "compact"}
+              />
+            ))}
+          </div>
+        ) : (
+          <StateCard
+            description="Prueba con otra fase o grupo y vuelve cuando se sincronicen más partidos en el calendario."
+            eyebrow="Tu torneo empieza aquí."
+            title="Todavía no hay partidos para este filtro."
+            tone="default"
+          />
+        )}
+      </section>
+    </OnboardingTour>
   );
 }

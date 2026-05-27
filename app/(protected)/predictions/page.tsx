@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { StateCard } from "@/components/ui/StateCard";
 import { BracketView } from "@/components/worldcup/BracketView";
 import { GroupPredictionEditor } from "@/components/worldcup/GroupPredictionEditor";
 import { GroupNavigator } from "@/components/worldcup/GroupNavigator";
+import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
 import { getBracketRounds } from "@/lib/services/bracket.service";
 import type { GroupLetter } from "@/lib/types/worldcup";
 import { getGroupPredictionGroups } from "@/lib/services/predictions.service";
@@ -89,7 +91,7 @@ function PredictionsHeader({
           : "El cuadro de eliminatorias sigue siendo legible en móvil, una ronda por columna, y solo deja elegir ganador cuando ya se conocen ambos equipos."}
       </p>
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2" data-tour="tabs">
         <PredictionTabLink currentTab={tab} label="Grupos" tab="groups" />
         <PredictionTabLink currentTab={tab} label="Eliminatorias" tab="knockout" />
       </div>
@@ -129,7 +131,7 @@ export default async function PredictionsPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=Inicia%20sesi%C3%B3n%20para%20hacer%20tus%20pron%C3%B3sticos.");
+    redirect("/login?error=Inicia%20sesión%20para%20hacer%20tus%20pronósticos.");
   }
 
   if (activeTab === "knockout") {
@@ -142,21 +144,23 @@ export default async function PredictionsPage({
     }
 
     return (
-      <section className="space-y-6">
-        <PredictionsHeader tab="knockout" />
+      <OnboardingTour steps={ONBOARDING_TOURS.predictions} tourId="predictions">
+        <section className="space-y-6">
+          <PredictionsHeader tab="knockout" />
 
-        {rounds ? (
-          <BracketView
-            activeMatchId={activeMatch}
-            error={error}
-            rounds={rounds}
-            saveAction={saveKnockoutPredictionAction}
-            saved={saved}
-          />
-        ) : (
-          <PredictionsErrorState title="No hemos podido cargar las predicciones de eliminatorias." />
-        )}
-      </section>
+          {rounds ? (
+            <BracketView
+              activeMatchId={activeMatch}
+              error={error}
+              rounds={rounds}
+              saveAction={saveKnockoutPredictionAction}
+              saved={saved}
+            />
+          ) : (
+            <PredictionsErrorState title="No hemos podido cargar las predicciones de eliminatorias." />
+          )}
+        </section>
+      </OnboardingTour>
     );
   }
 
@@ -169,48 +173,50 @@ export default async function PredictionsPage({
   }
 
   return (
-    <section className="space-y-6">
-      <PredictionsHeader tab="groups" />
+    <OnboardingTour steps={ONBOARDING_TOURS.predictions} tourId="predictions">
+      <section className="space-y-6">
+        <PredictionsHeader tab="groups" />
 
-      {groups ? (
-        <div className="space-y-4">
-          <GroupNavigator
-            groups={groups.map((group) => ({
-              isEmpty: group.teams.length === 0,
-              isLocked: group.lock.isLocked,
-              letter: group.groupLetter,
-            }))}
-            initialActiveLetter={initialActiveGroup}
-          />
+        {groups ? (
+          <div className="space-y-4">
+            <GroupNavigator
+              groups={groups.map((group) => ({
+                isEmpty: group.teams.length === 0,
+                isLocked: group.lock.isLocked,
+                letter: group.groupLetter,
+              }))}
+              initialActiveLetter={initialActiveGroup}
+            />
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            {groups.map((group) => (
-              <GroupPredictionEditor
-                key={`${group.groupLetter}-${group.teams.map((team) => team.id).join("-")}`}
-                flash={
-                  activeGroup === group.groupLetter
-                    ? error
-                      ? {
-                          message: error,
-                          tone: "error" as const,
-                        }
-                      : saved
+            <div className="grid gap-4 xl:grid-cols-2">
+              {groups.map((group) => (
+                <GroupPredictionEditor
+                  key={`${group.groupLetter}-${group.teams.map((team) => team.id).join("-")}`}
+                  flash={
+                    activeGroup === group.groupLetter
+                      ? error
                         ? {
-                            message: "Guardado. El orden de tu grupo ya vuelve a estar en juego.",
-                            tone: "success" as const,
+                            message: error,
+                            tone: "error" as const,
                           }
-                        : null
-                    : null
-                }
-                group={group}
-                saveAction={saveGroupPredictionAction}
-              />
-            ))}
+                        : saved
+                          ? {
+                              message: "Guardado. El orden de tu grupo ya vuelve a estar en juego.",
+                              tone: "success" as const,
+                            }
+                          : null
+                      : null
+                  }
+                  group={group}
+                  saveAction={saveGroupPredictionAction}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ) : (
-        <PredictionsErrorState title="No hemos podido cargar las predicciones de grupos." />
-      )}
-    </section>
+        ) : (
+          <PredictionsErrorState title="No hemos podido cargar las predicciones de grupos." />
+        )}
+      </section>
+    </OnboardingTour>
   );
 }

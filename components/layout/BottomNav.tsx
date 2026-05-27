@@ -57,7 +57,10 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-subtle bg-[rgba(8,13,24,0.86)] backdrop-blur-[16px]">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border-subtle bg-[rgba(8,13,24,0.86)] backdrop-blur-[16px]"
+      data-tour="bottom-nav"
+    >
       <div className="mx-auto grid w-full max-w-3xl grid-cols-5 px-2 py-2">
         {navItems.map(({ activePaths, href, icon: Icon, label }) => {
           const isActive = activePaths.some(

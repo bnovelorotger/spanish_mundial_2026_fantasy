@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { StateCard } from "@/components/ui/StateCard";
 import {
   CountdownCard,
@@ -16,6 +17,7 @@ import {
 import { LocalKickoff } from "@/components/worldcup/LocalKickoff";
 import { PhaseBadge } from "@/components/worldcup/PhaseBadge";
 import { RankingCard } from "@/components/worldcup/RankingCard";
+import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
 import { getNextOpenLock } from "@/lib/services/locks.service";
 import { getNextScheduledMatch } from "@/lib/services/matches.service";
 import {
@@ -211,179 +213,182 @@ export default async function DashboardPage() {
   const topThree = ranking?.slice(0, 3) ?? [];
 
   return (
-    <div className="space-y-6">
-      <CountdownCard {...countdown} />
+    <OnboardingTour steps={ONBOARDING_TOURS.home} tourId="home">
+      <div className="space-y-6">
+        <CountdownCard {...countdown} dataTour="countdown" />
 
-      {userEntry && breakdown ? (
-        <RankingCard
-          accentLabel="Mi posición"
-          avatarLabel={userEntry.displayName?.trim() || userEntry.username}
-          avatarUrl={userEntry.avatarUrl}
-          breakdown={{
-            champion: breakdown.champion,
-            groupStage: breakdown.groupStage,
-            knockout: breakdown.knockout,
-          }}
-          gapCopy={gapCopy}
-          highlighted
-          points={userEntry.totalPoints}
-          position={userEntry.position}
-          stamps={stamps}
-          title="Tu pulso en el torneo"
-        />
-      ) : (
-        <StateCard
-          description="Cuando lleguen las clasificaciones finales de grupo y se recalculen los puntos, este panel se convertirá en tu resumen diario del torneo."
-          eyebrow="Mi posición"
-          title="Tu tarjeta de clasificación se encenderá cuando entren puntos en juego."
-          tone="default"
-        />
-      )}
+        {userEntry && breakdown ? (
+          <RankingCard
+            accentLabel="Mi posición"
+            avatarLabel={userEntry.displayName?.trim() || userEntry.username}
+            avatarUrl={userEntry.avatarUrl}
+            breakdown={{
+              champion: breakdown.champion,
+              groupStage: breakdown.groupStage,
+              knockout: breakdown.knockout,
+            }}
+            gapCopy={gapCopy}
+            highlighted
+            points={userEntry.totalPoints}
+            position={userEntry.position}
+            stamps={stamps}
+            title="Tu pulso en el torneo"
+            tourId="ranking-pill"
+          />
+        ) : (
+          <StateCard
+            description="Cuando lleguen las clasificaciones finales de grupo y se recalculen los puntos, este panel se convertirá en tu resumen diario del torneo."
+            eyebrow="Mi posición"
+            title="Tu tarjeta de clasificación se encenderá cuando entren puntos en juego."
+            tone="default"
+          />
+        )}
 
-      {nextMatch ? (
+        {nextMatch ? (
+          <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
+                  Próximo partido
+                </p>
+                <h2 className="mt-2 text-lg font-semibold text-text-primary">
+                  {teamName(nextMatch.homeTeam, nextMatch.homePlaceholder)} vs{" "}
+                  {teamName(nextMatch.awayTeam, nextMatch.awayPlaceholder)}
+                </h2>
+              </div>
+              <PhaseBadge label="Programado" variant="scheduled" />
+            </div>
+
+            <div className="mt-5 grid gap-3 rounded-card border border-border-subtle bg-background-secondary/75 p-4">
+              <div className="flex items-center gap-2 text-sm text-text-secondary">
+                <CalendarClock className="size-4 text-accent-primary" strokeWidth={2} />
+                <LocalKickoff isoUtc={nextMatch.kickoff} separator=" · " />
+              </div>
+              <p className="text-sm text-text-secondary">
+                {matchPhaseLabels[nextMatch.phase]}
+                {nextMatch.city ? ` · ${nextMatch.city}` : ""}
+              </p>
+              <p className="text-sm text-text-muted">
+                El calendario en directo ya está conectado al torneo. Sede:{" "}
+                {nextMatch.venue ?? "Por decidir"}.
+              </p>
+            </div>
+          </section>
+        ) : (
+          <StateCard
+            description="El próximo saque inicial aparecerá aquí en cuanto el calendario del torneo tenga otro partido programado."
+            eyebrow="Próximo partido"
+            title="No hay próximos partidos programados."
+            tone="default"
+          />
+        )}
+
+        <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-status-warning">
+                Predicciones pendientes
+              </p>
+              <h2 className="mt-2 text-lg font-semibold text-text-primary">
+                Los grupos ya están en juego. Deja cerrado tu orden antes del primer partido.
+              </h2>
+            </div>
+            <Sparkles className="size-5 text-accent-primary" strokeWidth={2} />
+          </div>
+
+          <p className="mt-3 text-sm leading-6 text-text-secondary">
+            El editor está abierto, las reglas de cierre ya mandan y cada grupo
+            guardado alimenta directamente la carrera por la clasificación.
+          </p>
+
+          <Link
+            className="mt-5 inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
+            href="/predictions"
+          >
+            Haz tus pronósticos
+          </Link>
+        </section>
+
+        <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
+                Top de la clasificación
+              </p>
+              <h2 className="mt-2 text-lg font-semibold text-text-primary">
+                El tablero del trofeo ya está marcando el ritmo de la liga.
+              </h2>
+            </div>
+            <Trophy className="size-5 text-podium-gold" strokeWidth={2} />
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {topThree.length > 0 ? (
+              topThree.map((entry) => (
+                <div
+                  key={entry.userId}
+                  className="flex items-center justify-between rounded-card border border-border-subtle bg-background-secondary/75 px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-text-primary">
+                      #{entry.position} {entryName(entry)}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      A {entry.gapToLeader} pts · {entry.groupPoints} pts en grupos
+                    </p>
+                  </div>
+                  <p className="font-numeric text-xl font-bold text-text-primary">
+                    {entry.totalPoints}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-card border border-border-subtle bg-background-secondary/75 p-4">
+                <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
+                  Tu torneo empieza aquí.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                  El podio se llenará en cuanto entren en juego las clasificaciones finales y los pronósticos puntuados.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-                Próximo partido
+                Actividad reciente
               </p>
               <h2 className="mt-2 text-lg font-semibold text-text-primary">
-                {teamName(nextMatch.homeTeam, nextMatch.homePlaceholder)} vs{" "}
-                {teamName(nextMatch.awayTeam, nextMatch.awayPlaceholder)}
+                Tu torneo entre amigos empieza a calentarse.
               </h2>
             </div>
-            <PhaseBadge label="Programado" variant="scheduled" />
+            <Users className="size-5 text-accent-secondary" strokeWidth={2} />
           </div>
 
-          <div className="mt-5 grid gap-3 rounded-card border border-border-subtle bg-background-secondary/75 p-4">
-            <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <CalendarClock className="size-4 text-accent-primary" strokeWidth={2} />
-              <LocalKickoff isoUtc={nextMatch.kickoff} separator=" · " />
-            </div>
-            <p className="text-sm text-text-secondary">
-              {matchPhaseLabels[nextMatch.phase]}
-              {nextMatch.city ? ` · ${nextMatch.city}` : ""}
-            </p>
-            <p className="text-sm text-text-muted">
-              El calendario en directo ya está conectado al torneo. Sede:{" "}
-              {nextMatch.venue ?? "Por decidir"}.
-            </p>
+          <div className="mt-5 space-y-3">
+            {activityFeed.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-card border border-border-subtle bg-background-secondary/75 p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm leading-6 text-text-secondary">{item.text}</p>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-text-muted"
+                    strokeWidth={2}
+                  />
+                </div>
+                <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                  {item.timestamp}
+                </p>
+              </article>
+            ))}
           </div>
         </section>
-      ) : (
-        <StateCard
-          description="El próximo saque inicial aparecerá aquí en cuanto el calendario del torneo tenga otro partido programado."
-          eyebrow="Próximo partido"
-          title="No hay próximos partidos programados."
-          tone="default"
-        />
-      )}
-
-      <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-status-warning">
-              Predicciones pendientes
-            </p>
-            <h2 className="mt-2 text-lg font-semibold text-text-primary">
-              Los grupos ya están en juego. Deja cerrado tu orden antes del primer partido.
-            </h2>
-          </div>
-          <Sparkles className="size-5 text-accent-primary" strokeWidth={2} />
-        </div>
-
-        <p className="mt-3 text-sm leading-6 text-text-secondary">
-          El editor está abierto, las reglas de cierre ya mandan y cada grupo
-          guardado alimenta directamente la carrera por la clasificación.
-        </p>
-
-        <Link
-          className="mt-5 inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
-          href="/predictions"
-        >
-          Haz tus pronósticos
-        </Link>
-      </section>
-
-      <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-              Top de la clasificación
-            </p>
-            <h2 className="mt-2 text-lg font-semibold text-text-primary">
-              El tablero del trofeo ya está marcando el ritmo de la liga.
-            </h2>
-          </div>
-          <Trophy className="size-5 text-podium-gold" strokeWidth={2} />
-        </div>
-
-        <div className="mt-5 space-y-3">
-          {topThree.length > 0 ? (
-            topThree.map((entry) => (
-              <div
-                key={entry.userId}
-                className="flex items-center justify-between rounded-card border border-border-subtle bg-background-secondary/75 px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">
-                    #{entry.position} {entryName(entry)}
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    A {entry.gapToLeader} pts · {entry.groupPoints} pts en grupos
-                  </p>
-                </div>
-                <p className="font-numeric text-xl font-bold text-text-primary">
-                  {entry.totalPoints}
-                </p>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-card border border-border-subtle bg-background-secondary/75 p-4">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-                Tu torneo empieza aquí.
-              </p>
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
-                El podio se llenará en cuanto entren en juego las clasificaciones finales y los pronósticos puntuados.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="rounded-cardLg border border-border-subtle bg-surface-card/90 p-5 shadow-card">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-secondary">
-              Actividad reciente
-            </p>
-            <h2 className="mt-2 text-lg font-semibold text-text-primary">
-              Tu torneo entre amigos empieza a calentarse.
-            </h2>
-          </div>
-          <Users className="size-5 text-accent-secondary" strokeWidth={2} />
-        </div>
-
-        <div className="mt-5 space-y-3">
-          {activityFeed.map((item) => (
-            <article
-              key={item.id}
-              className="rounded-card border border-border-subtle bg-background-secondary/75 p-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm leading-6 text-text-secondary">{item.text}</p>
-                <ChevronRight
-                  className="size-4 shrink-0 text-text-muted"
-                  strokeWidth={2}
-                />
-              </div>
-              <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                {item.timestamp}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
+      </div>
+    </OnboardingTour>
   );
 }

@@ -14,6 +14,7 @@ import { TeamBadge } from "./TeamBadge";
 type MatchCardVariant = "compact" | "premium";
 
 interface MatchCardProps {
+  dataTour?: string;
   match: MatchCardViewModel;
   variant?: MatchCardVariant;
 }
@@ -80,7 +81,11 @@ function teamDisplay(match: MatchCardViewModel, side: "away" | "home") {
   };
 }
 
-export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
+export function MatchCard({
+  dataTour,
+  match,
+  variant = "compact",
+}: MatchCardProps) {
   const statusBadge = badgeVariantForStatus(match.status);
   const home = teamDisplay(match, "home");
   const away = teamDisplay(match, "away");
@@ -98,6 +103,7 @@ export function MatchCard({ match, variant = "compact" }: MatchCardProps) {
           : "bg-surface-card/90",
         accentBorder,
       )}
+      data-tour={dataTour}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
