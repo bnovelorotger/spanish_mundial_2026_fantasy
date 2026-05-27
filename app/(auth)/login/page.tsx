@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AuthForm } from "@/components/auth/AuthForm";
 import { createClient } from "@/lib/supabase/server";
 
 import { authenticate } from "./actions";
@@ -29,7 +30,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const params = (await searchParams) ?? {};
   const error = getQueryValue(params, "error");
-  const message = getQueryValue(params, "message");
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10 sm:px-6">
@@ -52,67 +52,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         ) : null}
 
-        {!error && message ? (
-          <div className="mt-5 rounded-card border border-accent-primary/35 bg-accent-primary/10 px-4 py-3 text-sm text-text-primary">
-            {message}
-          </div>
-        ) : null}
-
-        <form action={authenticate} className="mt-6 space-y-4">
-          <div>
-            <label
-              className="mb-2 block text-sm font-medium text-text-secondary"
-              htmlFor="email"
-            >
-              Correo electrónico
-            </label>
-            <input
-              className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
-              id="email"
-              name="email"
-              placeholder="name@example.com"
-              required
-              type="email"
-            />
-          </div>
-
-          <div>
-            <label
-              className="mb-2 block text-sm font-medium text-text-secondary"
-              htmlFor="password"
-            >
-              Contraseña
-            </label>
-            <input
-              className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
-              id="password"
-              minLength={8}
-              name="password"
-              placeholder="Mínimo 8 caracteres"
-              required
-              type="password"
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 pt-2">
-            <button
-              className="inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
-              name="intent"
-              type="submit"
-              value="login"
-            >
-              Iniciar sesión
-            </button>
-            <button
-              className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-6 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
-              name="intent"
-              type="submit"
-              value="signup"
-            >
-              Crear cuenta
-            </button>
-          </div>
-        </form>
+        <AuthForm action={authenticate} />
 
         <p className="mt-5 text-sm text-text-muted">
           El acceso al torneo se gestiona con autenticación segura de Supabase

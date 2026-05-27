@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
+import { AuthToastSurface } from "@/components/auth/AuthToastSurface";
 import { AppShell } from "@/components/layout/AppShell";
 import { HeaderMinimal } from "@/components/layout/HeaderMinimal";
+import { AppToaster } from "@/components/ui/AppToaster";
 import {
   ensureProfileForUser,
   isProfileComplete,
@@ -29,33 +32,39 @@ export default async function ProtectedLayout({
   const profileComplete = isProfileComplete(profile);
 
   return (
-    <AppShell
-      banner={
-        !profileComplete ? (
-          <div className="rounded-card border border-status-warning/35 bg-status-warning/10 px-4 py-3 text-sm text-text-primary">
-            Ya estás dentro, pero tu perfil todavía necesita un nombre de
-            usuario y un nombre visible.{" "}
-            <Link className="font-semibold text-accent-primary" href="/profile">
-              Terminar perfil
-            </Link>
-            .
-          </div>
-        ) : undefined
-      }
-      header={
-        <HeaderMinimal leagueName="Liga App Mundial">
-          <form action={signOut}>
-            <button
-              className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
-              type="submit"
-            >
-              Cerrar sesión
-            </button>
-          </form>
-        </HeaderMinimal>
-      }
-    >
-      {children}
-    </AppShell>
+    <>
+      <AppShell
+        banner={
+          !profileComplete ? (
+            <div className="rounded-card border border-status-warning/35 bg-status-warning/10 px-4 py-3 text-sm text-text-primary">
+              Ya estás dentro, pero tu perfil todavía necesita un nombre de
+              usuario y un nombre visible.{" "}
+              <Link className="font-semibold text-accent-primary" href="/profile">
+                Terminar perfil
+              </Link>
+              .
+            </div>
+          ) : undefined
+        }
+        header={
+          <HeaderMinimal leagueName="Liga App Mundial">
+            <form action={signOut}>
+              <button
+                className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
+                type="submit"
+              >
+                Cerrar sesión
+              </button>
+            </form>
+          </HeaderMinimal>
+        }
+      >
+        {children}
+      </AppShell>
+      <AppToaster />
+      <Suspense fallback={null}>
+        <AuthToastSurface />
+      </Suspense>
+    </>
   );
 }

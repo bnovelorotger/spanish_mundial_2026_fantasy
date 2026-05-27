@@ -9,12 +9,10 @@ import {
 } from "@/lib/services/profile.service";
 import { createClient } from "@/lib/supabase/server";
 
-function redirectWithMessage(
-  params: Record<string, string>,
-  pathname = "/login",
-): never {
-  const searchParams = new URLSearchParams(params);
-  redirect(`${pathname}?${searchParams.toString()}`);
+import type { AuthToastStatus } from "@/components/auth/AuthToastSurface";
+
+function redirectWithStatus(status: AuthToastStatus, pathname = "/login"): never {
+  redirect(`${pathname}?auth_status=${status}`);
 }
 
 type AuthPayload =
@@ -24,11 +22,11 @@ type AuthPayload =
         intent: "login" | "signup";
         password: string;
       };
-      error?: never;
+      errorStatus?: never;
     }
   | {
       data?: never;
-      error: string;
+      errorStatus: AuthToastStatus;
     };
 
 function validateAuthPayload(formData: FormData): AuthPayload {
@@ -37,15 +35,19 @@ function validateAuthPayload(formData: FormData): AuthPayload {
   const password = String(formData.get("password") ?? "");
 
   if (intent !== "login" && intent !== "signup") {
-    return { error: "Elige si quieres iniciar sesión o crear una cuenta." };
+    return { errorStatus: "login_unexpected" };
   }
 
   if (!email.includes("@")) {
-    return { error: "Introduce una dirección de correo válida." };
+    return {
+      errorStatus: intent === "login" ? "invalid_credentials" : "signup_unexpected",
+    };
   }
 
   if (password.length < 8) {
-    return { error: "La contraseña debe tener al menos 8 caracteres." };
+    return {
+      errorStatus: intent === "signup" ? "signup_weak_password" : "invalid_credentials",
+    };
   }
 
   return {
@@ -57,11 +59,28 @@ function validateAuthPayload(formData: FormData): AuthPayload {
   };
 }
 
+function isDuplicateEmailError(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("already registered") ||
+    normalized.includes("already been registered") ||
+    normalized.includes("already exists") ||
+    normalized.includes("user already registered")
+  );
+}
+
+function isInvalidCredentialsError(message: string) {
+  const normalized = message.toLowerCase();
+
+  return normalized.includes("invalid login credentials");
+}
+
 export async function authenticate(formData: FormData) {
-  const payload: AuthPayload = validateAuthPayload(formData);
+  const payload = validateAuthPayload(formData);
 
   if (!payload.data) {
-    redirectWithMessage({ error: payload.error });
+    redirectWithStatus(payload.errorStatus);
   }
 
   const authData = payload.data;
@@ -74,9 +93,11 @@ export async function authenticate(formData: FormData) {
     });
 
     if (error || !data.user) {
-      redirectWithMessage({
-        error: "No hemos podido iniciar sesión con ese correo y esa contraseña.",
-      });
+      redirectWithStatus(
+        error && isInvalidCredentialsError(error.message)
+          ? "invalid_credentials"
+          : "login_unexpected",
+      );
     }
 
     const profile = await ensureProfileForUser(data.user);
@@ -84,10 +105,10 @@ export async function authenticate(formData: FormData) {
     revalidatePath("/", "layout");
 
     if (!isProfileComplete(profile)) {
-      redirect("/profile?message=Termina%20de%20configurar%20tu%20perfil.");
+      redirect("/profile?auth_status=login_success");
     }
 
-    redirect("/home?message=Ya%20est%C3%A1s%20de%20vuelta.");
+    redirect("/home?auth_status=login_success");
   }
 
   const { data, error } = await supabase.auth.signUp({
@@ -96,21 +117,19 @@ export async function authenticate(formData: FormData) {
   });
 
   if (error || !data.user) {
-    redirectWithMessage({
-      error:
-        "No hemos podido crear tu cuenta. Prueba de nuevo con otra dirección de correo.",
-    });
+    redirectWithStatus(
+      error && isDuplicateEmailError(error.message)
+        ? "signup_duplicate_email"
+        : "signup_unexpected",
+    );
   }
 
   await ensureProfileForUser(data.user);
   revalidatePath("/", "layout");
 
   if (!data.session) {
-    redirectWithMessage({
-      message:
-        "Cuenta creada. Revisa tu correo para confirmar la dirección antes de iniciar sesión.",
-    });
+    redirect("/login?auth_status=signup_success");
   }
 
-  redirect("/profile?message=Termina%20de%20configurar%20tu%20perfil.");
+  redirect("/profile?auth_status=signup_success");
 }
