@@ -24,4 +24,15 @@ describe("onboarding tours", () => {
       }
     }
   });
+
+  it("does not leave English podium copy in any tour step", () => {
+    const leakedWords = /\b(gold|silver|bronze)\b/i;
+
+    for (const steps of Object.values(ONBOARDING_TOURS)) {
+      for (const step of steps) {
+        expect(step.title).not.toMatch(leakedWords);
+        expect(step.description).not.toMatch(leakedWords);
+      }
+    }
+  });
 });

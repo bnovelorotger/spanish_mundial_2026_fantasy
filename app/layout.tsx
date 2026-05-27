@@ -13,9 +13,9 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "App Mundial | World Cup 2026 Pick'em",
+  title: "Liga App Mundial — Pick'em entre amigos del Mundial 2026",
   description:
-    "Mobile-first World Cup 2026 Pick'em app built for private tournaments between friends.",
+    "Predice grupos, eliminatorias y campeón. Compite con tus amigos en tiempo real.",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans text-text-primary">{children}</body>

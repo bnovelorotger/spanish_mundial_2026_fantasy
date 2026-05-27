@@ -10,15 +10,8 @@ type LoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function getQueryValue(
-  searchParams: Record<string, string | string[] | undefined>,
-  key: string,
-) {
-  const value = searchParams[key];
-  return Array.isArray(value) ? value[0] : value;
-}
-
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  void searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,9 +20,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   if (user) {
     redirect("/home");
   }
-
-  const params = (await searchParams) ?? {};
-  const error = getQueryValue(params, "error");
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10 sm:px-6">
@@ -45,12 +35,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           2026. Los jugadores nuevos también pueden crear su cuenta desde este
           mismo formulario.
         </p>
-
-        {error ? (
-          <div className="mt-5 rounded-card border border-status-live/35 bg-status-live/10 px-4 py-3 text-sm text-text-primary">
-            {error}
-          </div>
-        ) : null}
 
         <AuthForm action={authenticate} />
 
