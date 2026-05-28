@@ -139,7 +139,7 @@ export async function uploadAvatarAction(formData: FormData) {
   });
 }
 
-export async function chooseTeamAvatarAction(teamCode: string) {
+export async function chooseTeamAvatarAction(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -150,6 +150,15 @@ export async function chooseTeamAvatarAction(teamCode: string) {
   }
 
   await ensureProfileForUser(user);
+
+  const teamCode = String(formData.get("team_code") ?? "").trim().toUpperCase();
+
+  if (!teamCode) {
+    redirectToProfile({
+      avatar: "team",
+      error: "Elige un escudo de equipo antes de guardar.",
+    });
+  }
 
   const { data, error } = await supabase
     .from("teams")

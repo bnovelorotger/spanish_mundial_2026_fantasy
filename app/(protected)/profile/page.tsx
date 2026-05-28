@@ -5,6 +5,7 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { ResetOnboardingButton } from "@/components/onboarding/ResetOnboardingButton";
 import { Header } from "@/components/layout/Header";
 import { AvatarUploadForm } from "@/components/profile/AvatarUploadForm";
+import { TeamAvatarRadioGroup } from "@/components/profile/TeamAvatarRadioGroup";
 import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
 import {
   ensureProfileForUser,
@@ -69,8 +70,8 @@ function AvatarModeLink({
     <a
       className={
         isActive
-          ? "inline-flex h-11 items-center justify-center rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-5 text-sm font-semibold text-accent-primary shadow-glowCyan"
-          : "inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-card px-5 text-sm font-semibold text-text-secondary transition-colors duration-200 hover:bg-surface-active"
+          ? "focus-ring inline-flex h-11 items-center justify-center rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-5 text-sm font-semibold text-accent-primary shadow-glowCyan"
+          : "focus-ring inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-card px-5 text-sm font-semibold text-text-secondary transition-colors duration-200 hover:bg-surface-active"
       }
       href={mode === "upload" ? "/profile?avatar=upload" : "/profile?avatar=team"}
     >
@@ -122,7 +123,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           action={
             <form action={signOut}>
               <button
-                className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
+                className="focus-ring inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
                 data-tour="logout"
                 type="submit"
               >
@@ -224,49 +225,22 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 <p className="text-sm leading-6 text-text-secondary">
                   Elige uno de los 48 escudos disponibles. Tu selección quedará marcada con el aro cian.
                 </p>
-                <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
-                  {teams.map((team) => {
-                    const isSelected = profile.avatar_team_code === team.code;
-                    const selectAction = chooseTeamAvatarAction.bind(null, team.code);
-
-                    return (
-                      <form action={selectAction} key={team.code}>
-                        <button
-                          className={
-                            isSelected
-                              ? "flex w-full flex-col items-center gap-2 rounded-card border border-accent-primary/40 bg-accent-primary/10 px-3 py-3 text-center shadow-glowCyan"
-                              : "flex w-full flex-col items-center gap-2 rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3 text-center transition-colors duration-200 hover:bg-surface-active"
-                          }
-                          type="submit"
-                        >
-                          {team.flag_url ? (
-                            <Image
-                              alt={`Escudo de ${team.name}`}
-                              className="size-12 rounded-full border border-border-subtle object-cover"
-                              height={48}
-                              src={team.flag_url}
-                              width={48}
-                            />
-                          ) : (
-                            <div className="flex size-12 items-center justify-center rounded-full border border-accent-primary/30 bg-accent-primary/10 text-sm font-semibold uppercase tracking-[0.12em] text-accent-primary">
-                              {team.code}
-                            </div>
-                          )}
-                          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
-                            {team.code}
-                          </span>
-                        </button>
-                      </form>
-                    );
-                  })}
-                </div>
+                <TeamAvatarRadioGroup
+                  chooseAction={chooseTeamAvatarAction}
+                  selectedCode={profile.avatar_team_code}
+                  teams={teams.map((team) => ({
+                    code: team.code,
+                    flagUrl: team.flag_url,
+                    name: team.name,
+                  }))}
+                />
               </div>
             )}
           </div>
 
           <form action={clearAvatarAction} className="mt-6">
             <button
-              className="inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
+              className="focus-ring inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-elevated px-5 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-surface-active"
               type="submit"
             >
               Quitar avatar
@@ -320,7 +294,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 Nombre de usuario
               </label>
               <input
-                className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
+                className="focus-ring h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
                 defaultValue={profile.username}
                 id="username"
                 maxLength={24}
@@ -342,7 +316,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 Nombre visible
               </label>
               <input
-                className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
+                className="focus-ring h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
                 defaultValue={profile.display_name ?? ""}
                 id="display_name"
                 maxLength={50}
@@ -354,7 +328,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             </div>
 
             <button
-              className="inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
+              className="focus-ring inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
               type="submit"
             >
               Guardar perfil
