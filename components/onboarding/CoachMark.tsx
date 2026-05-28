@@ -49,6 +49,12 @@ export function CoachMark({
           className={cn(
             "z-50 w-[min(320px,calc(100vw-32px))] rounded-card border border-border-subtle bg-surface-elevated p-4 text-text-primary shadow-card outline-none transition duration-200 data-[state=closed]:translate-y-1 data-[state=closed]:opacity-0 data-[state=open]:translate-y-0 data-[state=open]:opacity-100",
           )}
+          collisionPadding={{
+            bottom: 96,
+            left: 16,
+            right: 16,
+            top: 16,
+          }}
           onEscapeKeyDown={() => onOpenChange(false)}
           side={side}
           sideOffset={16}
