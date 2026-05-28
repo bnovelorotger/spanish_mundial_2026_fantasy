@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { OnboardingStep, OnboardingTourId } from "@/lib/onboarding/tours";
 
@@ -13,6 +13,11 @@ interface OnboardingTourProps {
 }
 
 const START_DELAY_MS = 50;
+const TOUR_STORAGE_DONE = "done";
+const TOUR_STORAGE_SKIPPED = "skipped";
+
+export type OnboardingPersistStatus = "completed" | "missing-targets" | "skipped";
+export type OnboardingPersistResult = "done" | "incomplete" | "skipped";
 
 function onboardingStorageKey(tourId: OnboardingTourId) {
   return `onboarding:${tourId}`;
@@ -20,6 +25,35 @@ function onboardingStorageKey(tourId: OnboardingTourId) {
 
 function skippedStorageKey(tourId: OnboardingTourId) {
   return `onboarding:${tourId}:skippedAt`;
+}
+
+export function shouldRunOnboarding(storedValue: string | null) {
+  return storedValue !== TOUR_STORAGE_DONE && storedValue !== TOUR_STORAGE_SKIPPED;
+}
+
+export function persistOnboardingResult(input: {
+  now?: string;
+  shownStepCount: number;
+  skippedAtStorageKey: string;
+  status: OnboardingPersistStatus;
+  storage: Pick<Storage, "setItem">;
+  storageKey: string;
+}): OnboardingPersistResult {
+  if (input.status === "skipped") {
+    input.storage.setItem(input.storageKey, TOUR_STORAGE_SKIPPED);
+    input.storage.setItem(
+      input.skippedAtStorageKey,
+      input.now ?? new Date().toISOString(),
+    );
+    return "skipped";
+  }
+
+  if (input.shownStepCount > 0) {
+    input.storage.setItem(input.storageKey, TOUR_STORAGE_DONE);
+    return "done";
+  }
+
+  return "incomplete";
 }
 
 function findStepTarget(
@@ -49,6 +83,7 @@ export function OnboardingTour({
   steps,
   tourId,
 }: OnboardingTourProps) {
+  const shownStepIndexesRef = useRef<Set<number>>(new Set());
   const [currentStep, setCurrentStep] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -57,13 +92,56 @@ export function OnboardingTour({
 
   const activeStep = steps[currentStep] ?? null;
   const storageKey = useMemo(() => onboardingStorageKey(tourId), [tourId]);
+  const skippedAtKey = useMemo(() => skippedStorageKey(tourId), [tourId]);
+
+  const registerShownStep = useCallback((stepIndex: number) => {
+    shownStepIndexesRef.current.add(stepIndex);
+  }, []);
+
+  const moveToStep = useCallback((match: { element: HTMLElement; index: number }) => {
+    const rect = match.element.getBoundingClientRect();
+    registerShownStep(match.index);
+    setCurrentStep(match.index);
+    setTargetRect(rect);
+    setSide(resolveSide(rect));
+  }, [registerShownStep]);
+
+  const finalizeTour = useCallback((status: OnboardingPersistStatus) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    persistOnboardingResult({
+      shownStepCount: shownStepIndexesRef.current.size,
+      skippedAtStorageKey: skippedAtKey,
+      status,
+      storage: window.localStorage,
+      storageKey,
+    });
+    setIsOpen(false);
+  }, [skippedAtKey, storageKey]);
+
+  const advanceToNextVisibleStep = useCallback((
+    fromStep: number,
+    exhaustedStatus: Exclude<OnboardingPersistStatus, "skipped">,
+  ) => {
+    const nextMatch = findStepTarget(steps, fromStep + 1);
+
+    if (!nextMatch) {
+      finalizeTour(exhaustedStatus);
+      return false;
+    }
+
+    moveToStep(nextMatch);
+    return true;
+  }, [finalizeTour, moveToStep, steps]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
 
-    if (window.localStorage.getItem(storageKey) === "done") {
+    if (!shouldRunOnboarding(window.localStorage.getItem(storageKey))) {
       return undefined;
     }
 
@@ -74,10 +152,7 @@ export function OnboardingTour({
         return;
       }
 
-      const rect = match.element.getBoundingClientRect();
-      setCurrentStep(match.index);
-      setTargetRect(rect);
-      setSide(resolveSide(rect));
+      moveToStep(match);
       setIsReady(true);
       setIsOpen(true);
     }, START_DELAY_MS);
@@ -85,12 +160,16 @@ export function OnboardingTour({
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [steps, storageKey]);
+  }, [moveToStep, steps, storageKey]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) {
       return undefined;
     }
+
+    const goToNextStep = () => {
+      advanceToNextVisibleStep(currentStep, "missing-targets");
+    };
 
     const updatePosition = () => {
       const target = document.querySelector<HTMLElement>(activeStep.target);
@@ -105,23 +184,6 @@ export function OnboardingTour({
       setSide(resolveSide(rect));
     };
 
-    const goToNextStep = () => {
-      setCurrentStep((previousStep) => {
-        const nextMatch = findStepTarget(steps, previousStep + 1);
-
-        if (!nextMatch) {
-          window.localStorage.setItem(storageKey, "done");
-          setIsOpen(false);
-          return previousStep;
-        }
-
-        const rect = nextMatch.element.getBoundingClientRect();
-        setTargetRect(rect);
-        setSide(resolveSide(rect));
-        return nextMatch.index;
-      });
-    };
-
     updatePosition();
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
@@ -130,27 +192,14 @@ export function OnboardingTour({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [activeStep, isOpen, steps, storageKey]);
+  }, [activeStep, advanceToNextVisibleStep, currentStep, isOpen, steps]);
 
   function handleNext() {
-    const nextMatch = findStepTarget(steps, currentStep + 1);
-
-    if (!nextMatch) {
-      window.localStorage.setItem(storageKey, "done");
-      setIsOpen(false);
-      return;
-    }
-
-    const rect = nextMatch.element.getBoundingClientRect();
-    setCurrentStep(nextMatch.index);
-    setTargetRect(rect);
-    setSide(resolveSide(rect));
+    advanceToNextVisibleStep(currentStep, "completed");
   }
 
   function handleSkip() {
-    window.localStorage.setItem(storageKey, "done");
-    window.localStorage.setItem(skippedStorageKey(tourId), new Date().toISOString());
-    setIsOpen(false);
+    finalizeTour("skipped");
   }
 
   return (

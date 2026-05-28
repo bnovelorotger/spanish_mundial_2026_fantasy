@@ -1,6 +1,7 @@
 export type OnboardingTourId =
   | "home"
-  | "predictions"
+  | "predictions-groups"
+  | "predictions-knockout"
   | "matches"
   | "ranking"
   | "profile";
@@ -45,7 +46,7 @@ export const ONBOARDING_TOURS: Record<OnboardingTourId, OnboardingStep[]> = {
       title: "Cada partido en su sitio",
     },
   ],
-  predictions: [
+  "predictions-groups": [
     {
       description:
         "Primero ordenas los grupos; después cerrarás las eliminatorias ronda a ronda.",
@@ -62,6 +63,26 @@ export const ONBOARDING_TOURS: Record<OnboardingTourId, OnboardingStep[]> = {
         "Cada grupo se guarda por separado antes de que el cierre te deje fuera.",
       target: '[data-tour="save-button"]',
       title: "Guarda cada grupo",
+    },
+  ],
+  "predictions-knockout": [
+    {
+      description:
+        "Cuando el cruce aún no tiene equipos cerrados, verás huecos como ganador de grupo o mejor tercero.",
+      target: '[data-tour="knockout-board"]',
+      title: "Lee el cuadro antes de tiempo",
+    },
+    {
+      description:
+        "Solo puedes elegir ganador cuando las dos plazas del partido ya tienen equipo confirmado.",
+      target: '[data-tour="knockout-match"]',
+      title: "Elige cuando el duelo exista",
+    },
+    {
+      description:
+        "Si no eliges tú, el estado te avisará cuando el cuadro haya quedado marcado como aleatorio.",
+      target: '[data-tour="knockout-state"]',
+      title: "Controla lo aleatorio",
     },
   ],
   profile: [

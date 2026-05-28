@@ -6,7 +6,7 @@ import { StateCard } from "@/components/ui/StateCard";
 import { BracketView } from "@/components/worldcup/BracketView";
 import { GroupPredictionEditor } from "@/components/worldcup/GroupPredictionEditor";
 import { GroupNavigator } from "@/components/worldcup/GroupNavigator";
-import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
+import { ONBOARDING_TOURS, type OnboardingTourId } from "@/lib/onboarding/tours";
 import { getBracketRounds } from "@/lib/services/bracket.service";
 import type { GroupLetter } from "@/lib/types/worldcup";
 import { getGroupPredictionGroups } from "@/lib/services/predictions.service";
@@ -124,6 +124,8 @@ export default async function PredictionsPage({
   const error = getQueryValue(params, "error");
   const saved = getQueryValue(params, "saved") === "1";
   const initialActiveGroup = resolveActiveGroup(activeGroup);
+  const onboardingTourId: OnboardingTourId =
+    activeTab === "knockout" ? "predictions-knockout" : "predictions-groups";
 
   const supabase = await createClient();
   const {
@@ -144,7 +146,10 @@ export default async function PredictionsPage({
     }
 
     return (
-      <OnboardingTour steps={ONBOARDING_TOURS.predictions} tourId="predictions">
+      <OnboardingTour
+        steps={ONBOARDING_TOURS[onboardingTourId]}
+        tourId={onboardingTourId}
+      >
         <section className="space-y-6">
           <PredictionsHeader tab="knockout" />
 
@@ -173,7 +178,10 @@ export default async function PredictionsPage({
   }
 
   return (
-    <OnboardingTour steps={ONBOARDING_TOURS.predictions} tourId="predictions">
+    <OnboardingTour
+      steps={ONBOARDING_TOURS[onboardingTourId]}
+      tourId={onboardingTourId}
+    >
       <section className="space-y-6">
         <PredictionsHeader tab="groups" />
 

@@ -33,7 +33,7 @@ export function BracketView({
         </p>
       </div>
 
-      <div className="overflow-x-auto pb-2">
+      <div className="overflow-x-auto pb-2" data-tour="knockout-board">
         <div className="flex min-w-max gap-4">
           {rounds.map((round) => (
             <section
@@ -51,9 +51,11 @@ export function BracketView({
 
               <div className="mt-4 space-y-4">
                 {round.matches.length > 0 ? (
-                  round.matches.map((match) => (
+                  round.matches.map((match, matchIndex) => (
                     <BracketPredictionEditor
                       key={match.id}
+                      dataTourCard={matchIndex === 0 ? "knockout-match" : undefined}
+                      dataTourState={matchIndex === 0 ? "knockout-state" : undefined}
                       flash={
                         activeMatchId === match.id
                           ? error

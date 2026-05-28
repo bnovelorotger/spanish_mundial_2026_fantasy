@@ -8,6 +8,8 @@ import { PhaseBadge } from "./PhaseBadge";
 import { TeamBadge } from "./TeamBadge";
 
 interface BracketPredictionEditorProps {
+  dataTourCard?: string;
+  dataTourState?: string;
   flash?: {
     message: string;
     tone: "error" | "success";
@@ -68,6 +70,8 @@ function slotButtonClassName(input: {
 }
 
 export function BracketPredictionEditor({
+  dataTourCard,
+  dataTourState,
   flash,
   match,
   saveAction,
@@ -84,6 +88,7 @@ export function BracketPredictionEditor({
             ? "border-accent-primary/30 bg-linear-to-b from-surface-elevated to-surface-card shadow-glowCyan"
             : "border-border-subtle bg-surface-card/90",
         )}
+        data-tour={dataTourCard}
       >
         <input name="match_id" type="hidden" value={match.id} />
         <input name="phase" type="hidden" value={match.phase} />
@@ -157,7 +162,10 @@ export function BracketPredictionEditor({
           })}
         </div>
 
-        <div className="mt-4 rounded-card border border-border-subtle bg-background-secondary/65 px-4 py-3 text-sm">
+        <div
+          className="mt-4 rounded-card border border-border-subtle bg-background-secondary/65 px-4 py-3 text-sm"
+          data-tour={dataTourState}
+        >
           {flash ? (
             <p
               className={cn(
