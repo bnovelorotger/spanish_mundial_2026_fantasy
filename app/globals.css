@@ -83,3 +83,13 @@ a {
   background: rgba(0, 212, 255, 0.24);
   color: #f8fafc;
 }
+
+@layer components {
+  .focus-ring {
+    @apply focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2;
+  }
+
+  .peer-focus-ring {
+    @apply peer-focus-visible:outline-2 peer-focus-visible:outline-accent-primary peer-focus-visible:outline-offset-2;
+  }
+}

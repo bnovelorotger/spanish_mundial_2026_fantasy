@@ -143,7 +143,7 @@ function SaveButton({ disabled }: { disabled: boolean }) {
   return (
     <button
       className={cn(
-        "inline-flex h-12 items-center justify-center rounded-pill px-6 text-sm font-bold text-background-main shadow-glowCyan transition duration-200 active:scale-[0.98]",
+        "focus-ring inline-flex h-12 items-center justify-center rounded-pill px-6 text-sm font-bold text-background-main shadow-glowCyan transition duration-200 active:scale-[0.98]",
         disabled || pending
           ? "cursor-not-allowed bg-surface-active text-text-disabled shadow-none"
           : "bg-linear-to-r from-accent-primary to-accent-secondary",

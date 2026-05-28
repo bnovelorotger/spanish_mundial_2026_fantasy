@@ -15,7 +15,7 @@ export function ResetOnboardingButton() {
 
   return (
     <button
-      className="text-sm font-medium text-text-muted transition-colors duration-150 hover:text-accent-primary"
+      className="focus-ring rounded-sm text-sm font-medium text-text-muted transition-colors duration-150 hover:text-accent-primary"
       onClick={handleReset}
       type="button"
     >

@@ -72,8 +72,8 @@ function FilterLink({
     <Link
       className={
         activeValue === nextValue
-          ? "inline-flex h-10 items-center justify-center rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-4 text-sm font-semibold text-accent-primary shadow-glowCyan"
-          : "inline-flex h-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card px-4 text-sm font-semibold text-text-secondary transition-colors duration-200 hover:bg-surface-active"
+          ? "focus-ring inline-flex h-10 items-center justify-center rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-4 text-sm font-semibold text-accent-primary shadow-glowCyan"
+          : "focus-ring inline-flex h-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card px-4 text-sm font-semibold text-text-secondary transition-colors duration-200 hover:bg-surface-active"
       }
       href={href}
     >

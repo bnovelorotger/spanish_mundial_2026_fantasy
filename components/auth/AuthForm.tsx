@@ -52,7 +52,7 @@ export function AuthForm({ action }: AuthFormProps) {
           Correo electrónico
         </label>
         <input
-          className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
+          className="focus-ring h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
           id="email"
           name="email"
           placeholder="name@example.com"
@@ -69,7 +69,7 @@ export function AuthForm({ action }: AuthFormProps) {
           Contraseña
         </label>
         <input
-          className="h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
+          className="focus-ring h-12 w-full rounded-card border border-border-subtle bg-background-secondary px-4 text-base text-text-primary outline-none transition-colors focus:border-accent-primary"
           id="password"
           minLength={8}
           name="password"

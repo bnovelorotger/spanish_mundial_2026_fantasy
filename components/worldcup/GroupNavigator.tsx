@@ -129,7 +129,7 @@ export function GroupNavigator({
               aria-current={isActive ? "true" : undefined}
               aria-label={`Ir al grupo ${group.letter}`}
               className={cn(
-                "inline-flex h-10 min-w-10 items-center justify-center rounded-pill border px-3 text-sm font-semibold transition duration-200 active:scale-[0.98]",
+                "focus-ring inline-flex h-10 min-w-10 items-center justify-center rounded-pill border px-3 text-sm font-semibold transition duration-200 active:scale-[0.98]",
                 group.isEmpty
                   ? "border-border-subtle text-text-disabled opacity-60"
                   : cn(

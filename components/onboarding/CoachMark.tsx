@@ -70,7 +70,7 @@ export function CoachMark({
             <div className="flex items-center justify-between gap-3">
               {currentStep === 0 && onSkip ? (
                 <button
-                  className="text-sm font-medium text-text-muted transition-colors duration-150 hover:text-text-primary"
+                  className="focus-ring rounded-sm text-sm font-medium text-text-muted transition-colors duration-150 hover:text-text-primary"
                   onClick={onSkip}
                   type="button"
                 >
@@ -80,7 +80,7 @@ export function CoachMark({
                 <span />
               )}
               <button
-                className="inline-flex h-11 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-5 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-150 active:scale-[0.97]"
+                className="focus-ring inline-flex h-11 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-5 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-150 active:scale-[0.97]"
                 onClick={onNext}
                 type="button"
               >

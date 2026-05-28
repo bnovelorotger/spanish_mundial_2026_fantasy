@@ -69,7 +69,7 @@ export function AvatarUploadForm({
 
       <label
         className={cn(
-          "flex cursor-pointer items-center gap-3 rounded-card border border-dashed border-border-strong bg-background-secondary/60 px-4 py-4 text-sm text-text-secondary transition-colors duration-200 hover:border-accent-primary/35 hover:bg-surface-active",
+          "peer-focus-ring flex cursor-pointer items-center gap-3 rounded-card border border-dashed border-border-strong bg-background-secondary/60 px-4 py-4 text-sm text-text-secondary transition-colors duration-200 hover:border-accent-primary/35 hover:bg-surface-active",
         )}
         htmlFor="avatar"
       >
@@ -78,7 +78,7 @@ export function AvatarUploadForm({
       </label>
       <input
         accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
+        className="peer sr-only"
         id="avatar"
         name="avatar"
         onChange={(event) => {
@@ -102,7 +102,7 @@ export function AvatarUploadForm({
       />
 
       <button
-        className="inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
+        className="focus-ring inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
         type="submit"
       >
         Subir foto

@@ -60,8 +60,8 @@ function PredictionTabLink({
     <Link
       className={
         isActive
-          ? "inline-flex h-11 items-center justify-center rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-5 text-sm font-semibold text-accent-primary shadow-glowCyan"
-          : "inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-card px-5 text-sm font-semibold text-text-secondary transition-colors duration-200 hover:bg-surface-active"
+          ? "focus-ring inline-flex h-11 items-center justify-center rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-5 text-sm font-semibold text-accent-primary shadow-glowCyan"
+          : "focus-ring inline-flex h-11 items-center justify-center rounded-pill border border-border-subtle bg-surface-card px-5 text-sm font-semibold text-text-secondary transition-colors duration-200 hover:bg-surface-active"
       }
       href={tab === "groups" ? "/predictions?tab=groups" : "/predictions?tab=knockout"}
     >

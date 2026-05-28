@@ -31,7 +31,7 @@ export function SubmitButton({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-pill px-6 text-sm font-semibold transition-transform duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2",
+        "focus-ring inline-flex items-center justify-center gap-2 rounded-pill px-6 text-sm font-semibold transition-transform duration-150 active:scale-[0.97]",
         intent === "login"
           ? "h-12 bg-linear-to-r from-accent-primary to-accent-secondary text-background-main shadow-glowCyan hover:scale-[0.99]"
           : "h-11 border border-border-subtle bg-surface-elevated text-text-primary hover:bg-surface-active",

@@ -41,7 +41,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="mt-5 text-sm text-text-muted">
           El acceso al torneo se gestiona con autenticación segura de Supabase
           en servidor. Puedes volver a la{" "}
-          <Link className="text-accent-primary" href="/">
+          <Link className="focus-ring rounded-sm text-accent-primary" href="/">
             página inicial
           </Link>{" "}
           cuando quieras.

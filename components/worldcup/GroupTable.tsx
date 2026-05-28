@@ -116,7 +116,7 @@ export function GroupTable({
                   ? "cursor-not-allowed border-border-subtle bg-surface-card opacity-45"
                   : isDragging
                     ? "border-accent-secondary/35 bg-accent-secondary/10 text-accent-secondary shadow-glowViolet"
-                    : "border-border-subtle bg-surface-card hover:border-accent-secondary/35 hover:bg-surface-active hover:text-text-primary active:scale-[0.98]",
+                    : "focus-ring border-border-subtle bg-surface-card hover:border-accent-secondary/35 hover:bg-surface-active hover:text-text-primary active:scale-[0.98]",
               )}
               disabled={isLocked}
               onPointerDown={(event) => {
@@ -150,7 +150,7 @@ export function GroupTable({
               <button
                 aria-label={`Subir a ${team.name}`}
                 className={cn(
-                  "inline-flex size-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card text-text-secondary transition duration-200 active:scale-[0.98]",
+                  "focus-ring inline-flex size-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card text-text-secondary transition duration-200 active:scale-[0.98]",
                   !isLocked && !isFirst && "hover:border-accent-secondary/35 hover:bg-surface-active hover:text-text-primary",
                   (isLocked || isFirst) &&
                     "cursor-not-allowed opacity-45",
@@ -165,7 +165,7 @@ export function GroupTable({
               <button
                 aria-label={`Bajar a ${team.name}`}
                 className={cn(
-                  "inline-flex size-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card text-text-secondary transition duration-200 active:scale-[0.98]",
+                  "focus-ring inline-flex size-10 items-center justify-center rounded-pill border border-border-subtle bg-surface-card text-text-secondary transition duration-200 active:scale-[0.98]",
                   !isLocked && !isLast && "hover:border-accent-primary/35 hover:bg-surface-active hover:text-text-primary",
                   (isLocked || isLast) &&
                     "cursor-not-allowed opacity-45",

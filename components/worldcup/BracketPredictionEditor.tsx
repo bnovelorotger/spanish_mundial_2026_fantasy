@@ -132,7 +132,7 @@ export function BracketPredictionEditor({
               <button
                 key={`${match.id}-${slot.name}`}
                 className={cn(
-                  "flex w-full items-center justify-between gap-3 rounded-card border px-3 py-3 text-left",
+                  "focus-ring flex w-full items-center justify-between gap-3 rounded-card border px-3 py-3 text-left",
                   slotButtonClassName({
                     canPredict: match.canPredict,
                     isSelected,
