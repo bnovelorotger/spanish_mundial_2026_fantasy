@@ -38,6 +38,34 @@ function podiumGapCopy(entry: RankingEntry, leaderPoints: number) {
   return `A ${leaderPoints - entry.totalPoints} pts del líder.`;
 }
 
+function podiumPositionLabel(position: number) {
+  switch (position) {
+    case 1:
+      return "Primer lugar";
+    case 2:
+      return "Segundo lugar";
+    case 3:
+      return "Tercer lugar";
+    default:
+      return `Posición ${position}`;
+  }
+}
+
+function rankingEntryAriaLabel(entry: RankingEntry, isCurrentUser: boolean) {
+  const parts = [
+    `Posición ${entry.position}.`,
+    entryName(entry),
+    `${entry.totalPoints} puntos.`,
+    `A ${entry.gapToLeader} puntos del líder.`,
+  ];
+
+  if (isCurrentUser) {
+    parts.splice(1, 0, "Tú.");
+  }
+
+  return parts.join(" ");
+}
+
 const podiumToneStyles: Record<number, string> = {
   1: "border-podium-gold/50 bg-podium-gold/10",
   2: "border-podium-silver/50 bg-podium-silver/10",
@@ -71,6 +99,7 @@ export function RankingTable({
 
         {podiumEntries.length > 0 ? (
           <div
+            aria-label="Podio actual de la liga"
             className="mt-5 grid gap-4 lg:grid-cols-[1.15fr_repeat(2,1fr)]"
             data-tour="podium"
           >
@@ -79,6 +108,7 @@ export function RankingTable({
 
               return (
                 <article
+                  aria-label={`${podiumPositionLabel(entry.position)}. ${rankingEntryAriaLabel(entry, isCurrentUser)}`}
                   key={entry.userId}
                   className={cn(
                     "rounded-cardLg border p-4 shadow-card",
@@ -203,16 +233,20 @@ export function RankingTable({
           <Medal className="size-5 text-accent-secondary" strokeWidth={2} />
         </div>
 
-        <div className="mt-5 space-y-3">
-          {entries.length > 0 ? (
-            entries.map((entry) => {
+        {entries.length > 0 ? (
+          <ol
+            aria-label="Clasificación completa de la liga"
+            className="mt-5 space-y-3"
+          >
+            {entries.map((entry) => {
               const isCurrentUser = entry.userId === currentUserId;
 
               return (
-                <article
+                <li
+                  aria-label={rankingEntryAriaLabel(entry, isCurrentUser)}
                   key={`table-${entry.userId}`}
                   className={cn(
-                    "flex items-center justify-between gap-4 rounded-card border px-4 py-3",
+                    "list-none flex items-center justify-between gap-4 rounded-card border px-4 py-3",
                     isCurrentUser
                       ? "border-accent-primary/35 bg-surface-active shadow-glowCyan"
                       : "border-border-subtle bg-background-secondary/70",
@@ -256,18 +290,20 @@ export function RankingTable({
                       {entry.groupPoints} grupos
                     </p>
                   </div>
-                </article>
+                </li>
               );
-            })
-          ) : (
+            })}
+          </ol>
+        ) : (
+          <div className="mt-5">
             <StateCard
               description="En cuanto se puntúen los primeros pronósticos, esta tabla se convertirá en la carrera diaria que mirar."
               eyebrow="Tu torneo empieza aquí."
               title="La tabla completa se abre con el primer recálculo."
               tone="default"
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );
