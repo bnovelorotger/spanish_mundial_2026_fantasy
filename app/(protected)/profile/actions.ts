@@ -11,6 +11,7 @@ import {
   usernameExistsForOtherUser,
   validateProfileFormData,
 } from "@/lib/services/profile.service";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectToProfile(params: Record<string, string>): never {
@@ -119,12 +120,26 @@ export async function uploadAvatarAction(formData: FormData) {
   }
 
   const storagePath = `${user.id}/avatar.${extension}`;
-  const { error } = await supabase.storage.from("avatars").upload(storagePath, avatar, {
+
+  // The authenticated server client built from cookies works fine for
+  // PostgREST (the profiles table) but @supabase/ssr v0.10.x does not
+  // reliably forward the user JWT to the Storage REST endpoint. That makes
+  // the upload run as `anon`, which the RLS policies on storage.objects
+  // reject. We use the admin client (service role) just for this hop —
+  // RLS is bypassed but we control the path manually (`${user.id}/...`)
+  // so a user cannot write outside their own folder.
+  const admin = createAdminClient();
+  const { error } = await admin.storage.from("avatars").upload(storagePath, avatar, {
     contentType: avatar.type,
     upsert: true,
   });
 
   if (error) {
+    console.error("avatar upload failed", {
+      message: error.message,
+      storagePath,
+      userId: user.id,
+    });
     redirectToProfile({
       avatar: "upload",
       error: "No hemos podido subir tu foto. Inténtalo de nuevo.",

@@ -12,6 +12,13 @@ interface AvatarUploadFormProps {
   uploadAction: (formData: FormData) => void | Promise<void>;
 }
 
+const ACCEPTED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+
 function initialsFromLabel(label: string) {
   return label
     .split(" ")
@@ -27,6 +34,7 @@ export function AvatarUploadForm({
   uploadAction,
 }: AvatarUploadFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -85,10 +93,28 @@ export function AvatarUploadForm({
           const file = event.target.files?.[0];
 
           if (!file) {
+            setClientError(null);
             setPreviewUrl(currentAvatarUrl);
             return;
           }
 
+          if (!ACCEPTED_MIME_TYPES.has(file.type)) {
+            setClientError(
+              "Esa imagen no nos vale. Sube una JPG, PNG o WEBP.",
+            );
+            event.target.value = "";
+            setPreviewUrl(currentAvatarUrl);
+            return;
+          }
+
+          if (file.size > MAX_FILE_SIZE_BYTES) {
+            setClientError("La foto supera los 2 MB. Prueba con una más ligera.");
+            event.target.value = "";
+            setPreviewUrl(currentAvatarUrl);
+            return;
+          }
+
+          setClientError(null);
           const objectUrl = URL.createObjectURL(file);
           setPreviewUrl((current) => {
             if (current?.startsWith("blob:")) {
@@ -101,8 +127,19 @@ export function AvatarUploadForm({
         type="file"
       />
 
+      {clientError ? (
+        <p
+          aria-live="polite"
+          className="rounded-card border border-status-live/35 bg-status-live/10 px-3 py-2 text-sm text-text-primary"
+          role="alert"
+        >
+          {clientError}
+        </p>
+      ) : null}
+
       <button
-        className="focus-ring inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99]"
+        className="focus-ring inline-flex h-12 items-center justify-center rounded-pill bg-linear-to-r from-accent-primary to-accent-secondary px-6 text-sm font-semibold text-background-main shadow-glowCyan transition-transform duration-200 hover:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={clientError !== null || !previewUrl?.startsWith("blob:")}
         type="submit"
       >
         Subir foto

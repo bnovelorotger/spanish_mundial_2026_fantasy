@@ -317,9 +317,17 @@ export async function setProfileAvatarFromUpload(
     data: { publicUrl },
   } = supabase.storage.from("avatars").getPublicUrl(storagePath);
 
+  // The avatar storage path is stable (`{userId}/avatar.{ext}`) so the
+  // public URL never changes across re-uploads. Without a cache buster
+  // the browser and the CDN keep serving the previous photo even after
+  // the user uploads a new one. Append a timestamp here — every fresh
+  // upload writes a new query string, so `next/image` and the browser
+  // treat it as a new resource.
+  const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
+
   await updateProfileAvatarFields(supabase, userId, {
     avatar_team_code: null,
-    avatar_url: publicUrl,
+    avatar_url: cacheBustedUrl,
   });
 }
 

@@ -85,11 +85,21 @@ describe("profile avatar updates", () => {
 
     expect(storageFrom).toHaveBeenCalledWith("avatars");
     expect(getPublicUrl).toHaveBeenCalledWith("user-1/avatar.webp");
-    expect(update).toHaveBeenCalledWith({
-      avatar_team_code: null,
-      avatar_url:
-        "https://dzvwgffjheyknrilwrvh.supabase.co/storage/v1/object/public/avatars/user-1/avatar.webp",
-    });
+
+    // The service appends a cache-busting `?v=<timestamp>` query string so
+    // re-uploads to the same path force the browser and the CDN to fetch
+    // the new bytes. Assert the URL shape without locking in a specific
+    // timestamp.
+    expect(update).toHaveBeenCalledTimes(1);
+    const updateArgs = update.mock.calls[0]?.[0] as {
+      avatar_team_code: string | null;
+      avatar_url: string | null;
+    };
+    expect(updateArgs.avatar_team_code).toBeNull();
+    expect(updateArgs.avatar_url).toMatch(
+      /^https:\/\/dzvwgffjheyknrilwrvh\.supabase\.co\/storage\/v1\/object\/public\/avatars\/user-1\/avatar\.webp\?v=\d+$/,
+    );
+
     expect(eq).toHaveBeenCalledWith("id", "user-1");
   });
 
