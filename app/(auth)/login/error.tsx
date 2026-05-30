@@ -17,12 +17,12 @@ export default function LoginError({
             onClick={() => reset()}
             type="button"
           >
-            Volver a cargar el acceso
+            Reintentar
           </button>
         }
-        description="Vuelve a intentarlo en un momento. La entrada al torneo debería volver a encenderse enseguida."
-        eyebrow="Acceso fuera de juego"
-        title="No hemos podido cargar la pantalla de inicio de sesión."
+        description="Refresca la página y vuelve a intentarlo."
+        eyebrow="Acceso interrumpido"
+        title="El acceso se ha tropezado un instante."
         tone="error"
       />
     </main>

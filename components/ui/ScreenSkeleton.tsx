@@ -24,7 +24,7 @@ function SkeletonLine({
 export function ScreenSkeleton({
   accent = "cyan",
   cards = 3,
-  title = "Cargando tu tablero del torneo.",
+  title = "Trayendo tu liga...",
 }: ScreenSkeletonProps) {
   const accentClass =
     accent === "violet"

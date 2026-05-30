@@ -106,8 +106,8 @@ function PredictionsErrorState({
 }) {
   return (
     <StateCard
-      description="Prueba de nuevo en un momento. Tu tablero del torneo debería volver a encenderse enseguida."
-      eyebrow="Predicciones fuera de juego"
+      description="Inténtalo en un momento. Tu tablero del torneo sigue ahí."
+      eyebrow="Predicciones offline"
       title={title}
       tone="error"
     />

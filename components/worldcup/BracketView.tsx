@@ -77,9 +77,9 @@ export function BracketView({
                   ))
                 ) : (
                   <StateCard
-                    description="Esta columna ya está preparada. Los cruces de eliminatorias aparecerán aquí en cuanto entren en Supabase."
-                    eyebrow="Tu torneo empieza aquí."
-                    title="Esta ronda del cuadro espera su primera tarjeta de partido."
+                    description="Los cruces de esta fase aparecerán en cuanto el sorteo los confirme."
+                    eyebrow="Sin cruces aún"
+                    title="Esta ronda espera su primera tarjeta."
                     tone="default"
                   />
                 )}

@@ -19,8 +19,8 @@ export default function ProtectedError({
           Reintentar
         </button>
       }
-      description="Tu torneo privado volverá a estar en marcha en un momento. Prueba otra vez enseguida."
-      eyebrow="Pantalla protegida fuera de juego"
+      description="Inténtalo en un momento. Tu liga sigue ahí, esperándote."
+      eyebrow="Vista offline"
       title="No hemos podido cargar esta pantalla."
       tone="error"
     />

@@ -40,9 +40,9 @@ export default async function RankingPage() {
   if (!ranking || !breakdown) {
     return (
       <StateCard
-        description="Prueba de nuevo en un momento. El podio debería volver bajo los focos enseguida."
-        eyebrow="Clasificación fuera de juego"
-        title="No hemos podido cargar la clasificación de la liga."
+        description="Inténtalo en un momento. El podio vuelve bajo los focos enseguida."
+        eyebrow="Clasificación offline"
+        title="No hemos podido cargar la clasificación."
         tone="error"
       />
     );
@@ -94,9 +94,9 @@ export default async function RankingPage() {
           />
         ) : (
           <StateCard
-            description="Deja listos tus pronósticos, espera a las clasificaciones finales y tus primeros sellos de puntos aparecerán aquí."
-            eyebrow="Tu torneo empieza aquí."
-            title="Tu fila en la clasificación aparecerá en cuanto tu perfil entre en el tablero."
+            description="Cierra tus pronósticos y, al primer recálculo, aparecerás en la carrera."
+            eyebrow="Sin puntos en el marcador"
+            title="Tu fila se enciende con tu primer punto."
             tone="default"
           />
         )}

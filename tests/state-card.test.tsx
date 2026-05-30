@@ -4,13 +4,33 @@ import { describe, expect, it } from "vitest";
 import { StateCard } from "@/components/ui/StateCard";
 
 describe("StateCard", () => {
-  it("renders Spanish empty-state defaults", () => {
+  it("renders neutral Spanish defaults when no props are passed", () => {
     const markup = renderToStaticMarkup(<StateCard />);
 
-    expect(markup).toContain("Tu torneo empieza aquí.");
-    expect(markup).toContain("El marcador espera su próximo movimiento.");
+    expect(markup).toContain("Sin movimiento todavía");
+    expect(markup).toContain("Esta tarjeta espera su primer dato.");
     expect(markup).toContain(
-      "En cuanto lleguen más partidos, puntos o movimientos, esta tarjeta volverá a encenderse.",
+      "Cuando haya algo que mostrar en esta zona, lo verás aquí.",
     );
+  });
+
+  it("does not fall back to the legacy generic 'Tu torneo empieza aquí.' eyebrow", () => {
+    const markup = renderToStaticMarkup(<StateCard />);
+
+    expect(markup).not.toContain("Tu torneo empieza aquí.");
+  });
+
+  it("renders contextual copy when caller provides eyebrow/title/description", () => {
+    const markup = renderToStaticMarkup(
+      <StateCard
+        description="Ajusta la fase o el grupo para ver más cruces."
+        eyebrow="Sin coincidencias"
+        title="Ningún partido cumple esos filtros."
+      />,
+    );
+
+    expect(markup).toContain("Sin coincidencias");
+    expect(markup).toContain("Ningún partido cumple esos filtros.");
+    expect(markup).toContain("Ajusta la fase o el grupo para ver más cruces.");
   });
 });

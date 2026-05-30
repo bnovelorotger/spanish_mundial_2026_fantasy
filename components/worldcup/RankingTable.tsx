@@ -162,9 +162,9 @@ export function RankingTable({
         ) : (
           <div className="mt-5">
             <StateCard
-              description="La clasificación se llenará en cuanto entren en juego los perfiles de la liga y los primeros puntos."
-              eyebrow="Tu torneo empieza aquí."
-              title="El podio está listo para los primeros pronósticos puntuados."
+              description="El 11 de junio el balón rueda y la liga cobra vida."
+              eyebrow="Aún no hay carrera"
+              title="El podio espera al primer pronóstico puntuado."
               tone="default"
             />
           </div>
@@ -297,8 +297,8 @@ export function RankingTable({
         ) : (
           <div className="mt-5">
             <StateCard
-              description="En cuanto se puntúen los primeros pronósticos, esta tabla se convertirá en la carrera diaria que mirar."
-              eyebrow="Tu torneo empieza aquí."
+              description="Cuando se puntúen los primeros pronósticos, esta tabla pasa a ser la carrera diaria."
+              eyebrow="Sin marcador todavía"
               title="La tabla completa se abre con el primer recálculo."
               tone="default"
             />

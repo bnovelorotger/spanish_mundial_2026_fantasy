@@ -175,9 +175,9 @@ export default async function CalendarPage({
           </div>
         ) : (
           <StateCard
-            description="Prueba con otra fase o grupo y vuelve cuando se sincronicen más partidos en el calendario."
-            eyebrow="Tu torneo empieza aquí."
-            title="Todavía no hay partidos para este filtro."
+            description="Ajusta la fase o el grupo para ver más cruces."
+            eyebrow="Sin coincidencias"
+            title="Ningún partido cumple esos filtros."
             tone="default"
           />
         )}

@@ -237,9 +237,9 @@ export default async function DashboardPage() {
           />
         ) : (
           <StateCard
-            description="Cuando lleguen las clasificaciones finales de grupo y se recalculen los puntos, este panel se convertirá en tu resumen diario del torneo."
-            eyebrow="Mi posición"
-            title="Tu tarjeta de clasificación se encenderá cuando entren puntos en juego."
+            description="El podio se llena cuando la fase de grupos cierra sus locks."
+            eyebrow="Sin puntos en el marcador"
+            title="Tu primer punto aterriza con la primera acertada."
             tone="default"
           />
         )}
@@ -276,9 +276,9 @@ export default async function DashboardPage() {
           </section>
         ) : (
           <StateCard
-            description="El próximo saque inicial aparecerá aquí en cuanto el calendario del torneo tenga otro partido programado."
-            eyebrow="Próximo partido"
-            title="No hay próximos partidos programados."
+            description="El calendario se actualizará cuando haya un choque en agenda."
+            eyebrow="Sin próximo partido"
+            title="Ningún cruce programado por ahora."
             tone="default"
           />
         )}
@@ -345,10 +345,10 @@ export default async function DashboardPage() {
             ) : (
               <div className="rounded-card border border-border-subtle bg-background-secondary/75 p-4">
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
-                  Tu torneo empieza aquí.
+                  Aún no hay carrera
                 </p>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  El podio se llenará en cuanto entren en juego las clasificaciones finales y los pronósticos puntuados.
+                  La clasificación arranca con el primer pitido. El 11 de junio el balón rueda y la liga cobra vida.
                 </p>
               </div>
             )}

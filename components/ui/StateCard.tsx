@@ -36,9 +36,9 @@ const icons: Record<StateCardTone, typeof Sparkles> = {
 
 export function StateCard({
   action,
-  description = "En cuanto lleguen más partidos, puntos o movimientos, esta tarjeta volverá a encenderse.",
-  eyebrow = "Tu torneo empieza aquí.",
-  title = "El marcador espera su próximo movimiento.",
+  description = "Cuando haya algo que mostrar en esta zona, lo verás aquí.",
+  eyebrow = "Sin movimiento todavía",
+  title = "Esta tarjeta espera su primer dato.",
   tone = "default",
 }: StateCardProps) {
   const Icon = icons[tone];
