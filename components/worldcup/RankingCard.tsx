@@ -112,24 +112,24 @@ export function RankingCard({
       </div>
 
       <div className="mt-5 grid grid-cols-3 gap-3">
-        <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+        <div className="min-w-0 rounded-card border border-border-subtle bg-background-secondary/70 px-2 py-3">
+          <p className="break-words text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
             Grupos
           </p>
           <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
             {breakdown.groupStage}
           </p>
         </div>
-        <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+        <div className="min-w-0 rounded-card border border-border-subtle bg-background-secondary/70 px-2 py-3">
+          <p className="break-words text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
             Eliminatorias
           </p>
           <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
             {breakdown.knockout}
           </p>
         </div>
-        <div className="rounded-card border border-border-subtle bg-background-secondary/70 px-3 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+        <div className="min-w-0 rounded-card border border-border-subtle bg-background-secondary/70 px-2 py-3">
+          <p className="break-words text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
             Campeón
           </p>
           <p className="mt-1 font-numeric text-xl font-bold text-text-primary">
