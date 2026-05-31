@@ -16,6 +16,7 @@ import {
 } from "@/components/worldcup/CountdownCard";
 import { LocalKickoff } from "@/components/worldcup/LocalKickoff";
 import { PhaseBadge } from "@/components/worldcup/PhaseBadge";
+import { RankingAvatar } from "@/components/worldcup/RankingAvatar";
 import { RankingCard } from "@/components/worldcup/RankingCard";
 import { ONBOARDING_TOURS } from "@/lib/onboarding/tours";
 import { getNextOpenLock } from "@/lib/services/locks.service";
@@ -87,6 +88,18 @@ function entryName(entry: {
   username: string;
 }) {
   return entry.displayName?.trim() || entry.username;
+}
+
+function initialsFromEntry(entry: {
+  displayName: string | null;
+  username: string;
+}) {
+  return entryName(entry)
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 function teamName(
@@ -327,15 +340,23 @@ export default async function DashboardPage() {
               topThree.map((entry) => (
                 <div
                   key={entry.userId}
-                  className="flex items-center justify-between rounded-card border border-border-subtle bg-background-secondary/75 px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-card border border-border-subtle bg-background-secondary/75 px-4 py-3"
                 >
-                  <div>
-                    <p className="text-sm font-semibold text-text-primary">
-                      #{entry.position} {entryName(entry)}
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      A {entry.gapToLeader} pts · {entry.groupPoints} pts en grupos
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <RankingAvatar
+                      avatarUrl={entry.avatarUrl}
+                      className="size-10 shrink-0"
+                      fallback={initialsFromEntry(entry)}
+                      name={entryName(entry)}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-text-primary">
+                        #{entry.position} {entryName(entry)}
+                      </p>
+                      <p className="truncate text-xs text-text-muted">
+                        A {entry.gapToLeader} pts · {entry.groupPoints} pts en grupos
+                      </p>
+                    </div>
                   </div>
                   <p className="font-numeric text-xl font-bold text-text-primary">
                     {entry.totalPoints}

@@ -132,13 +132,21 @@ export function RankingTable({
                     )}
                   </div>
 
-                  <div className="mt-4">
-                    <p className="text-lg font-semibold text-text-primary">
-                      {entryName(entry)}
-                    </p>
-                    <p className="mt-1 text-sm text-text-secondary">
-                      {podiumGapCopy(entry, leaderPoints)}
-                    </p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <RankingAvatar
+                      avatarUrl={entry.avatarUrl}
+                      className="size-11 shrink-0"
+                      fallback={initialsFromEntry(entry)}
+                      name={entryName(entry)}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-lg font-semibold text-text-primary">
+                        {entryName(entry)}
+                      </p>
+                      <p className="mt-1 text-sm text-text-secondary">
+                        {podiumGapCopy(entry, leaderPoints)}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="mt-5 flex items-end justify-between gap-4">
