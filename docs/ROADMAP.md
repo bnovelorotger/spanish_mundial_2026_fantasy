@@ -32,6 +32,38 @@
 
 > **MVP 1 complete.** All 11 phases plus deployment landed on `main`.
 
+### Post-MVP polish window (2026-05-25 → 2026-05-31)
+
+After MVP 1 shipped, a polish window addressed real-user friction and a
+full frontend audit. Closed in waves:
+
+- **Real data wiring**: football-data.org as top-of-chain provider, real
+  team flags via flagcdn, profile avatars (uploaded photo + team crest)
+  rendering across ranking surfaces.
+- **i18n**: full app translated to peninsular Spanish (`es-ES`), with
+  auth toasts replacing legacy banners.
+- **First-visit onboarding**: 5-page coach-mark tour with split per
+  subtab in Predicciones, persisted in localStorage.
+- **Audit `docs/AUDIT_FRONTEND_2026-05-27.md`** with 17 findings,
+  triaged by cross-review (1 discarded as false positive, 11 P1, 5 P2).
+  14 of the actionable findings executed in 5 waves: i18n closure,
+  fast a11y, onboarding fixes, deeper a11y (focus-visible + semantic
+  ranking + radio group avatars), and microcopy editorial polish.
+- **Live scoring**: GROUP_POSITION now evaluates against current
+  standings instead of waiting for `is_final = true`. Cron raised to
+  hourly (72 calls/day, well below TIER_ONE's 10 calls/minute). UI
+  shows an `EN DIRECTO` badge while any group standings remain open.
+
+What was *intentionally* left for later:
+
+- F-002 / F-012 (audit) — tournament-aware editorial copy. Will be
+  taken on closer to June 2026, when the actual phase of the tournament
+  matters.
+- F-008 / F-013 (audit) — debated; the auditor advised against them.
+- F-016 closed as part of the microcopy wave above.
+- KNOCKOUT_WINNER and CHAMPION scoring not implemented yet — typed in
+  the schema but no logic. Worth tackling before June.
+
 ---
 
 ## MVP 2 — Enhanced experience (future)
