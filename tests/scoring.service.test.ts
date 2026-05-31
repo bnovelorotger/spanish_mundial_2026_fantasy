@@ -89,7 +89,7 @@ describe("buildGroupStagePointsRows", () => {
     },
   ];
 
-  const finalStandings = [
+  const currentStandings = [
     {
       group_letter: "A" as const,
       position: 1,
@@ -116,17 +116,48 @@ describe("buildGroupStagePointsRows", () => {
     },
   ];
 
-  it("is idempotent for the same predictions and final standings", () => {
-    const firstPass = buildGroupStagePointsRows(predictions, finalStandings);
-    const secondPass = buildGroupStagePointsRows(predictions, finalStandings);
+  it("is idempotent for the same predictions and current standings", () => {
+    const firstPass = buildGroupStagePointsRows(predictions, currentStandings);
+    const secondPass = buildGroupStagePointsRows(predictions, currentStandings);
 
     expect(firstPass).toEqual(secondPass);
   });
 
-  it("does not score groups without four final standings", () => {
-    const partialStandings = finalStandings.slice(0, 3);
+  it("does not score groups without four current standings", () => {
+    const partialStandings = currentStandings.slice(0, 3);
 
     expect(buildGroupStagePointsRows(predictions, partialStandings)).toEqual([]);
+  });
+
+  it("scores current standings that are not final yet", () => {
+    const liveStandings = currentStandings.map((standing) => ({
+      ...standing,
+      is_final: false,
+    }));
+
+    const rows = buildGroupStagePointsRows(predictions, liveStandings);
+
+    expect(
+      rows.find((row) => row.source_id === "group_A_team_team-1")
+        ?.points_awarded,
+    ).toBe(3);
+  });
+
+  it("keeps a third-place exact hit at 3 points until best-third qualification is known", () => {
+    const liveStandings = currentStandings.map((standing) =>
+      standing.team_id === "team-3"
+        ? { ...standing, qualification_status: null }
+        : standing,
+    );
+
+    const rows = buildGroupStagePointsRows(predictions, liveStandings);
+    const thirdPlaceRow = rows.find(
+      (row) => row.source_id === "group_A_team_team-3",
+    );
+
+    expect(thirdPlaceRow?.points_awarded).toBe(3);
+    expect(thirdPlaceRow?.reason).toBe("Exact position");
+    expect(thirdPlaceRow?.metadata?.stamp).toBe("Exact");
   });
 
   it("keeps deterministic rows, including misses, sorted by source id", () => {
@@ -137,7 +168,7 @@ describe("buildGroupStagePointsRows", () => {
         predictions[0]!,
         predictions[2]!,
       ],
-      finalStandings.map((standing) =>
+      currentStandings.map((standing) =>
         standing.team_id === "team-4"
           ? { ...standing, position: 1, qualification_status: "QUALIFIED_FIRST" as const }
           : standing,

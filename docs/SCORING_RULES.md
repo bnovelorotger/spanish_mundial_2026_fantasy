@@ -11,10 +11,12 @@ For each team prediction:
 Rules:
 
 - Do not duplicate points.
-- Do not score unfinished groups.
+- Score group predictions against the current standings, not only final tables.
+- Points can move during the group stage as football-data updates live standings.
+- Do not score incomplete groups: a group needs 4 standings rows before it is eligible.
 - Use group_standings as source of truth.
 - Save one points row per scored prediction.
-- Only score when group_standings.is_final = true.
+- BEST_THIRD only applies when football-data marks qualification_status = BEST_THIRD.
 
 ### Scoring examples
 
@@ -25,6 +27,7 @@ Rules:
 | 1st | 2nd | +1 | Top 2, wrong position |
 | 2nd | 1st | +1 | Top 2, wrong position |
 | 3rd | 3rd (BEST_THIRD) | +2 | Best third bonus |
+| 3rd | 3rd (qualification pending) | +3 | Exact position |
 | 3rd | 3rd (ELIMINATED) | +3 | Exact position |
 | 4th | 4th | +3 | Exact position |
 | 1st | 3rd | 0 | Wrong |

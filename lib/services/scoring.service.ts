@@ -7,7 +7,7 @@ import type {
   QualificationStatus,
 } from "../types/worldcup";
 
-interface FinalStandingRow {
+interface StandingRow {
   group_letter: GroupLetter;
   position: number;
   qualification_status: QualificationStatus | null;
@@ -62,8 +62,8 @@ function buildStamp(pointsAwarded: number, reason: string) {
   return `${pointsAwarded === 1 ? "+1 pt" : `+${pointsAwarded} pts`}`;
 }
 
-function eligibleGroupsFromStandings(standings: FinalStandingRow[]) {
-  const groups = new Map<GroupLetter, FinalStandingRow[]>();
+function eligibleGroupsFromStandings(standings: StandingRow[]) {
+  const groups = new Map<GroupLetter, StandingRow[]>();
 
   for (const standing of standings) {
     const currentRows = groups.get(standing.group_letter) ?? [];
@@ -116,12 +116,12 @@ export function scoreGroupPrediction(
 
 export function buildGroupStagePointsRows(
   predictions: GroupPredictionRow[],
-  finalStandings: FinalStandingRow[],
+  currentStandings: StandingRow[],
 ): PointsRow[] {
-  const eligibleGroups = eligibleGroupsFromStandings(finalStandings);
-  const standingsByGroupAndTeam = new Map<string, FinalStandingRow>();
+  const eligibleGroups = eligibleGroupsFromStandings(currentStandings);
+  const standingsByGroupAndTeam = new Map<string, StandingRow>();
 
-  for (const standing of finalStandings) {
+  for (const standing of currentStandings) {
     standingsByGroupAndTeam.set(
       `${standing.group_letter}:${standing.team_id}`,
       standing,
@@ -168,8 +168,7 @@ async function loadGroupStageScoringInputs(supabase: SupabaseClient) {
       .select("user_id, group_letter, team_id, predicted_position"),
     supabase
       .from("group_standings")
-      .select("group_letter, team_id, position, qualification_status")
-      .eq("is_final", true),
+      .select("group_letter, team_id, position, qualification_status"),
   ]);
 
   if (predictionsResponse.error) {
@@ -180,12 +179,12 @@ async function loadGroupStageScoringInputs(supabase: SupabaseClient) {
 
   if (standingsResponse.error) {
     throw new Error(
-      `Could not load final standings for scoring: ${standingsResponse.error.message}`,
+      `Could not load current standings for scoring: ${standingsResponse.error.message}`,
     );
   }
 
   return {
-    finalStandings: standingsResponse.data as FinalStandingRow[],
+    currentStandings: standingsResponse.data as StandingRow[],
     predictions: predictionsResponse.data as GroupPredictionRow[],
   };
 }
@@ -196,10 +195,10 @@ export async function recalculateAllPoints(
   const client =
     supabase ??
     (await import("../supabase/admin.ts")).createAdminClient();
-  const { finalStandings, predictions } = await loadGroupStageScoringInputs(
+  const { currentStandings, predictions } = await loadGroupStageScoringInputs(
     client,
   );
-  const groupRows = buildGroupStagePointsRows(predictions, finalStandings);
+  const groupRows = buildGroupStagePointsRows(predictions, currentStandings);
 
   const deleteResponse = await client
     .from("points")
