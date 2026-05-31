@@ -3,7 +3,11 @@ name: Sync World Cup Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"
+    # Live scoring needs fresher standings: 24 runs/day x 3 football-data calls
+    # = 72 calls/day, safely below TIER_ONE (10 calls/minute, no daily cap).
+    # GitHub scheduled runs can lag 5-30 min, so perceived ranking latency is
+    # roughly <= 1h30 without increasing API noise further.
+    - cron: "0 * * * *"
 
 jobs:
   sync:
