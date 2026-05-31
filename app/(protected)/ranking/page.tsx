@@ -24,20 +24,20 @@ export default async function RankingPage() {
     redirect("/login?error=Inicia%20sesión%20para%20ver%20la%20clasificación.");
   }
 
-  let ranking = null;
+  let rankingModel = null;
   let breakdown = null;
 
   try {
-    [ranking, breakdown] = await Promise.all([
+    [rankingModel, breakdown] = await Promise.all([
       getRankingByPhase(supabase),
       getUserPointsBreakdown(supabase, user.id),
     ]);
   } catch {
-    ranking = null;
+    rankingModel = null;
     breakdown = null;
   }
 
-  if (!ranking || !breakdown) {
+  if (!rankingModel || !breakdown) {
     return (
       <StateCard
         description="Inténtalo en un momento. El podio vuelve bajo los focos enseguida."
@@ -48,10 +48,11 @@ export default async function RankingPage() {
     );
   }
 
-  const userEntry = ranking.find((entry) => entry.userId === user.id) ?? null;
-  const gapCopy = getUserGapCopy(ranking, user.id);
+  const rankingEntries = rankingModel.entries;
+  const userEntry = rankingEntries.find((entry) => entry.userId === user.id) ?? null;
+  const gapCopy = getUserGapCopy(rankingEntries, user.id);
   const stamps = getRankingStamps(breakdown);
-  const topRanking = ranking.slice(0, 10);
+  const topRanking = rankingEntries.slice(0, 10);
 
   return (
     <OnboardingTour steps={ONBOARDING_TOURS.ranking} tourId="ranking">
@@ -86,6 +87,7 @@ export default async function RankingPage() {
             }}
             gapCopy={gapCopy}
             highlighted
+            isLive={rankingModel.isLive}
             points={userEntry.totalPoints}
             position={userEntry.position}
             stamps={stamps}
@@ -101,7 +103,11 @@ export default async function RankingPage() {
           />
         )}
 
-        <RankingTable currentUserId={user.id} entries={topRanking} />
+        <RankingTable
+          currentUserId={user.id}
+          entries={topRanking}
+          isLive={rankingModel.isLive}
+        />
       </section>
     </OnboardingTour>
   );

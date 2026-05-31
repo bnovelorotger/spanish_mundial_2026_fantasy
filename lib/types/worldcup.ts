@@ -294,6 +294,11 @@ export interface RankingEntry {
   username: string;
 }
 
+export interface RankingModel {
+  entries: RankingEntry[];
+  isLive: boolean;
+}
+
 export interface PointsBreakdown {
   champion: number;
   details: Array<{

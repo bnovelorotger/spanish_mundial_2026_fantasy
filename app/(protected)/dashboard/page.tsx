@@ -175,7 +175,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let ranking = null;
+  let rankingModel = null;
   let breakdown = null;
   let nextMatch = null;
   let countdown: DashboardCountdownModel = {
@@ -206,24 +206,27 @@ export default async function DashboardPage() {
 
   if (user) {
     try {
-      [ranking, breakdown] = await Promise.all([
+      [rankingModel, breakdown] = await Promise.all([
         getRankingByPhase(supabase),
         getUserPointsBreakdown(supabase, user.id),
       ]);
     } catch {
-      ranking = null;
+      rankingModel = null;
       breakdown = null;
     }
   }
 
+  const rankingEntries = rankingModel?.entries ?? null;
   const userEntry =
-    user && ranking ? ranking.find((entry) => entry.userId === user.id) ?? null : null;
+    user && rankingEntries
+      ? rankingEntries.find((entry) => entry.userId === user.id) ?? null
+      : null;
   const gapCopy =
-    user && ranking
-      ? getUserGapCopy(ranking, user.id)
+    user && rankingEntries
+      ? getUserGapCopy(rankingEntries, user.id)
       : "Tu tabla de clasificación se iluminará en cuanto entren puntos en juego.";
   const stamps = breakdown ? getRankingStamps(breakdown, 3) : [];
-  const topThree = ranking?.slice(0, 3) ?? [];
+  const topThree = rankingEntries?.slice(0, 3) ?? [];
 
   return (
     <OnboardingTour steps={ONBOARDING_TOURS.home} tourId="home">
@@ -242,6 +245,7 @@ export default async function DashboardPage() {
             }}
             gapCopy={gapCopy}
             highlighted
+            isLive={rankingModel?.isLive ?? false}
             points={userEntry.totalPoints}
             position={userEntry.position}
             stamps={stamps}

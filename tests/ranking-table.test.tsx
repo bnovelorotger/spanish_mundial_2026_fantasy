@@ -94,4 +94,17 @@ describe("RankingTable", () => {
     expect(markup).toContain("Segundo lugar.");
     expect(markup).toContain("Tercer lugar.");
   });
+
+  it("renders the live-scoring badge and explanation when ranking is live", () => {
+    const markup = renderToStaticMarkup(
+      <RankingTable
+        currentUserId="user-4"
+        entries={rankingEntries}
+        isLive
+      />,
+    );
+
+    expect(markup).toContain("EN DIRECTO");
+    expect(markup).toContain("Puede subir o bajar");
+  });
 });

@@ -242,7 +242,10 @@ describe("render smoke", () => {
       phase: "GROUP_STAGE",
     });
     mockGetNextScheduledMatch.mockResolvedValue(nextMatch);
-    mockGetRankingByPhase.mockResolvedValue(rankingEntries);
+    mockGetRankingByPhase.mockResolvedValue({
+      entries: rankingEntries,
+      isLive: true,
+    });
     mockGetUserPointsBreakdown.mockResolvedValue({
       champion: 0,
       details: [],

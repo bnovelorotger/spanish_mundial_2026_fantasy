@@ -16,6 +16,7 @@ interface RankingCardProps {
   };
   gapCopy: string;
   highlighted?: boolean;
+  isLive?: boolean;
   points: number;
   position: number;
   stamps: RankingStamp[];
@@ -40,6 +41,14 @@ function initialsFromLabel(label: string) {
     .join("");
 }
 
+function LiveScoringBadge() {
+  return (
+    <span className="inline-flex items-center rounded-pill border border-status-live/35 bg-status-live/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-status-live motion-safe:animate-pulse">
+      EN DIRECTO
+    </span>
+  );
+}
+
 export function RankingCard({
   accentLabel,
   avatarLabel,
@@ -47,6 +56,7 @@ export function RankingCard({
   breakdown,
   gapCopy,
   highlighted = false,
+  isLive = false,
   points,
   position,
   stamps,
@@ -68,9 +78,17 @@ export function RankingCard({
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-accent-primary">
             {accentLabel}
           </p>
-          <h2 className="mt-2 text-lg font-semibold text-text-primary">
-            {title}
-          </h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-text-primary">
+              {title}
+            </h2>
+            {isLive ? <LiveScoringBadge /> : null}
+          </div>
+          {isLive ? (
+            <p className="mt-2 text-sm leading-6 text-text-muted">
+              Tu puntuación se actualiza tras cada jornada. Puede subir o bajar hasta que se cierren los grupos.
+            </p>
+          ) : null}
         </div>
         <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
           <RankingAvatar

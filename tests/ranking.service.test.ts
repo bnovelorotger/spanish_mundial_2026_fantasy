@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildRankingEntries,
+  getRankingByPhase,
   getRankingStamps,
   getTopRanking,
   getUserGapCopy,
   getUserRankingPosition,
+  resolveRankingLiveState,
 } from "@/lib/services/ranking.service";
 
-function createRankingSupabaseMock() {
+function createRankingSupabaseMock(
+  standings: Array<{ is_final: boolean }> = [],
+) {
   const profiles = [
     {
       avatar_team: null,
@@ -85,6 +89,17 @@ function createRankingSupabaseMock() {
           select() {
             return Promise.resolve({
               data: points,
+              error: null,
+            });
+          },
+        };
+      }
+
+      if (table === "group_standings") {
+        return {
+          select() {
+            return Promise.resolve({
+              data: standings,
               error: null,
             });
           },
@@ -289,6 +304,39 @@ describe("avatar resolution", () => {
       avatarUrl: "https://crests.football-data.org/760.svg",
       userId: "user-2",
     });
+  });
+});
+
+describe("ranking live state", () => {
+  it("marks ranking live when any standing is not final", () => {
+    expect(resolveRankingLiveState([
+      { is_final: true },
+      { is_final: false },
+    ])).toBe(true);
+  });
+
+  it("marks ranking consolidated when all standings are final", () => {
+    expect(resolveRankingLiveState([
+      { is_final: true },
+      { is_final: true },
+    ])).toBe(false);
+  });
+
+  it("marks ranking consolidated before standings exist", () => {
+    expect(resolveRankingLiveState([])).toBe(false);
+  });
+
+  it("exposes the live flag on the ranking model", async () => {
+    const ranking = await getRankingByPhase(
+      createRankingSupabaseMock([{ is_final: false }]) as never,
+    );
+
+    expect(ranking.isLive).toBe(true);
+    expect(ranking.entries.map((entry) => entry.userId)).toEqual([
+      "user-1",
+      "user-2",
+      "user-3",
+    ]);
   });
 });
 

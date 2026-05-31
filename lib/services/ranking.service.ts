@@ -5,6 +5,7 @@ import type {
   PointsBreakdown,
   PointsSourceType,
   RankingEntry,
+  RankingModel,
   RankingStamp,
 } from "../types/worldcup";
 
@@ -30,6 +31,10 @@ interface PointRow {
   source_id: string;
   source_type: PointsSourceType;
   user_id: string;
+}
+
+interface StandingLiveStateRow {
+  is_final: boolean;
 }
 
 function displayName(profile: ProfileRow) {
@@ -188,6 +193,24 @@ async function loadProfilesAndPoints(supabase: SupabaseClient) {
   };
 }
 
+export function resolveRankingLiveState(
+  standings: StandingLiveStateRow[],
+) {
+  return standings.some((standing) => standing.is_final === false);
+}
+
+async function loadRankingLiveState(supabase: SupabaseClient) {
+  const response = await supabase
+    .from("group_standings")
+    .select("is_final");
+
+  if (response.error) {
+    throw new Error(`Could not load ranking live state: ${response.error.message}`);
+  }
+
+  return resolveRankingLiveState(response.data as StandingLiveStateRow[]);
+}
+
 function sortBreakdownRows(rows: PointRow[]) {
   return [...rows].sort((left, right) => {
     if (right.points_awarded !== left.points_awarded) {
@@ -202,9 +225,18 @@ function sortBreakdownRows(rows: PointRow[]) {
   });
 }
 
-export async function getRankingByPhase(supabase: SupabaseClient) {
-  const { pointsRows, profiles } = await loadProfilesAndPoints(supabase);
-  return buildRankingEntries(profiles, pointsRows);
+export async function getRankingByPhase(
+  supabase: SupabaseClient,
+): Promise<RankingModel> {
+  const [{ pointsRows, profiles }, isLive] = await Promise.all([
+    loadProfilesAndPoints(supabase),
+    loadRankingLiveState(supabase),
+  ]);
+
+  return {
+    entries: buildRankingEntries(profiles, pointsRows),
+    isLive,
+  };
 }
 
 export async function getTopRanking(
@@ -212,7 +244,7 @@ export async function getTopRanking(
   limit = 10,
 ) {
   const ranking = await getRankingByPhase(supabase);
-  return ranking.slice(0, limit);
+  return ranking.entries.slice(0, limit);
 }
 
 export async function getUserRankingPosition(
@@ -220,7 +252,7 @@ export async function getUserRankingPosition(
   userId: string,
 ) {
   const ranking = await getRankingByPhase(supabase);
-  return ranking.find((entry) => entry.userId === userId) ?? null;
+  return ranking.entries.find((entry) => entry.userId === userId) ?? null;
 }
 
 export async function getUserPointsBreakdown(

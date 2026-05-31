@@ -15,6 +15,7 @@ import { RankingAvatar } from "./RankingAvatar";
 interface RankingTableProps {
   currentUserId: string;
   entries: RankingEntry[];
+  isLive?: boolean;
 }
 
 function entryName(entry: RankingEntry) {
@@ -72,9 +73,18 @@ const podiumToneStyles: Record<number, string> = {
   3: "border-podium-bronze/50 bg-podium-bronze/10",
 };
 
+function LiveScoringBadge() {
+  return (
+    <span className="inline-flex items-center rounded-pill border border-status-live/35 bg-status-live/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-status-live motion-safe:animate-pulse">
+      EN DIRECTO
+    </span>
+  );
+}
+
 export function RankingTable({
   currentUserId,
   entries,
+  isLive = false,
 }: RankingTableProps) {
   const leaderPoints = entries[0]?.totalPoints ?? 0;
   const podiumEntries = entries.slice(0, 3);
@@ -90,9 +100,17 @@ export function RankingTable({
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-podium-gold">
               Clasificación de la liga
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-text-primary">
-              El tablero del trofeo ya está en juego.
-            </h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl font-semibold text-text-primary">
+                El tablero del trofeo ya está en juego.
+              </h2>
+              {isLive ? <LiveScoringBadge /> : null}
+            </div>
+            {isLive ? (
+              <p className="mt-2 text-sm leading-6 text-text-muted">
+                Tu puntuación se actualiza tras cada jornada. Puede subir o bajar hasta que se cierren los grupos.
+              </p>
+            ) : null}
           </div>
           <Trophy className="size-5 text-podium-gold" strokeWidth={2} />
         </div>
