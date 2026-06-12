@@ -17,16 +17,28 @@ jobs:
     steps:
       - name: Trigger protected sync endpoint
         env:
-          APP_URL: ${{ secrets.APP_URL }}
+          APP_URL: ${{ vars.APP_URL || secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          test -n "$APP_URL"
-          test -n "$CRON_SECRET"
+          missing=0
+
+          if [ -z "$APP_URL" ]; then
+            echo "::error title=Missing APP_URL::Add APP_URL as a repository variable or secret with your deployed app URL."
+            missing=1
+          fi
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error title=Missing CRON_SECRET::Add CRON_SECRET as a repository secret. It must match the Vercel CRON_SECRET."
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
 
           curl \
-            --fail \
+            --fail-with-body \
             --show-error \
-            --silent \
             --request POST \
             --header "Authorization: Bearer $CRON_SECRET" \
             --header "Content-Type: application/json" \
