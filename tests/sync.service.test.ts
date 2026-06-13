@@ -324,6 +324,7 @@ describe("buildStaleTeamPrunePlan", () => {
     ],
     groupStandings: [
       { id: "standing-1", team_id: "team-stale" },
+      { id: "standing-orphan", team_id: "team-orphan" },
       { id: "standing-2", team_id: "team-keep" },
     ],
     knockoutPredictions: [
@@ -339,7 +340,7 @@ describe("buildStaleTeamPrunePlan", () => {
         group_letter: "A",
         home_placeholder: null,
         home_score: null,
-        home_team_id: "team-stale",
+        home_team_id: "team-orphan",
         id: "match-1",
         kickoff: "2026-06-11T19:00:00Z",
         match_number: 1,
@@ -350,7 +351,7 @@ describe("buildStaleTeamPrunePlan", () => {
       {
         away_placeholder: null,
         away_score: null,
-        away_team_id: "team-stale",
+        away_team_id: "team-orphan",
         city: "Vancouver",
         group_letter: "A",
         home_placeholder: null,
@@ -377,42 +378,66 @@ describe("buildStaleTeamPrunePlan", () => {
         source_id: "group_A_team_team-keep",
         source_type: "GROUP_POSITION" as const,
       },
+      {
+        id: "point-orphan",
+        metadata: { teamId: "team-orphan" },
+        source_id: "group_A_team_team-orphan",
+        source_type: "GROUP_POSITION" as const,
+      },
     ],
     teams: [
       { code: "STA", id: "team-stale" },
+      { code: "ORP", id: "team-orphan" },
       { code: "KEP", id: "team-keep" },
     ],
   };
 
-  it("removes teams not in the provider response", () => {
+  it("removes stale teams not in the provider response when they have no user predictions", () => {
     const plan = buildStaleTeamPrunePlan(snapshot, ["KEP"]);
     const pruned = applyStaleTeamPrunePlan(snapshot, plan);
 
-    expect(plan.staleTeamCodes).toEqual(["STA"]);
-    expect(pruned.teams).toEqual([{ code: "KEP", id: "team-keep" }]);
+    expect(plan.staleTeamCodes).toEqual(["ORP"]);
+    expect(pruned.teams).toEqual([
+      { code: "STA", id: "team-stale" },
+      { code: "KEP", id: "team-keep" },
+    ]);
   });
 
   it("is a no-op when the provider response matches the database", () => {
-    const plan = buildStaleTeamPrunePlan(snapshot, ["STA", "KEP"]);
+    const plan = buildStaleTeamPrunePlan(snapshot, ["STA", "ORP", "KEP"]);
     const pruned = applyStaleTeamPrunePlan(snapshot, plan);
 
     expect(plan.staleTeamIds).toEqual([]);
     expect(pruned).toEqual(snapshot);
   });
 
-  it("cascades into predictions, standings, points, and neutralized matches", () => {
+  it("preserves user predictions and cascades only orphaned stale teams", () => {
     const plan = buildStaleTeamPrunePlan(snapshot, ["KEP"]);
     const pruned = applyStaleTeamPrunePlan(snapshot, plan);
 
-    expect(pruned.groupPredictions).toEqual([{ id: "group-pred-2", team_id: "team-keep" }]);
+    expect(pruned.groupPredictions).toEqual([
+      { id: "group-pred-1", team_id: "team-stale" },
+      { id: "group-pred-2", team_id: "team-keep" },
+    ]);
     expect(pruned.knockoutPredictions).toEqual([
+      { id: "knockout-1", predicted_winner_team_id: "team-stale" },
       { id: "knockout-2", predicted_winner_team_id: "team-keep" },
     ]);
     expect(pruned.championPredictions).toEqual([
+      { id: "champion-1", team_id: "team-stale" },
       { id: "champion-2", team_id: "team-keep" },
     ]);
-    expect(pruned.groupStandings).toEqual([{ id: "standing-2", team_id: "team-keep" }]);
+    expect(pruned.groupStandings).toEqual([
+      { id: "standing-1", team_id: "team-stale" },
+      { id: "standing-2", team_id: "team-keep" },
+    ]);
     expect(pruned.points).toEqual([
+      {
+        id: "point-1",
+        metadata: { teamId: "team-stale" },
+        source_id: "group_A_team_team-stale",
+        source_type: "GROUP_POSITION",
+      },
       {
         id: "point-2",
         metadata: { teamId: "team-keep" },

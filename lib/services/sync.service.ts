@@ -390,7 +390,19 @@ export function buildStaleTeamPrunePlan(
   activeProviderCodes: string[],
 ): StaleTeamPrunePlan {
   const activeCodes = new Set(activeProviderCodes);
-  const staleTeams = snapshot.teams.filter((team) => !activeCodes.has(team.code));
+  const predictionTeamIds = new Set([
+    ...snapshot.groupPredictions.map((prediction) => prediction.team_id),
+    ...snapshot.championPredictions.map((prediction) => prediction.team_id),
+    ...snapshot.knockoutPredictions.flatMap((prediction) =>
+      prediction.predicted_winner_team_id
+        ? [prediction.predicted_winner_team_id]
+        : [],
+    ),
+  ]);
+  const staleTeams = snapshot.teams.filter(
+    (team) =>
+      !activeCodes.has(team.code) && !predictionTeamIds.has(team.id),
+  );
   const staleTeamIds = staleTeams.map((team) => team.id);
   const staleTeamCodes = staleTeams.map((team) => team.code);
   const staleTeamIdSet = new Set(staleTeamIds);
