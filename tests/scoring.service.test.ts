@@ -92,24 +92,28 @@ describe("buildGroupStagePointsRows", () => {
   const currentStandings = [
     {
       group_letter: "A" as const,
+      played: 1,
       position: 1,
       qualification_status: "QUALIFIED_FIRST" as const,
       team_id: "team-1",
     },
     {
       group_letter: "A" as const,
+      played: 1,
       position: 2,
       qualification_status: "QUALIFIED_SECOND" as const,
       team_id: "team-2",
     },
     {
       group_letter: "A" as const,
+      played: 1,
       position: 3,
       qualification_status: "BEST_THIRD" as const,
       team_id: "team-3",
     },
     {
       group_letter: "A" as const,
+      played: 1,
       position: 4,
       qualification_status: "ELIMINATED" as const,
       team_id: "team-4",
@@ -127,6 +131,15 @@ describe("buildGroupStagePointsRows", () => {
     const partialStandings = currentStandings.slice(0, 3);
 
     expect(buildGroupStagePointsRows(predictions, partialStandings)).toEqual([]);
+  });
+
+  it("does not score seeded standings before a group has played", () => {
+    const unplayedStandings = currentStandings.map((standing) => ({
+      ...standing,
+      played: 0,
+    }));
+
+    expect(buildGroupStagePointsRows(predictions, unplayedStandings)).toEqual([]);
   });
 
   it("scores current standings that are not final yet", () => {

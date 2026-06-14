@@ -9,6 +9,7 @@ import type {
 
 interface StandingRow {
   group_letter: GroupLetter;
+  played: number;
   position: number;
   qualification_status: QualificationStatus | null;
   team_id: string;
@@ -73,7 +74,10 @@ function eligibleGroupsFromStandings(standings: StandingRow[]) {
 
   return new Set(
     [...groups.entries()]
-      .filter(([, rows]) => rows.length === 4)
+      .filter(
+        ([, rows]) =>
+          rows.length === 4 && rows.some((standing) => standing.played > 0),
+      )
       .map(([groupLetter]) => groupLetter),
   );
 }
@@ -168,7 +172,7 @@ async function loadGroupStageScoringInputs(supabase: SupabaseClient) {
       .select("user_id, group_letter, team_id, predicted_position"),
     supabase
       .from("group_standings")
-      .select("group_letter, team_id, position, qualification_status"),
+      .select("group_letter, team_id, played, position, qualification_status"),
   ]);
 
   if (predictionsResponse.error) {

@@ -14,6 +14,7 @@ Rules:
 - Score group predictions against the current standings, not only final tables.
 - Points can move during the group stage as football-data updates live standings.
 - Do not score incomplete groups: a group needs 4 standings rows before it is eligible.
+- Do not score unplayed groups: at least one team in the group must have `played > 0`.
 - Use group_standings as source of truth.
 - Save one points row per scored prediction.
 - BEST_THIRD only applies when football-data marks qualification_status = BEST_THIRD.
