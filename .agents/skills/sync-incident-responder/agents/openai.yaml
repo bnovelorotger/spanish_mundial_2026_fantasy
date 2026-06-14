@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Incident Responder"
+  short_description: "Triage sync, cron, provider, and deploy failures"
+  default_prompt: "Use $sync-incident-responder to triage a failing production sync or blocked deployment."

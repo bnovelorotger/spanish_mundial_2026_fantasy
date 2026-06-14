@@ -34,6 +34,9 @@ dev-server.*.log
 # local tooling
 .playwright-mcp/
 
+# local incident/recovery exports with user prediction data
+/tmp/
+
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prediction Recovery"
+  short_description: "Safely repair and audit user predictions"
+  default_prompt: "Use $prediction-recovery-operator to repair or audit damaged prediction data safely."

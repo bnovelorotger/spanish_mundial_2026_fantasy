@@ -267,6 +267,52 @@ Avoid brittle UI tests.
 Run pnpm test before finishing.
 ```
 
+### 7. prediction-recovery-operator
+
+Use for production prediction repair, manual reconstruction, import/export,
+partial-row incidents, or any change that writes user predictions after a data
+loss event.
+
+Trigger examples:
+
+```txt
+Use $prediction-recovery-operator. Rebuild group_predictions from this reviewed CSV.
+```
+
+```txt
+Use $prediction-recovery-operator. Audit which prediction rows are incomplete.
+```
+
+### 8. sync-incident-responder
+
+Use when GitHub Actions sync fails, Vercel blocks a deployment, `/api/sync`
+returns errors, or a provider/sync change might affect production data.
+
+Trigger examples:
+
+```txt
+Use $sync-incident-responder. Triage the failed Sync World Cup Data workflow.
+```
+
+```txt
+Use $sync-incident-responder. Deploy a blocked sync fix safely.
+```
+
+### 9. production-audit-runbook
+
+Use for full app audits across frontend, Supabase, scoring, sync, operations,
+tests, and deployment readiness.
+
+Trigger examples:
+
+```txt
+Use $production-audit-runbook. Audit production readiness after the incident.
+```
+
+```txt
+Use $production-audit-runbook. Produce a prioritized risk register for app_mundial.
+```
+
 ## Skill maintenance rules
 
 Update a skill only when:
@@ -288,6 +334,9 @@ Core skills:
 - scoring-engine-validator
 - mobile-sports-ui-reviewer
 - provider-sync-guard
+- prediction-recovery-operator
+- sync-incident-responder
+- production-audit-runbook
 
 Optional after MVP grows:
 

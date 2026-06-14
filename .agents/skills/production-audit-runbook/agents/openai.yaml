@@ -1,0 +1,4 @@
+interface:
+  display_name: "Production Audit Runbook"
+  short_description: "Audit production health and readiness"
+  default_prompt: "Use $production-audit-runbook to produce a production readiness audit for app_mundial."
