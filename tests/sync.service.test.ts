@@ -4,6 +4,7 @@ import {
   applyStaleTeamPrunePlan,
   buildGameLockSyncRows,
   buildStaleTeamPrunePlan,
+  findPredictionProtectedTeamGroupDrifts,
   getProviderFallbackChain,
   hasMatchPayloadChanged,
   hasStandingPayloadChanged,
@@ -457,6 +458,58 @@ describe("buildStaleTeamPrunePlan", () => {
         home_team_id: "team-keep",
       }),
     ]);
+  });
+});
+
+describe("findPredictionProtectedTeamGroupDrifts", () => {
+  it("flags provider regrouping for teams with saved group predictions", () => {
+    const drifts = findPredictionProtectedTeamGroupDrifts(
+      [
+        { code: "CAN", group_letter: "A", id: "team-can" },
+        { code: "MEX", group_letter: "A", id: "team-mex" },
+        { code: "ESP", group_letter: "H", id: "team-esp" },
+      ],
+      [
+        {
+          code: "CAN",
+          group_letter: "B",
+          is_tbd: false,
+          name: "Canada",
+        },
+        {
+          code: "MEX",
+          group_letter: "A",
+          is_tbd: false,
+          name: "Mexico",
+        },
+        {
+          code: "ESP",
+          group_letter: "I",
+          is_tbd: false,
+          name: "Spain",
+        },
+      ],
+      [{ team_id: "team-can" }],
+    );
+
+    expect(drifts).toEqual([{ code: "CAN", from: "A", to: "B" }]);
+  });
+
+  it("ignores provider regrouping for teams without saved group predictions", () => {
+    const drifts = findPredictionProtectedTeamGroupDrifts(
+      [{ code: "ESP", group_letter: "H", id: "team-esp" }],
+      [
+        {
+          code: "ESP",
+          group_letter: "I",
+          is_tbd: false,
+          name: "Spain",
+        },
+      ],
+      [],
+    );
+
+    expect(drifts).toEqual([]);
   });
 });
 

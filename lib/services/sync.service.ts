@@ -35,6 +35,7 @@ interface TeamRow {
 interface ExistingTeamGroupRow {
   code: string;
   group_letter: string;
+  id: string;
 }
 
 interface MatchRow {
@@ -508,6 +509,31 @@ export function applyStaleTeamPrunePlan(
   };
 }
 
+export function findPredictionProtectedTeamGroupDrifts(
+  existingTeams: ExistingTeamGroupRow[],
+  incomingTeams: TeamDTO[],
+  groupPredictions: Array<Pick<GroupPredictionRow, "team_id">>,
+) {
+  const incomingGroupByCode = new Map(
+    incomingTeams.map((team) => [team.code, team.group_letter] as const),
+  );
+  const predictedTeamIds = new Set(
+    groupPredictions.map((prediction) => prediction.team_id),
+  );
+
+  return existingTeams
+    .filter((team) => predictedTeamIds.has(team.id))
+    .map((team) => ({
+      code: team.code,
+      from: team.group_letter,
+      to: incomingGroupByCode.get(team.code),
+    }))
+    .filter(
+      (team): team is { code: string; from: string; to: TeamDTO["group_letter"] } =>
+        typeof team.to === "string" && team.to !== team.from,
+    );
+}
+
 interface PhaseKickoffInput {
   kickoff: string;
   phase: MatchPhase;
@@ -797,10 +823,13 @@ async function clearGroupStandingsForTeamDrift(
   teams: TeamDTO[],
 ) {
   const codes = teams.map((team) => team.code);
-  const existingTeamsResponse = await supabase
-    .from("teams")
-    .select("code, group_letter")
-    .in("code", codes);
+  const [existingTeamsResponse, groupPredictionsResponse] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("id, code, group_letter")
+      .in("code", codes),
+    supabase.from("group_predictions").select("team_id"),
+  ]);
 
   if (existingTeamsResponse.error) {
     throw new Error(
@@ -808,10 +837,30 @@ async function clearGroupStandingsForTeamDrift(
     );
   }
 
+  if (groupPredictionsResponse.error) {
+    throw new Error(
+      `Could not inspect group predictions before team regrouping: ${groupPredictionsResponse.error.message}`,
+    );
+  }
+
+  const existingTeams = existingTeamsResponse.data as ExistingTeamGroupRow[];
+  const protectedDrifts = findPredictionProtectedTeamGroupDrifts(
+    existingTeams,
+    teams,
+    groupPredictionsResponse.data as Array<Pick<GroupPredictionRow, "team_id">>,
+  );
+
+  if (protectedDrifts.length > 0) {
+    throw new Error(
+      `Provider attempted to move teams with saved group predictions: ${protectedDrifts
+        .map((team) => `${team.code} ${team.from}->${team.to}`)
+        .join(", ")}`,
+    );
+  }
+
   const incomingGroupByCode = new Map(
     teams.map((team) => [team.code, team.group_letter] as const),
   );
-  const existingTeams = existingTeamsResponse.data as ExistingTeamGroupRow[];
   const driftedGroups = new Set<string>();
 
   for (const existingTeam of existingTeams) {
