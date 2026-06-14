@@ -30,6 +30,8 @@ const stampToneStyles: Record<RankingStamp["tone"], string> = {
   miss: "border-status-live/30 bg-status-live/10 text-status-live",
   points:
     "border-accent-primary/30 bg-accent-primary/10 text-accent-primary",
+  recovered:
+    "border-status-warning/30 bg-status-warning/10 text-status-warning",
 };
 
 function initialsFromLabel(label: string) {

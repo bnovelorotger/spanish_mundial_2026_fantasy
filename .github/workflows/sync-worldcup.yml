@@ -12,9 +12,54 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export critical Supabase tables before sync
+        id: backup
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=0
+
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+            echo "::error title=Missing NEXT_PUBLIC_SUPABASE_URL::Add NEXT_PUBLIC_SUPABASE_URL as a repository secret so sync can create a rollback artifact before mutating data."
+            missing=1
+          fi
+
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error title=Missing SUPABASE_SERVICE_ROLE_KEY::Add SUPABASE_SERVICE_ROLE_KEY as a repository secret so sync can create a rollback artifact before mutating data."
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          pnpm backup:critical
+
+      - name: Upload pre-sync critical data artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.backup.outputs.artifact_name }}
+          path: ${{ steps.backup.outputs.artifact_path }}
+          retention-days: 30
+
       - name: Trigger protected sync endpoint
         env:
           APP_URL: ${{ vars.APP_URL || secrets.APP_URL }}

@@ -36,6 +36,7 @@ dev-server.*.log
 
 # local incident/recovery exports with user prediction data
 /tmp/
+/backups/
 
 # env files (can opt-in for committing if needed)
 .env*

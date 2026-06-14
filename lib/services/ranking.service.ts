@@ -309,31 +309,40 @@ export function getRankingStamps(
     const stampValue = typeof detail.metadata?.stamp === "string"
       ? detail.metadata.stamp
       : null;
+    const predictionProvenance =
+      typeof detail.metadata?.predictionProvenance === "string"
+        ? detail.metadata.predictionProvenance
+        : "USER_SUBMITTED";
+    const provenanceStamp =
+      predictionProvenance === "USER_SUBMITTED"
+        ? []
+        : [{ label: "Recuperado" as const, tone: "recovered" as const }];
 
     if (stampValue === "Exact") {
       return [
         { label: "Exacto", tone: "exact" as const },
         { label: "+3 pts", tone: "points" as const },
+        ...provenanceStamp,
       ];
     }
 
     if (stampValue === "Miss") {
-      return [{ label: "Fallo", tone: "miss" as const }];
+      return [{ label: "Fallo", tone: "miss" as const }, ...provenanceStamp];
     }
 
     if (detail.pointsAwarded === 1) {
-      return [{ label: "+1 pto", tone: "points" as const }];
+      return [{ label: "+1 pto", tone: "points" as const }, ...provenanceStamp];
     }
 
     if (detail.pointsAwarded === 2) {
-      return [{ label: "+2 pts", tone: "points" as const }];
+      return [{ label: "+2 pts", tone: "points" as const }, ...provenanceStamp];
     }
 
     if (detail.pointsAwarded === 3) {
-      return [{ label: "+3 pts", tone: "points" as const }];
+      return [{ label: "+3 pts", tone: "points" as const }, ...provenanceStamp];
     }
 
-    return [{ label: "Fallo", tone: "miss" as const }];
+    return [{ label: "Fallo", tone: "miss" as const }, ...provenanceStamp];
   });
 
   return stamps.slice(0, limit);

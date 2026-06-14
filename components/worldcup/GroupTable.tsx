@@ -16,6 +16,21 @@ interface GroupTableProps {
   teams: GroupPredictionTeamViewModel[];
 }
 
+function provenanceLabel(team: GroupPredictionTeamViewModel) {
+  switch (team.provenance) {
+    case "BASELINE":
+      return "Base";
+    case "IMPORTED_BACKUP":
+      return "Importado";
+    case "INFERRED_100":
+      return "Inferido";
+    case "MANUAL_REVIEWED":
+      return "Recuperado";
+    default:
+      return null;
+  }
+}
+
 export function GroupTable({
   isLocked,
   onMoveDown,
@@ -144,6 +159,11 @@ export function GroupTable({
                 isPlaceholder={team.isTbd}
                 name={team.name}
               />
+              {provenanceLabel(team) ? (
+                <span className="mt-2 inline-flex rounded-pill border border-accent-primary/25 bg-accent-primary/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-primary">
+                  {provenanceLabel(team)}
+                </span>
+              ) : null}
             </div>
 
             <div className="flex shrink-0 items-center gap-2">

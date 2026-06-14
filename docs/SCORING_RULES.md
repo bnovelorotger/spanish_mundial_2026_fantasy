@@ -17,6 +17,8 @@ Rules:
 - Do not score unplayed groups: at least one team in the group must have `played > 0`.
 - Use group_standings as source of truth.
 - Save one points row per scored prediction.
+- Prediction provenance does not exclude rows from scoring in v1; it is copied
+  into points metadata for auditability.
 - BEST_THIRD only applies when football-data marks qualification_status = BEST_THIRD.
 
 ### Scoring examples

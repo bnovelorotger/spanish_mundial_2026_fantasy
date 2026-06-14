@@ -53,6 +53,7 @@ export function resolvePhaseLock({
 
 export function resolvePredictionState(input: {
   hasDirtyChanges: boolean;
+  hasRecoveredRows?: boolean;
   isLocked: boolean;
   savedCount: number;
 }): PredictionState {
@@ -62,6 +63,14 @@ export function resolvePredictionState(input: {
 
   if (input.hasDirtyChanges) {
     return "PENDING";
+  }
+
+  if (input.savedCount > 0 && input.savedCount < 4) {
+    return "PARTIAL";
+  }
+
+  if (input.hasRecoveredRows) {
+    return "NEEDS_REVIEW";
   }
 
   if (input.savedCount === 4) {

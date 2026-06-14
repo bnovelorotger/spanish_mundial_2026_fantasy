@@ -5,6 +5,7 @@ import type {
   GroupLetter,
   GroupPredictionGroupViewModel,
   GroupPredictionTeamViewModel,
+  PredictionProvenance,
 } from "@/lib/types/worldcup";
 import { GROUP_LETTER_OPTIONS } from "@/lib/types/worldcup";
 
@@ -18,8 +19,11 @@ interface TeamRow {
 }
 
 interface GroupPredictionRow {
+  confirmed_at: string | null;
   group_letter: GroupLetter;
   predicted_position: number;
+  provenance: PredictionProvenance;
+  provenance_note: string | null;
   team_id: string;
 }
 
@@ -49,18 +53,22 @@ function sortPredictionRows(predictions: GroupPredictionRow[]) {
 function toTeamViewModel(
   team: TeamRow,
   predictedPosition: number,
+  prediction?: GroupPredictionRow,
 ): GroupPredictionTeamViewModel {
   return {
     code: team.code,
+    confirmedAt: prediction?.confirmed_at ?? null,
     flagUrl: team.flag_url,
     id: team.id,
     isTbd: team.is_tbd,
     name: team.name,
     predictedPosition,
+    provenance: prediction?.provenance ?? null,
+    provenanceNote: prediction?.provenance_note ?? null,
   };
 }
 
-function mapGroupTeams(
+export function mapGroupTeams(
   groupLetter: GroupLetter,
   teams: TeamRow[],
   predictions: GroupPredictionRow[],
@@ -69,7 +77,7 @@ function mapGroupTeams(
     predictions.filter((prediction) => prediction.group_letter === groupLetter),
   );
   const teamsById = new Map(teams.map((team) => [team.id, team]));
-  const orderedFromSaved = savedRows
+  const savedTeams = savedRows
     .map((prediction) => {
       const team = teamsById.get(prediction.team_id);
 
@@ -77,24 +85,63 @@ function mapGroupTeams(
         return null;
       }
 
-      return toTeamViewModel(team, prediction.predicted_position);
+      return {
+        prediction,
+        team,
+      };
     })
-    .filter((value): value is GroupPredictionTeamViewModel => value !== null);
+    .filter(
+      (value): value is { prediction: GroupPredictionRow; team: TeamRow } =>
+        value !== null,
+    );
 
-  if (orderedFromSaved.length === 4) {
+  if (savedTeams.length === 4) {
     return {
       savedCount: 4,
-      teams: orderedFromSaved,
+      teams: savedTeams.map(({ prediction, team }) =>
+        toTeamViewModel(team, prediction.predicted_position, prediction),
+      ),
     };
   }
 
-  const fallbackTeams = defaultTeamsForGroup(teams).map((team, index) =>
-    toTeamViewModel(team, index + 1),
+  const savedTeamIds = new Set(savedTeams.map(({ team }) => team.id));
+  const remainingTeams = defaultTeamsForGroup(teams).filter(
+    (team) => !savedTeamIds.has(team.id),
   );
+  const nextTeams: Array<GroupPredictionTeamViewModel | null> = Array.from(
+    { length: Math.max(4, teams.length) },
+    () => null,
+  );
+  const usedPositions = new Set<number>();
+
+  for (const { prediction, team } of savedTeams) {
+    const position = prediction.predicted_position;
+
+    if (position < 1 || position > nextTeams.length || usedPositions.has(position)) {
+      continue;
+    }
+
+    usedPositions.add(position);
+    nextTeams[position - 1] = toTeamViewModel(team, position, prediction);
+  }
+
+  let remainingIndex = 0;
+  const filledTeams = nextTeams.map((team, index) => {
+    if (team) {
+      return team;
+    }
+
+    const fallbackTeam = remainingTeams[remainingIndex];
+    remainingIndex += 1;
+
+    return fallbackTeam ? toTeamViewModel(fallbackTeam, index + 1) : null;
+  });
 
   return {
-    savedCount: orderedFromSaved.length,
-    teams: fallbackTeams,
+    savedCount: savedTeams.length,
+    teams: filledTeams.filter(
+      (team): team is GroupPredictionTeamViewModel => team !== null,
+    ),
   };
 }
 
@@ -190,7 +237,9 @@ export async function getGroupPredictionGroups(
       .order("name", { ascending: true }),
     supabase
       .from("group_predictions")
-      .select("group_letter, team_id, predicted_position")
+      .select(
+        "group_letter, team_id, predicted_position, provenance, provenance_note, confirmed_at",
+      )
       .eq("user_id", userId),
     getGroupStageLock(supabase),
   ]);
@@ -215,16 +264,26 @@ export async function getGroupPredictionGroups(
       groupTeams,
       predictions,
     );
+    const hasRecoveredRows = orderedTeams.some(
+      (team) => team.provenance !== null && team.provenance !== "USER_SUBMITTED",
+    );
+    const isPartial = savedCount > 0 && savedCount < 4;
 
     return {
       groupLetter,
+      hasRecoveredRows,
+      isPartial,
       lock: groupStageLock,
       savedCount,
       state: groupStageLock.isLocked
         ? "LOCKED"
-        : savedCount === 4
-          ? "COMPLETED"
-          : "EDITABLE",
+        : isPartial
+          ? "PARTIAL"
+          : hasRecoveredRows
+            ? "NEEDS_REVIEW"
+            : savedCount === 4
+              ? "COMPLETED"
+              : "EDITABLE",
       teams: orderedTeams,
     };
   });
@@ -274,8 +333,12 @@ export async function saveGroupPrediction(
   }
 
   const rows = validation.data.teamIds.map((teamId, index) => ({
+    confirmed_at: new Date().toISOString(),
+    confirmed_by: userId,
     group_letter: validation.data.groupLetter,
     predicted_position: index + 1,
+    provenance: "USER_SUBMITTED" as const,
+    provenance_note: null,
     team_id: teamId,
     user_id: userId,
   }));

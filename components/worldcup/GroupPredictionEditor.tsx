@@ -65,6 +65,10 @@ function badgeForState(state: PredictionState) {
       return { label: "Completado", variant: "saved" as const };
     case "LOCKED":
       return { label: "Cerrado", variant: "locked" as const };
+    case "NEEDS_REVIEW":
+      return { label: "Revisión", variant: "pending" as const };
+    case "PARTIAL":
+      return { label: "Parcial", variant: "pending" as const };
     case "PENDING":
       return { label: "Pendiente", variant: "pending" as const };
     default:
@@ -169,11 +173,13 @@ export function GroupPredictionEditor({
   const hasDirtyChanges = !arraysMatch(initialOrder, currentOrder);
   const state = resolvePredictionState({
     hasDirtyChanges,
+    hasRecoveredRows: group.hasRecoveredRows,
     isLocked: group.lock.isLocked,
     savedCount: group.savedCount,
   });
   const badge = badgeForState(state);
-  const canSave = !group.lock.isLocked && (hasDirtyChanges || group.savedCount < 4);
+  const needsReview = state === "NEEDS_REVIEW" || state === "PARTIAL";
+  const canSave = !group.lock.isLocked && (hasDirtyChanges || group.savedCount < 4 || needsReview);
 
   return (
     <section
@@ -232,6 +238,10 @@ export function GroupPredictionEditor({
                   ? "Ese guardado no ha llegado al tablero."
                   : state === "PENDING"
                     ? "Tienes cambios sin guardar en juego."
+                    : state === "PARTIAL"
+                      ? "Revisión pendiente: este grupo tiene predicciones incompletas."
+                      : state === "NEEDS_REVIEW"
+                        ? "Revisión pendiente: este grupo fue recuperado tras el incidente."
                     : state === "COMPLETED"
                       ? "Tu orden guardado ya está colocado en el tablero del torneo."
                       : "Está editable. Mueve los equipos hasta tu orden final previsto."}
@@ -242,7 +252,10 @@ export function GroupPredictionEditor({
                 flash?.tone === "error" ? "text-status-live" : "text-text-muted",
               )}
             >
-              {flash?.message ?? formatLockCopy(group.lock.effectiveLockAt)}
+              {flash?.message ??
+                (needsReview
+                  ? "Hay predicciones recuperadas o incompletas. Revisa el orden antes de darlo por bueno."
+                  : formatLockCopy(group.lock.effectiveLockAt))}
             </p>
           </div>
         </div>
@@ -263,7 +276,11 @@ export function GroupPredictionEditor({
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-            {group.savedCount === 4 ? "Pronóstico guardado" : "Se necesitan cuatro equipos"}
+            {group.savedCount === 4
+              ? needsReview
+                ? "Pronóstico pendiente de revisión"
+                : "Pronóstico guardado"
+              : "Se necesitan cuatro equipos"}
           </p>
           <SaveButton disabled={!canSave} />
         </div>

@@ -190,6 +190,8 @@ const rankingEntries: RankingEntry[] = [
 const predictionGroups: GroupPredictionGroupViewModel[] = GROUP_LETTER_OPTIONS.map(
   (letter) => ({
     groupLetter: letter,
+    hasRecoveredRows: false,
+    isPartial: false,
     lock: {
       effectiveLockAt: "2026-06-11T19:00:00Z",
       isLocked: letter === "D",
@@ -203,11 +205,14 @@ const predictionGroups: GroupPredictionGroupViewModel[] = GROUP_LETTER_OPTIONS.m
         ? []
         : Array.from({ length: 4 }, (_, teamIndex) => ({
             code: `${letter}${teamIndex + 1}`,
+            confirmedAt: null,
             flagUrl: null,
             id: `${letter.toLowerCase()}-team-${teamIndex + 1}`,
             isTbd: false,
             name: `Team ${letter}${teamIndex + 1}`,
             predictedPosition: teamIndex + 1,
+            provenance: "USER_SUBMITTED",
+            provenanceNote: null,
           })),
   }),
 );

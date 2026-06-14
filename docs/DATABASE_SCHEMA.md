@@ -93,6 +93,10 @@ Unique constraint: (group_letter, position) when is_final = true
 | group_letter | text | not null |
 | team_id | uuid | FK teams(id), not null |
 | predicted_position | integer | not null (1-4) |
+| provenance | text | not null default USER_SUBMITTED |
+| provenance_note | text | nullable |
+| confirmed_at | timestamptz | nullable |
+| confirmed_by | uuid | FK profiles(id), nullable |
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
@@ -108,6 +112,10 @@ Unique constraint: (user_id, group_letter, predicted_position)
 | match_id | uuid | FK matches(id), not null |
 | predicted_winner_team_id | uuid | FK teams(id), nullable |
 | is_random | boolean | default false |
+| provenance | text | not null default USER_SUBMITTED |
+| provenance_note | text | nullable |
+| confirmed_at | timestamptz | nullable |
+| confirmed_by | uuid | FK profiles(id), nullable |
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
@@ -120,6 +128,10 @@ Unique constraint: (user_id, match_id)
 | id | uuid | PK, default gen_random_uuid() |
 | user_id | uuid | FK profiles(id), not null |
 | team_id | uuid | FK teams(id), not null |
+| provenance | text | not null default USER_SUBMITTED |
+| provenance_note | text | nullable |
+| confirmed_at | timestamptz | nullable |
+| confirmed_by | uuid | FK profiles(id), nullable |
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
@@ -195,6 +207,19 @@ The combination:
 - source_id
 
 must be unique.
+
+### prediction provenance
+
+Prediction rows track whether they were submitted directly by the user or
+recovered during an incident. Current values:
+
+- USER_SUBMITTED
+- INFERRED_100
+- MANUAL_REVIEWED
+- BASELINE
+- IMPORTED_BACKUP
+
+Provenance is copied into points metadata during recalculation for auditability.
 
 ### sync_runs
 

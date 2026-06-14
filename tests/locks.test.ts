@@ -68,6 +68,27 @@ describe("resolvePredictionState", () => {
     ).toBe("COMPLETED");
   });
 
+  it("returns partial for a group with only some saved rows", () => {
+    expect(
+      resolvePredictionState({
+        hasDirtyChanges: false,
+        isLocked: false,
+        savedCount: 2,
+      }),
+    ).toBe("PARTIAL");
+  });
+
+  it("returns needs review for recovered complete predictions", () => {
+    expect(
+      resolvePredictionState({
+        hasDirtyChanges: false,
+        hasRecoveredRows: true,
+        isLocked: false,
+        savedCount: 4,
+      }),
+    ).toBe("NEEDS_REVIEW");
+  });
+
   it("returns locked before any pending or completed state", () => {
     expect(
       resolvePredictionState({

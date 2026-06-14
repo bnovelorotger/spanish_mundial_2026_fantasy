@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
+    "backup:critical": "node --experimental-strip-types ./scripts/export-critical-data.ts",
     "seed": "node ./scripts/seed.mjs",
     "sync": "node --experimental-strip-types ./scripts/sync-worldcup-data.ts",
     "recalculate-points": "node --experimental-strip-types ./scripts/recalculate-points.ts"

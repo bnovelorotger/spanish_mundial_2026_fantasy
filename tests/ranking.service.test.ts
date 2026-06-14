@@ -431,4 +431,34 @@ describe("getRankingStamps", () => {
       { label: "Fallo", tone: "miss" },
     ]);
   });
+
+  it("adds a recovered stamp for non user-submitted point metadata", () => {
+    const stamps = getRankingStamps(
+      {
+        champion: 0,
+        details: [
+          {
+            metadata: {
+              predictionProvenance: "BASELINE",
+              stamp: "Exact",
+            },
+            pointsAwarded: 3,
+            reason: "Exact position",
+            sourceId: "group_A_team_1",
+            sourceType: "GROUP_POSITION",
+          },
+        ],
+        groupStage: 3,
+        knockout: 0,
+        total: 3,
+      },
+      4,
+    );
+
+    expect(stamps).toEqual([
+      { label: "Exacto", tone: "exact" },
+      { label: "+3 pts", tone: "points" },
+      { label: "Recuperado", tone: "recovered" },
+    ]);
+  });
 });

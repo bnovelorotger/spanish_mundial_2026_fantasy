@@ -4,6 +4,7 @@ import type {
   GroupLetter,
   PointsBreakdown,
   PointsSourceType,
+  PredictionProvenance,
   QualificationStatus,
 } from "../types/worldcup";
 
@@ -16,8 +17,11 @@ interface StandingRow {
 }
 
 interface GroupPredictionRow {
+  confirmed_at: string | null;
   group_letter: GroupLetter;
   predicted_position: number;
+  provenance: PredictionProvenance;
+  provenance_note: string | null;
   team_id: string;
   user_id: string;
 }
@@ -35,6 +39,9 @@ interface PointsRow {
 interface GroupPredictionScoreInput {
   actualPosition: number;
   groupLetter: GroupLetter;
+  predictionConfirmedAt?: string | null;
+  predictionProvenance?: PredictionProvenance;
+  predictionProvenanceNote?: string | null;
   predictedPosition: number;
   qualificationStatus: QualificationStatus | null;
   teamId: string;
@@ -107,6 +114,9 @@ export function scoreGroupPrediction(
     metadata: {
       actualPosition: input.actualPosition,
       groupLetter: input.groupLetter,
+      predictionConfirmedAt: input.predictionConfirmedAt ?? null,
+      predictionProvenance: input.predictionProvenance ?? "USER_SUBMITTED",
+      predictionProvenanceNote: input.predictionProvenanceNote ?? null,
       predictedPosition: input.predictedPosition,
       qualificationStatus: input.qualificationStatus,
       stamp: buildStamp(pointsAwarded, reason),
@@ -146,6 +156,9 @@ export function buildGroupStagePointsRows(
       const scored = scoreGroupPrediction({
         actualPosition: standing.position,
         groupLetter: prediction.group_letter,
+        predictionConfirmedAt: prediction.confirmed_at,
+        predictionProvenance: prediction.provenance,
+        predictionProvenanceNote: prediction.provenance_note,
         predictedPosition: prediction.predicted_position,
         qualificationStatus: standing.qualification_status,
         teamId: prediction.team_id,
@@ -169,7 +182,9 @@ async function loadGroupStageScoringInputs(supabase: SupabaseClient) {
   const [predictionsResponse, standingsResponse] = await Promise.all([
     supabase
       .from("group_predictions")
-      .select("user_id, group_letter, team_id, predicted_position"),
+      .select(
+        "user_id, group_letter, team_id, predicted_position, provenance, provenance_note, confirmed_at",
+      ),
     supabase
       .from("group_standings")
       .select("group_letter, team_id, played, position, qualification_status"),

@@ -1,0 +1,59 @@
+name: Backup Critical Data
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run shortly before the hourly sync so every automated data refresh has a
+    # recent rollback artifact on the GitHub private repository.
+    - cron: "55 * * * *"
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export critical Supabase tables
+        id: backup
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=0
+
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+            echo "::error title=Missing NEXT_PUBLIC_SUPABASE_URL::Add NEXT_PUBLIC_SUPABASE_URL as a repository secret."
+            missing=1
+          fi
+
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error title=Missing SUPABASE_SERVICE_ROLE_KEY::Add SUPABASE_SERVICE_ROLE_KEY as a repository secret."
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          pnpm backup:critical
+
+      - name: Upload critical data artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.backup.outputs.artifact_name }}
+          path: ${{ steps.backup.outputs.artifact_path }}
+          retention-days: 30

@@ -64,26 +64,38 @@ describe("scoreGroupPrediction", () => {
 describe("buildGroupStagePointsRows", () => {
   const predictions = [
     {
+      confirmed_at: "2026-06-14T20:00:00Z",
       group_letter: "A" as const,
       predicted_position: 1,
+      provenance: "USER_SUBMITTED" as const,
+      provenance_note: null,
       team_id: "team-1",
       user_id: "user-1",
     },
     {
+      confirmed_at: "2026-06-14T20:00:00Z",
       group_letter: "A" as const,
       predicted_position: 2,
+      provenance: "USER_SUBMITTED" as const,
+      provenance_note: null,
       team_id: "team-2",
       user_id: "user-1",
     },
     {
+      confirmed_at: "2026-06-14T20:00:00Z",
       group_letter: "A" as const,
       predicted_position: 3,
+      provenance: "USER_SUBMITTED" as const,
+      provenance_note: null,
       team_id: "team-3",
       user_id: "user-1",
     },
     {
+      confirmed_at: "2026-06-14T20:00:00Z",
       group_letter: "A" as const,
       predicted_position: 4,
+      provenance: "USER_SUBMITTED" as const,
+      provenance_note: null,
       team_id: "team-4",
       user_id: "user-1",
     },
@@ -195,6 +207,24 @@ describe("buildGroupStagePointsRows", () => {
       mixedRows.find((row) => row.source_id === "group_A_team_team-4")?.metadata?.stamp,
     ).toBe("Miss");
     expect(mixedRows.some((row) => row.points_awarded === 0)).toBe(true);
+  });
+
+  it("keeps scoring reconstructed baseline predictions while tagging metadata", () => {
+    const rows = buildGroupStagePointsRows(
+      [
+        {
+          ...predictions[0]!,
+          provenance: "BASELINE",
+          provenance_note: "Alphabetical baseline",
+        },
+      ],
+      currentStandings,
+    );
+
+    expect(rows[0]?.points_awarded).toBe(3);
+    expect(rows[0]?.metadata?.predictionProvenance).toBe("BASELINE");
+    expect(rows[0]?.metadata?.predictionProvenanceNote).toBe("Alphabetical baseline");
+    expect(rows[0]?.metadata?.predictionConfirmedAt).toBe("2026-06-14T20:00:00Z");
   });
 });
 

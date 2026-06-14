@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { recalculateAllPoints } from "@/lib/services/scoring.service";
 import { syncWorldCupData } from "@/lib/services/sync.service";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +24,10 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminClient();
     const syncSummary = await syncWorldCupData(adminClient);
-    const recalculateSummary = await recalculateAllPoints(adminClient);
 
     return NextResponse.json({
       ok: true,
-      recalculate: recalculateSummary,
+      recalculate: syncSummary.recalculateSummary,
       sync: syncSummary,
     });
   } catch (error) {

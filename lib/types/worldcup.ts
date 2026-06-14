@@ -46,8 +46,17 @@ export type QualificationStatus =
 export type PredictionState =
   | "EDITABLE"
   | "LOCKED"
+  | "NEEDS_REVIEW"
+  | "PARTIAL"
   | "PENDING"
   | "COMPLETED";
+
+export type PredictionProvenance =
+  | "USER_SUBMITTED"
+  | "INFERRED_100"
+  | "MANUAL_REVIEWED"
+  | "BASELINE"
+  | "IMPORTED_BACKUP";
 
 export type PointsSourceType =
   | "GROUP_POSITION"
@@ -112,6 +121,10 @@ export interface GroupPrediction {
   group_letter: GroupLetter;
   team_id: string;
   predicted_position: number;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  provenance: PredictionProvenance;
+  provenance_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -122,6 +135,10 @@ export interface KnockoutPrediction {
   match_id: string;
   predicted_winner_team_id: string | null;
   is_random: boolean;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  provenance: PredictionProvenance;
+  provenance_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -130,6 +147,10 @@ export interface ChampionPrediction {
   id: string;
   user_id: string;
   team_id: string;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  provenance: PredictionProvenance;
+  provenance_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -257,10 +278,13 @@ export interface MatchFilters {
 export interface GroupPredictionTeamViewModel {
   id: string;
   code: string;
+  confirmedAt: string | null;
   flagUrl: string | null;
   isTbd: boolean;
   name: string;
   predictedPosition: number;
+  provenance: PredictionProvenance | null;
+  provenanceNote: string | null;
 }
 
 export interface PhaseLockViewModel {
@@ -272,6 +296,8 @@ export interface PhaseLockViewModel {
 
 export interface GroupPredictionGroupViewModel {
   groupLetter: GroupLetter;
+  hasRecoveredRows: boolean;
+  isPartial: boolean;
   lock: PhaseLockViewModel;
   savedCount: number;
   state: PredictionState;
@@ -318,11 +344,12 @@ export type PredictionStamp =
   | "+2 pts"
   | "+3 pts"
   | "Exacto"
-  | "Fallo";
+  | "Fallo"
+  | "Recuperado";
 
 export interface RankingStamp {
   label: PredictionStamp;
-  tone: "exact" | "miss" | "points";
+  tone: "exact" | "miss" | "points" | "recovered";
 }
 
 export interface BracketSlotViewModel {
