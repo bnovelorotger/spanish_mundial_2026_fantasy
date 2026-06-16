@@ -88,6 +88,33 @@ function normalizeText(value: string | null | undefined) {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * football-data.org is inconsistent about a few team codes across its
+ * `/teams`, `/matches` and `/standings` endpoints. Uruguay, for example, is
+ * returned as `URU` by `/teams` and `/standings` but as `URY` by `/matches`.
+ * Because our database (and every saved prediction) keys teams by `URY`, an
+ * un-aliased payload drops Uruguay from the normalized team list, fails
+ * `validateProviderPayload`, and forces the sync to fall back to the stale
+ * static snapshot — which then triggers the prediction-protection guard and
+ * aborts the whole run. Canonicalizing every code through this map keeps a
+ * single endpoint disagreement from breaking live scoring.
+ */
+const FOOTBALL_DATA_TLA_ALIASES: Record<string, string> = {
+  URU: "URY",
+};
+
+function canonicalTeamCode(
+  value: string | null | undefined,
+): string | null {
+  const normalized = normalizeText(value)?.toUpperCase();
+
+  if (!normalized) {
+    return null;
+  }
+
+  return FOOTBALL_DATA_TLA_ALIASES[normalized] ?? normalized;
+}
+
 function toGroupLetter(value: string | null | undefined): GroupLetter | null {
   const normalized = normalizeText(value)?.toUpperCase();
 
@@ -221,8 +248,8 @@ export function createGroupMapFromFootballDataMatches(
     }
 
     const groupLetter = toGroupLetter(match.group);
-    const homeCode = normalizeText(match.homeTeam?.tla)?.toUpperCase();
-    const awayCode = normalizeText(match.awayTeam?.tla)?.toUpperCase();
+    const homeCode = canonicalTeamCode(match.homeTeam?.tla);
+    const awayCode = canonicalTeamCode(match.awayTeam?.tla);
 
     if (!groupLetter) {
       continue;
@@ -248,7 +275,7 @@ export function normalizeFootballDataTeams(
 
   const teams = (teamsResponse.teams as FootballDataTeam[])
     .flatMap<TeamDTO>((team) => {
-      const tla = normalizeText(team.tla)?.toUpperCase();
+      const tla = canonicalTeamCode(team.tla);
       const name = normalizeText(team.name);
 
       if (!tla || !name) {
@@ -293,8 +320,8 @@ export function normalizeFootballDataMatches(
   const matches = (matchesResponse.matches as FootballDataMatch[])
     .map((match, index) => {
       const phase = parseMatchPhase(match.stage);
-      const homeCode = normalizeText(match.homeTeam?.tla)?.toUpperCase();
-      const awayCode = normalizeText(match.awayTeam?.tla)?.toUpperCase();
+      const homeCode = canonicalTeamCode(match.homeTeam?.tla);
+      const awayCode = canonicalTeamCode(match.awayTeam?.tla);
       const homeName =
         normalizeText(match.homeTeam?.shortName) ?? normalizeText(match.homeTeam?.name);
       const awayName =
@@ -456,7 +483,7 @@ export function normalizeFootballDataStandings(input: {
   const byGroup = new Map<GroupLetter, GroupStandingDTO[]>();
 
   for (const row of totalStanding.table) {
-    const teamCode = normalizeText(row.team?.tla)?.toUpperCase();
+    const teamCode = canonicalTeamCode(row.team?.tla);
 
     if (!teamCode) {
       continue;

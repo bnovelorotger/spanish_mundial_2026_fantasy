@@ -244,4 +244,77 @@ describe("football-data normalizers", () => {
     expect(tournamentData.matches).toHaveLength(3);
     expect(tournamentData.standings).toHaveLength(4);
   });
+
+  it("canonicalizes inconsistent team codes (Uruguay URU/URY) across endpoints", () => {
+    // football-data.org returns Uruguay as URU in /teams and /standings but as
+    // URY in /matches. Every endpoint must normalize to the canonical URY code
+    // so the team is not dropped and the payload validates against itself.
+    const teamsResponse = {
+      teams: [
+        { area: { code: "URU", name: "Uruguay" }, name: "Uruguay", tla: "URU" },
+        { area: { code: "ESP", name: "Spain" }, name: "Spain", tla: "ESP" },
+      ],
+    };
+    const matchesResponse = {
+      matches: [
+        {
+          awayTeam: { name: "Spain", tla: "ESP" },
+          group: "GROUP_H",
+          homeTeam: { name: "Uruguay", tla: "URY" },
+          id: 600001,
+          score: { fullTime: { away: null, home: null } },
+          stage: "GROUP_STAGE",
+          status: "TIMED",
+          utcDate: "2026-06-20T19:00:00Z",
+          venue: "Estadio Akron",
+        },
+      ],
+    };
+    const standingsResponse = {
+      standings: [
+        {
+          group: null,
+          stage: "GROUP_STAGE",
+          table: [
+            {
+              draw: 0, goalDifference: 1, goalsAgainst: 0, goalsFor: 1,
+              lost: 0, playedGames: 1, points: 3, position: 1,
+              team: { name: "Uruguay", tla: "URU" }, won: 1,
+            },
+            {
+              draw: 0, goalDifference: -1, goalsAgainst: 1, goalsFor: 0,
+              lost: 1, playedGames: 1, points: 0, position: 2,
+              team: { name: "Spain", tla: "ESP" }, won: 0,
+            },
+          ],
+          type: "TOTAL",
+        },
+      ],
+    };
+
+    const groupMap = createGroupMapFromFootballDataMatches(matchesResponse);
+    expect(groupMap.get("URY")).toBe("H");
+    expect(groupMap.has("URU")).toBe(false);
+
+    const teams = normalizeFootballDataTeams(teamsResponse, groupMap);
+    expect(teams.map((team) => team.code).sort()).toEqual(["ESP", "URY"]);
+
+    const matches = normalizeFootballDataMatches(matchesResponse);
+    expect(matches[0]?.home_team_code).toBe("URY");
+
+    const standings = normalizeFootballDataStandings({ groupMap, standingsResponse });
+    expect(standings.map((row) => row.team_code).sort()).toEqual(["ESP", "URY"]);
+
+    // The full payload must validate: every team referenced by matches and
+    // standings is present in the normalized team list.
+    const tournamentData = normalizeFootballDataTournamentData({
+      matchesResponse,
+      standingsResponse,
+      teamsResponse,
+    });
+    expect(tournamentData.teams.map((team) => team.code).sort()).toEqual([
+      "ESP",
+      "URY",
+    ]);
+  });
 });
