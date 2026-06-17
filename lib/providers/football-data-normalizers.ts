@@ -267,33 +267,86 @@ export function createGroupMapFromFootballDataMatches(
   return groupMap;
 }
 
+/**
+ * Collects a canonical-code -> display-name map from the group-stage matches.
+ * football-data.org's `/teams` endpoint intermittently returns an incomplete
+ * list (missing a team entirely, e.g. only 47 of 48), which previously dropped
+ * that team, failed `validateProviderPayload`, and forced the catastrophic
+ * fallback to the stale static snapshot. The `/matches` endpoint reliably
+ * carries every participating team (with names), so it is the resilient source
+ * of truth for both participation and naming.
+ */
+export function collectTeamNamesFromMatches(
+  matchesResponse: unknown,
+): Map<string, string> {
+  assertArrayField(matchesResponse, "matches", "matches");
+
+  const names = new Map<string, string>();
+
+  for (const match of matchesResponse.matches as FootballDataMatch[]) {
+    if (parseMatchPhase(match.stage) !== "GROUP_STAGE") {
+      continue;
+    }
+
+    for (const side of [match.homeTeam, match.awayTeam]) {
+      const code = canonicalTeamCode(side?.tla);
+      const name =
+        normalizeText(side?.shortName) ?? normalizeText(side?.name);
+
+      if (code && name && !names.has(code)) {
+        names.set(code, name);
+      }
+    }
+  }
+
+  return names;
+}
+
 export function normalizeFootballDataTeams(
   teamsResponse: unknown,
   groupMap: Map<string, GroupLetter>,
+  fallbackNames?: Map<string, string>,
 ): TeamDTO[] {
   assertArrayField(teamsResponse, "teams", "teams");
 
-  const teams = (teamsResponse.teams as FootballDataTeam[])
-    .flatMap<TeamDTO>((team) => {
-      const tla = canonicalTeamCode(team.tla);
-      const name = normalizeText(team.name);
+  // Enrichment (name + crest) from /teams, keyed by canonical code.
+  const metaByCode = new Map<
+    string,
+    { crest: string | null; name: string | null }
+  >();
 
-      if (!tla || !name) {
-        return [];
-      }
+  for (const team of teamsResponse.teams as FootballDataTeam[]) {
+    const code = canonicalTeamCode(team.tla);
 
-      const groupLetter = groupMap.get(tla);
+    if (!code) {
+      continue;
+    }
 
-      if (!groupLetter) {
+    metaByCode.set(code, {
+      crest: team.crest ?? team.area?.flag ?? null,
+      name: normalizeText(team.name),
+    });
+  }
+
+  // The matches-derived groupMap is the source of truth for which teams take
+  // part and which group they belong to. Building from it (instead of from the
+  // flaky /teams list) guarantees every team referenced by matches/standings is
+  // present, so a partial /teams response can no longer break the sync.
+  const teams = [...groupMap.entries()]
+    .flatMap<TeamDTO>(([code, groupLetter]) => {
+      const meta = metaByCode.get(code);
+      const name = meta?.name ?? fallbackNames?.get(code) ?? null;
+
+      if (!name) {
         return [];
       }
 
       return [
         {
-          code: tla,
+          code,
           flag_url: resolveTeamFlagUrl({
-            crest: team.crest ?? team.area?.flag ?? null,
-            tla,
+            crest: meta?.crest ?? null,
+            tla: code,
           }),
           group_letter: groupLetter,
           is_tbd: false,
@@ -576,7 +629,12 @@ export function normalizeFootballDataTournamentData(input: {
   teamsResponse: unknown;
 }) {
   const groupMap = createGroupMapFromFootballDataMatches(input.matchesResponse);
-  const teams = normalizeFootballDataTeams(input.teamsResponse, groupMap);
+  const fallbackNames = collectTeamNamesFromMatches(input.matchesResponse);
+  const teams = normalizeFootballDataTeams(
+    input.teamsResponse,
+    groupMap,
+    fallbackNames,
+  );
   const matches = normalizeFootballDataMatches(input.matchesResponse);
   const standings = normalizeFootballDataStandings({
     groupMap,

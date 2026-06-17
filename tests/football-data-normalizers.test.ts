@@ -317,4 +317,63 @@ describe("football-data normalizers", () => {
       "URY",
     ]);
   });
+
+  it("keeps teams missing from a partial /teams response (built from matches)", () => {
+    // football-data.org intermittently returns an incomplete /teams list (e.g.
+    // only 47 of 48 teams). The dropped team must still be derived from the
+    // matches so the payload validates and the sync does not fall back to the
+    // stale static snapshot. Here Uruguay is entirely absent from /teams.
+    const teamsResponse = {
+      teams: [{ area: { code: "ESP", name: "Spain" }, name: "Spain", tla: "ESP" }],
+    };
+    const matchesResponse = {
+      matches: [
+        {
+          awayTeam: { name: "Spain", tla: "ESP" },
+          group: "GROUP_H",
+          homeTeam: { name: "Uruguay", tla: "URY" },
+          id: 600002,
+          score: { fullTime: { away: 1, home: 2 } },
+          stage: "GROUP_STAGE",
+          status: "FINISHED",
+          utcDate: "2026-06-21T19:00:00Z",
+          venue: "Estadio Akron",
+        },
+      ],
+    };
+    const standingsResponse = {
+      standings: [
+        {
+          group: null,
+          stage: "GROUP_STAGE",
+          table: [
+            {
+              draw: 0, goalDifference: 1, goalsAgainst: 1, goalsFor: 2,
+              lost: 0, playedGames: 1, points: 3, position: 1,
+              team: { name: "Uruguay", tla: "URY" }, won: 1,
+            },
+            {
+              draw: 0, goalDifference: -1, goalsAgainst: 2, goalsFor: 1,
+              lost: 1, playedGames: 1, points: 0, position: 2,
+              team: { name: "Spain", tla: "ESP" }, won: 0,
+            },
+          ],
+          type: "TOTAL",
+        },
+      ],
+    };
+
+    const tournamentData = normalizeFootballDataTournamentData({
+      matchesResponse,
+      standingsResponse,
+      teamsResponse,
+    });
+
+    const uruguay = tournamentData.teams.find((team) => team.code === "URY");
+    expect(uruguay).toMatchObject({ code: "URY", group_letter: "H", name: "Uruguay" });
+    expect(tournamentData.teams.map((team) => team.code).sort()).toEqual([
+      "ESP",
+      "URY",
+    ]);
+  });
 });
