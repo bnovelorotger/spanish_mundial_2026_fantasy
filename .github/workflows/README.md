@@ -8,20 +8,23 @@ Expected files:
   `workflow_dispatch`. Exports critical Supabase tables and uploads a private
   GitHub artifact with 30-day retention.
 - `sync-worldcup.yml` - Scheduled hourly plus `workflow_dispatch`. First
-  exports the same critical-data artifact, then calls `POST $APP_URL/api/sync`
-  with `Authorization: Bearer ${{ secrets.CRON_SECRET }}`.
+  exports the same critical-data artifact, then runs the sync directly against
+  Supabase with `pnpm sync` (the repository's current code). It no longer calls
+  the deployed `/api/sync`, so scheduled scoring is decoupled from the Vercel
+  deployment.
 - `ci.yml` *(optional)* - Run `pnpm lint`, `pnpm test`, `pnpm build` on PRs.
 
-Required repository secrets or variables:
+Required repository secrets:
 
-- `APP_URL` - Public deployment URL, for example
-  `https://your-app.vercel.app`.
-- `CRON_SECRET` - Same value set in Vercel env vars for `/api/sync`.
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL used by backup scripts.
-- `SUPABASE_SERVICE_ROLE_KEY` - Server-only key used by backup scripts.
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL (backup + sync).
+- `SUPABASE_SERVICE_ROLE_KEY` - Server-only key (backup + sync).
+- `WORLD_CUP_API_KEY` - football-data.org API key used by the sync step.
+
+The deployed app still serves data by reading Supabase, so it does not need
+these workflows to be healthy to display the latest standings.
 
 Rules:
 
 - Never echo secrets in logs.
-- The sync workflow must fail before calling `/api/sync` if the pre-sync backup
+- The sync workflow must fail before mutating data if the pre-sync backup
   cannot be created.

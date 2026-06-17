@@ -60,20 +60,26 @@ jobs:
           path: ${{ steps.backup.outputs.artifact_path }}
           retention-days: 30
 
-      - name: Trigger protected sync endpoint
+      - name: Run World Cup sync
         env:
-          APP_URL: ${{ vars.APP_URL || secrets.APP_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WORLD_CUP_API_PROVIDER: footballdata
+          WORLD_CUP_API_KEY: ${{ secrets.WORLD_CUP_API_KEY }}
         run: |
+          # Run the sync directly against Supabase using the repository's current
+          # code, instead of calling the deployed /api/sync. This decouples
+          # scheduled scoring from the Vercel deployment so a blocked or stale
+          # deploy can no longer stop match-by-match updates.
           missing=0
 
-          if [ -z "$APP_URL" ]; then
-            echo "::error title=Missing APP_URL::Add APP_URL as a repository variable or secret with your deployed app URL."
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error title=Missing Supabase credentials::Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as repository secrets."
             missing=1
           fi
 
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error title=Missing CRON_SECRET::Add CRON_SECRET as a repository secret. It must match the Vercel CRON_SECRET."
+          if [ -z "$WORLD_CUP_API_KEY" ]; then
+            echo "::error title=Missing WORLD_CUP_API_KEY::Add WORLD_CUP_API_KEY as a repository secret so the sync can reach the football-data provider."
             missing=1
           fi
 
@@ -81,12 +87,4 @@ jobs:
             exit 1
           fi
 
-          APP_URL="${APP_URL%/}"
-
-          curl \
-            --fail-with-body \
-            --show-error \
-            --request POST \
-            --header "Authorization: Bearer $CRON_SECRET" \
-            --header "Content-Type: application/json" \
-            "$APP_URL/api/sync"
+          pnpm sync
