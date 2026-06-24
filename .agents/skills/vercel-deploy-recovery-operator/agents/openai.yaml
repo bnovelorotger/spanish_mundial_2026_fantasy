@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vercel Deploy Recovery"
+  short_description: "Recover blocked Vercel production deploys"
+  default_prompt: "Use $vercel-deploy-recovery-operator to restore or verify production deploys for app_mundial."

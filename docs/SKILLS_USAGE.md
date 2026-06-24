@@ -313,6 +313,22 @@ Use $production-audit-runbook. Audit production readiness after the incident.
 Use $production-audit-runbook. Produce a prioritized risk register for app_mundial.
 ```
 
+### 10. vercel-deploy-recovery-operator
+
+Use when Vercel production deploys are blocked, stale, disconnected from Git,
+or need to be restored through GitHub Actions instead of native Vercel Git
+integration.
+
+Trigger examples:
+
+```txt
+Use $vercel-deploy-recovery-operator. Recover production deploys after Vercel blocks Git pushes.
+```
+
+```txt
+Use $vercel-deploy-recovery-operator. Verify the GitHub Actions release path and current production alias.
+```
+
 ## Skill maintenance rules
 
 Update a skill only when:
@@ -337,6 +353,7 @@ Core skills:
 - prediction-recovery-operator
 - sync-incident-responder
 - production-audit-runbook
+- vercel-deploy-recovery-operator
 
 Optional after MVP grows:
 
