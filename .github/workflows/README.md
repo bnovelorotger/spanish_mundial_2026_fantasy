@@ -21,6 +21,8 @@ Expected files:
 Required repository secrets:
 
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL (backup + sync).
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Browser auth key needed by the production
+  deploy build.
 - `SUPABASE_SERVICE_ROLE_KEY` - Server-only key (backup + sync).
 - `WORLD_CUP_API_KEY` - football-data.org API key used by the sync step.
 - `VERCEL_AUTH_JSON` - Serialized Vercel CLI `auth.json` for production deploys.
