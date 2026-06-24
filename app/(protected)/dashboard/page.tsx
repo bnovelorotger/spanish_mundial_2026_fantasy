@@ -72,7 +72,7 @@ const matchPhaseLabels: Record<MatchPhase, string> = {
   THIRD_PLACE: "Tercer puesto",
 };
 
-const lockPhaseLabels: Record<LockPhase, string> = {
+const lockPhaseLabels: Record<Exclude<LockPhase, "KNOCKOUT_STAGE_ONE" | "KNOCKOUT_STAGE_TWO">, string> = {
   CHAMPION: "Campeón",
   FINAL: "Final",
   GROUP_STAGE: "Fase de grupos",
@@ -82,6 +82,18 @@ const lockPhaseLabels: Record<LockPhase, string> = {
   SEMI_FINALS: "Semifinales",
   THIRD_PLACE: "Tercer puesto",
 };
+
+function lockPhaseLabel(phase: LockPhase) {
+  if (phase === "KNOCKOUT_STAGE_ONE") {
+    return "Ventana 1 KO";
+  }
+
+  if (phase === "KNOCKOUT_STAGE_TWO") {
+    return "Ventana 2 KO";
+  }
+
+  return lockPhaseLabels[phase];
+}
 
 function entryName(entry: {
   displayName: string | null;
@@ -159,9 +171,9 @@ async function getDashboardCountdown(
     new Date(nextOpenLock.lock_at).getTime() - now.getTime();
 
   return {
-    description: `Siguiente cierre: ${lockPhaseLabels[nextOpenLock.phase]}.`,
+    description: `Siguiente cierre: ${lockPhaseLabel(nextOpenLock.phase)}.`,
     label: "Las predicciones cierran en",
-    phaseLabel: lockPhaseLabels[nextOpenLock.phase],
+    phaseLabel: lockPhaseLabel(nextOpenLock.phase),
     state: "active",
     timeDisplay: formatRemainingLockTime(remainingMs),
     urgency: countdownUrgency(remainingMs),
@@ -307,15 +319,15 @@ export default async function DashboardPage() {
                 Predicciones pendientes
               </p>
               <h2 className="mt-2 text-lg font-semibold text-text-primary">
-                Los grupos ya están en juego. Deja cerrado tu orden antes del primer partido.
+                Guarda grupos y bracket antes del siguiente cierre del torneo.
               </h2>
             </div>
             <Sparkles className="size-5 text-accent-primary" strokeWidth={2} />
           </div>
 
           <p className="mt-3 text-sm leading-6 text-text-secondary">
-            El editor está abierto, las reglas de cierre ya mandan y cada grupo
-            guardado alimenta directamente la carrera por la clasificación.
+            La cuenta atrás ya marca la ventana activa. Cuando llegue el lock, lo
+            que hayas guardado quedará fijado y entrará en juego en la clasificación.
           </p>
 
           <Link

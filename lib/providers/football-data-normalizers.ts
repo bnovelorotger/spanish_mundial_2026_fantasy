@@ -6,6 +6,7 @@ import type {
   MatchStatus,
   QualificationStatus,
   TeamDTO,
+  WinnerSide,
 } from "../types/worldcup.ts";
 import { getFlagUrlForTeamCode } from "./team-flags.ts";
 
@@ -38,10 +39,12 @@ export interface FootballDataMatch {
   homeTeam?: FootballDataMatchTeam | null;
   id?: number | null;
   score?: {
+    duration?: string | null;
     fullTime?: {
       away?: number | null;
       home?: number | null;
     } | null;
+    winner?: string | null;
   } | null;
   stage?: string | null;
   status?: string | null;
@@ -163,6 +166,32 @@ function parseMatchStatus(value: string | null | undefined): MatchStatus {
   }
 
   return "SCHEDULED";
+}
+
+function parseWinnerSide(input: {
+  awayScore: number | null | undefined;
+  homeScore: number | null | undefined;
+  winner: string | null | undefined;
+}): WinnerSide | null {
+  const normalizedWinner = normalizeText(input.winner)?.toUpperCase();
+
+  if (normalizedWinner === "HOME_TEAM") {
+    return "HOME";
+  }
+
+  if (normalizedWinner === "AWAY_TEAM") {
+    return "AWAY";
+  }
+
+  if (
+    typeof input.homeScore === "number" &&
+    typeof input.awayScore === "number" &&
+    input.homeScore !== input.awayScore
+  ) {
+    return input.homeScore > input.awayScore ? "HOME" : "AWAY";
+  }
+
+  return null;
 }
 
 function parseMatchPhase(value: string | null | undefined): MatchPhase {
@@ -409,6 +438,11 @@ export function normalizeFootballDataMatches(
         phase,
         status: parseMatchStatus(match.status),
         venue: normalizeText(match.venue) ?? undefined,
+        winner_side: parseWinnerSide({
+          awayScore: match.score?.fullTime?.away,
+          homeScore: match.score?.fullTime?.home,
+          winner: match.score?.winner,
+        }) ?? undefined,
       } satisfies MatchDTO & { fixtureId: number | null };
     })
     .sort((left, right) => {
@@ -440,6 +474,7 @@ export function normalizeFootballDataMatches(
     phase: match.phase,
     status: match.status,
     venue: match.venue,
+    winner_side: match.winner_side,
   }));
 }
 

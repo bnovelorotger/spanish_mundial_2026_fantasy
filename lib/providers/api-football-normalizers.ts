@@ -6,6 +6,7 @@ import type {
   MatchStatus,
   QualificationStatus,
   TeamDTO,
+  WinnerSide,
 } from "../types/worldcup.ts";
 import { getFlagUrlForTeamCode } from "./team-flags.ts";
 
@@ -80,11 +81,13 @@ export interface ApiFootballFixtureResponseItem {
       code?: string | null;
       id?: number | null;
       name?: string | null;
+      winner?: boolean | null;
     } | null;
     home?: {
       code?: string | null;
       id?: number | null;
       name?: string | null;
+      winner?: boolean | null;
     } | null;
   } | null;
 }
@@ -182,6 +185,31 @@ function parseStatusShort(value: string | null | undefined): MatchStatus {
   }
 
   return "SCHEDULED";
+}
+
+function parseWinnerSide(input: {
+  awayScore: number | null | undefined;
+  awayWinner: boolean | null | undefined;
+  homeScore: number | null | undefined;
+  homeWinner: boolean | null | undefined;
+}): WinnerSide | null {
+  if (input.homeWinner === true) {
+    return "HOME";
+  }
+
+  if (input.awayWinner === true) {
+    return "AWAY";
+  }
+
+  if (
+    typeof input.homeScore === "number" &&
+    typeof input.awayScore === "number" &&
+    input.homeScore !== input.awayScore
+  ) {
+    return input.homeScore > input.awayScore ? "HOME" : "AWAY";
+  }
+
+  return null;
 }
 
 function parseQualificationStatus(
@@ -413,6 +441,12 @@ export function normalizeApiFootballFixtures(
         phase,
         status: parseStatusShort(entry.fixture?.status?.short),
         venue: normalizeText(entry.fixture?.venue?.name) ?? undefined,
+        winner_side: parseWinnerSide({
+          awayScore: entry.goals?.away,
+          awayWinner: entry.teams?.away?.winner,
+          homeScore: entry.goals?.home,
+          homeWinner: entry.teams?.home?.winner,
+        }) ?? undefined,
         weight: index,
       };
     })
@@ -445,6 +479,7 @@ export function normalizeApiFootballFixtures(
     phase: match.phase,
     status: match.status,
     venue: match.venue,
+    winner_side: match.winner_side,
   }));
 }
 

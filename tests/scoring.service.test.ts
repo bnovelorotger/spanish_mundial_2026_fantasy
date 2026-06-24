@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildGroupStagePointsRows,
+  buildKnockoutPointsRows,
   getPointsBreakdownFromRows,
   scoreGroupPrediction,
+  scoreKnockoutPrediction,
 } from "@/lib/services/scoring.service";
 
 describe("scoreGroupPrediction", () => {
@@ -228,6 +230,123 @@ describe("buildGroupStagePointsRows", () => {
   });
 });
 
+describe("scoreKnockoutPrediction", () => {
+  it("awards the configured round points when the winner side matches", () => {
+    const result = scoreKnockoutPrediction({
+      matchId: "match-final",
+      phase: "FINAL",
+      predictedWinnerSlot: "HOME",
+      winnerSide: "HOME",
+    });
+
+    expect(result.pointsAwarded).toBe(25);
+    expect(result.reason).toBe("Correct winner · Final");
+    expect(result.metadata.stamp).toBe("+25 pts");
+  });
+
+  it("returns a miss when the selected side does not advance", () => {
+    const result = scoreKnockoutPrediction({
+      matchId: "match-semi",
+      phase: "SEMI_FINALS",
+      predictedWinnerSlot: "HOME",
+      winnerSide: "AWAY",
+    });
+
+    expect(result.pointsAwarded).toBe(0);
+    expect(result.reason).toBe("Miss");
+    expect(result.metadata.stamp).toBe("Miss");
+  });
+});
+
+describe("buildKnockoutPointsRows", () => {
+  it("creates deterministic rows for knockout hits, misses and champion bonus", () => {
+    const rows = buildKnockoutPointsRows(
+      [
+        {
+          confirmed_at: "2026-07-01T12:00:00Z",
+          match_id: "match-r32",
+          predicted_winner_slot: "HOME",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          user_id: "user-1",
+        },
+        {
+          confirmed_at: "2026-07-19T12:00:00Z",
+          match_id: "match-final",
+          predicted_winner_slot: "AWAY",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          user_id: "user-1",
+        },
+      ],
+      [
+        {
+          id: "match-r32",
+          phase: "ROUND_OF_32",
+          status: "FINISHED",
+          winner_side: "HOME",
+        },
+        {
+          id: "match-final",
+          phase: "FINAL",
+          status: "FINISHED",
+          winner_side: "HOME",
+        },
+      ],
+    );
+
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.source_id)).toEqual([
+      "knockout_match_match-final",
+      "knockout_match_match-r32",
+      "champion_final_match-final",
+    ]);
+    expect(
+      rows.find((row) => row.source_id === "knockout_match_match-r32"),
+    ).toMatchObject({
+      points_awarded: 4,
+      source_type: "KNOCKOUT_WINNER",
+    });
+    expect(
+      rows.find((row) => row.source_id === "knockout_match_match-final"),
+    ).toMatchObject({
+      points_awarded: 0,
+      source_type: "KNOCKOUT_WINNER",
+    });
+    expect(
+      rows.find((row) => row.source_id === "champion_final_match-final"),
+    ).toMatchObject({
+      points_awarded: 0,
+      source_type: "CHAMPION",
+    });
+  });
+
+  it("skips finished matches that still have no resolvable winner side", () => {
+    const rows = buildKnockoutPointsRows(
+      [
+        {
+          confirmed_at: "2026-07-01T12:00:00Z",
+          match_id: "match-r32",
+          predicted_winner_slot: "HOME",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          user_id: "user-1",
+        },
+      ],
+      [
+        {
+          id: "match-r32",
+          phase: "ROUND_OF_32",
+          status: "FINISHED",
+          winner_side: null,
+        },
+      ],
+    );
+
+    expect(rows).toEqual([]);
+  });
+});
+
 describe("getPointsBreakdownFromRows", () => {
   it("aggregates totals by scoring source", () => {
     const breakdown = getPointsBreakdownFromRows([
@@ -252,7 +371,7 @@ describe("getPointsBreakdownFromRows", () => {
       {
         created_at: "2026-07-19T00:00:00Z",
         metadata: null,
-        points_awarded: 6,
+        points_awarded: 25,
         reason: "Champion",
         source_id: "champion-1",
         source_type: "CHAMPION",
@@ -262,8 +381,8 @@ describe("getPointsBreakdownFromRows", () => {
 
     expect(breakdown.groupStage).toBe(3);
     expect(breakdown.knockout).toBe(4);
-    expect(breakdown.champion).toBe(6);
-    expect(breakdown.total).toBe(13);
+    expect(breakdown.champion).toBe(25);
+    expect(breakdown.total).toBe(32);
     expect(breakdown.details).toHaveLength(3);
   });
 });

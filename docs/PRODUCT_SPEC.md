@@ -1,4 +1,4 @@
-# Product Spec — World Cup 2026 Pick'em App
+# Product Spec - World Cup 2026 Pick'em App
 
 ## Product goal
 
@@ -13,7 +13,9 @@ The first version must include:
 - Protected dashboard.
 - Match calendar using mock data.
 - Group prediction flow for groups A-L.
+- Knockout bracket flow in two fixed windows.
 - Group scoring.
+- Knockout winner scoring plus champion bonus inferred from the final pick.
 - Top 10 ranking.
 - User points breakdown.
 - Mock sync endpoint.
@@ -26,7 +28,7 @@ The following are not required in the first implementation:
 
 - Real external football API.
 - Scraper provider.
-- Full dynamic knockout bracket logic.
+- Full dynamic knockout bracket propagation.
 - Push notifications.
 - Admin panel.
 - Payment system.
@@ -64,6 +66,18 @@ The following are not required in the first implementation:
    - positions 1, 2, 3, 4;
    - phase is not locked.
 
+### Knockout predictions
+
+1. User opens the knockout tab.
+2. User sees the full bracket.
+3. Window 1 allows picks for `ROUND_OF_32` and `ROUND_OF_16`.
+4. Window 2 allows picks for `QUARTER_FINALS`, `SEMI_FINALS`, and `FINAL`.
+5. User chooses which side of each card advances (`HOME` or `AWAY`).
+6. App validates:
+   - the round belongs to the active knockout window;
+   - the window is not locked;
+   - the final pick also acts as the champion pick.
+
 ### Ranking
 
 1. User opens ranking page.
@@ -87,6 +101,7 @@ The app is accepted when:
 - A user can see dashboard.
 - A user can see calendar.
 - A user can save group predictions.
+- A user can save knockout predictions in both configured windows.
 - Mock results can be synced.
 - Points can be recalculated.
 - Ranking updates correctly.

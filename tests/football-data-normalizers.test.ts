@@ -194,6 +194,36 @@ describe("football-data normalizers", () => {
     ]);
   });
 
+  it("uses football-data winner metadata to resolve the advancing side after a draw", () => {
+    const matches = normalizeFootballDataMatches({
+      matches: [
+        {
+          awayTeam: { name: "Brazil", tla: "BRA" },
+          group: null,
+          homeTeam: { name: "Argentina", tla: "ARG" },
+          id: 537999,
+          score: {
+            duration: "PENALTY_SHOOTOUT",
+            fullTime: { away: 1, home: 1 },
+            winner: "AWAY_TEAM",
+          },
+          stage: "FINAL",
+          status: "FINISHED",
+          utcDate: "2026-07-19T19:00:00Z",
+          venue: "MetLife Stadium",
+        },
+      ],
+    });
+
+    expect(matches[0]).toMatchObject({
+      away_score: 1,
+      home_score: 1,
+      phase: "FINAL",
+      status: "FINISHED",
+      winner_side: "AWAY",
+    });
+  });
+
   it("normalizes standings into group rows with in-group positions", () => {
     const groupMap = createGroupMapFromFootballDataMatches(sampleMatchesResponse);
     const standings = normalizeFootballDataStandings({

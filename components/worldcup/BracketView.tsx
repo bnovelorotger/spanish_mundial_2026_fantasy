@@ -1,6 +1,10 @@
 import { StateCard } from "@/components/ui/StateCard";
-import type { BracketRoundViewModel } from "@/lib/types/worldcup";
+import type {
+  BracketRoundViewModel,
+  KnockoutWindowSummary,
+} from "@/lib/types/worldcup";
 
+import { LocalKickoff } from "./LocalKickoff";
 import { BracketPredictionEditor } from "./BracketPredictionEditor";
 
 interface BracketViewProps {
@@ -9,6 +13,7 @@ interface BracketViewProps {
   rounds: BracketRoundViewModel[];
   saveAction: (formData: FormData) => void | Promise<void>;
   saved?: boolean;
+  windowSummary?: KnockoutWindowSummary | null;
 }
 
 export function BracketView({
@@ -17,6 +22,7 @@ export function BracketView({
   rounds,
   saveAction,
   saved = false,
+  windowSummary = null,
 }: BracketViewProps) {
   return (
     <section className="space-y-4">
@@ -25,12 +31,28 @@ export function BracketView({
           Cuadro de eliminatorias
         </p>
         <h2 className="mt-2 text-2xl font-semibold text-text-primary">
-          Recorre las rondas, elige ganadores y mantén viva la carrera.
+          Rellena el bracket por ventanas y mantén viva la carrera.
         </h2>
         <p className="mt-3 text-sm leading-6 text-text-secondary">
-          Una ronda por columna, pensado primero para móvil y sin una imagen
-          gigante que esconda el cuadro en una pantalla de 360px.
+          El cuadro se completa por lados del bracket, con dos ventanas fijas:
+          primero dieciseisavos y octavos, después cuartos, semifinales y final.
         </p>
+
+        {windowSummary?.effectiveLockAt ? (
+          <div className="mt-5 rounded-card border border-accent-primary/20 bg-accent-primary/10 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
+              {windowSummary.label}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">
+              {windowSummary.roundsLabel}
+            </p>
+            <p className="mt-1 text-sm text-text-secondary">
+              Cierra en{" "}
+              <LocalKickoff isoUtc={windowSummary.effectiveLockAt} separator=" · " />
+              .
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className="overflow-x-auto pb-2" data-tour="knockout-board">
@@ -65,7 +87,7 @@ export function BracketView({
                               }
                             : saved
                               ? {
-                                  message: "Guardado. Tu ganador ya está en el cuadro.",
+                                  message: "Guardado. Tu lado ya quedó fijado en el cuadro.",
                                   tone: "success" as const,
                                 }
                               : null

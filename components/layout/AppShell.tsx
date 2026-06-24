@@ -6,11 +6,13 @@ interface AppShellProps {
   banner?: ReactNode;
   children: ReactNode;
   header: ReactNode;
+  overlay?: ReactNode;
 }
 
-export function AppShell({ banner, children, header }: AppShellProps) {
+export function AppShell({ banner, children, header, overlay }: AppShellProps) {
   return (
     <div className="min-h-screen">
+      {overlay}
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-28 pt-4 sm:px-6">
         <div className="space-y-4">
           {header}

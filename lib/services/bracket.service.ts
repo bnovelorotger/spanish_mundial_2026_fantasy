@@ -1,11 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getPhaseLock } from "@/lib/services/locks.service";
+import {
+  getKnockoutWindowLabel,
+  getKnockoutWindowPhaseForRound,
+  getKnockoutWindowStateForRound,
+} from "@/lib/services/knockout-window.service";
 import type {
   BracketMatchViewModel,
   BracketRoundViewModel,
   BracketSlotViewModel,
   KnockoutRoundPhase,
+  KnockoutWindowState,
+  WinnerSide,
 } from "@/lib/types/worldcup";
 
 interface TeamRow {
@@ -32,13 +39,13 @@ interface MatchRow {
 interface KnockoutPredictionRow {
   is_random: boolean;
   match_id: string;
-  predicted_winner_team_id: string | null;
+  predicted_winner_slot: WinnerSide | null;
 }
 
 interface SaveKnockoutPredictionInput {
   matchId: string;
   phase: KnockoutRoundPhase;
-  predictedWinnerTeamId: string;
+  predictedWinnerSlot: WinnerSide;
 }
 
 interface SaveKnockoutPredictionMatchRow {
@@ -118,52 +125,50 @@ export function isKnockoutRoundPhase(value: string): value is KnockoutRoundPhase
   return KNOCKOUT_PHASES.includes(value as KnockoutRoundPhase);
 }
 
-export function canPredictKnockoutMatch(input: {
-  awaySlot: BracketSlotViewModel;
-  homeSlot: BracketSlotViewModel;
-  isLocked: boolean;
-}) {
-  return (
-    !input.isLocked &&
-    input.homeSlot.isKnown &&
-    input.awaySlot.isKnown &&
-    input.homeSlot.id !== null &&
-    input.awaySlot.id !== null
-  );
+export function isWinnerSide(value: string): value is WinnerSide {
+  return value === "HOME" || value === "AWAY";
 }
 
-function toRoundMatchViewModel(
-  match: MatchRow,
-  predictedWinnerTeamId: string | null,
-  isRandom: boolean,
-  lock: Awaited<ReturnType<typeof getPhaseLock>>,
-): BracketMatchViewModel {
-  const homeSlot = toSlot(match.home_team, match.home_placeholder);
-  const awaySlot = toSlot(match.away_team, match.away_placeholder);
+export function canPredictKnockoutMatch(input: {
+  windowState: KnockoutWindowState;
+}) {
+  return input.windowState === "EDITABLE";
+}
+
+function toRoundMatchViewModel(input: {
+  match: MatchRow;
+  predictedWinnerSlot: WinnerSide | null;
+  isRandom: boolean;
+  lock: Awaited<ReturnType<typeof getPhaseLock>>;
+  windowState: KnockoutWindowState;
+}): BracketMatchViewModel {
+  const homeSlot = toSlot(input.match.home_team, input.match.home_placeholder);
+  const awaySlot = toSlot(input.match.away_team, input.match.away_placeholder);
+  const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
 
   return {
     awaySlot,
     canPredict: canPredictKnockoutMatch({
-      awaySlot,
-      homeSlot,
-      isLocked: lock.isLocked,
+      windowState: input.windowState,
     }),
-    city: match.city,
+    city: input.match.city,
     homeSlot,
-    id: match.id,
-    isFinal: match.phase === "FINAL",
-    kickoff: match.kickoff,
-    lock,
-    matchNumber: match.match_number,
-    phase: match.phase,
+    id: input.match.id,
+    isFinal: input.match.phase === "FINAL",
+    kickoff: input.match.kickoff,
+    lock: input.lock,
+    matchNumber: input.match.match_number,
+    phase: input.match.phase,
     prediction:
-      predictedWinnerTeamId !== null
+      input.predictedWinnerSlot !== null
         ? {
-            isRandom,
-            predictedWinnerTeamId,
+            isRandom: input.isRandom,
+            predictedWinnerSlot: input.predictedWinnerSlot,
           }
         : null,
-    venue: match.venue,
+    venue: input.match.venue,
+    windowLabel: getKnockoutWindowLabel(windowPhase),
+    windowState: input.windowState,
   };
 }
 
@@ -171,18 +176,20 @@ export async function getBracketRounds(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<BracketRoundViewModel[]> {
-  const [matchesResponse, predictionsResponse, ...locks] = await Promise.all([
-    supabase
-      .from("matches")
-      .select(BRACKET_MATCHES_SELECT)
-      .in("phase", KNOCKOUT_PHASES)
-      .order("kickoff", { ascending: true }),
-    supabase
-      .from("knockout_predictions")
-      .select("match_id, predicted_winner_team_id, is_random")
-      .eq("user_id", userId),
-    ...KNOCKOUT_PHASES.map((phase) => getPhaseLock(supabase, phase)),
-  ]);
+  const [matchesResponse, predictionsResponse, stageOneLock, stageTwoLock] =
+    await Promise.all([
+      supabase
+        .from("matches")
+        .select(BRACKET_MATCHES_SELECT)
+        .in("phase", KNOCKOUT_PHASES)
+        .order("kickoff", { ascending: true }),
+      supabase
+        .from("knockout_predictions")
+        .select("match_id, predicted_winner_slot, is_random")
+        .eq("user_id", userId),
+      getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
+      getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
+    ]);
 
   if (matchesResponse.error) {
     throw new Error(`Could not load bracket matches: ${matchesResponse.error.message}`);
@@ -200,9 +207,6 @@ export async function getBracketRounds(
       prediction,
     ]),
   );
-  const locksByPhase = new Map(
-    locks.map((lock) => [lock.phase, lock] as const),
-  );
   const matches = matchesResponse.data as MatchRow[];
 
   return KNOCKOUT_PHASES.map((phase) => ({
@@ -211,18 +215,22 @@ export async function getBracketRounds(
       .filter((match) => match.phase === phase)
       .map((match) => {
         const prediction = predictionsByMatchId.get(match.id);
-        const lock = locksByPhase.get(phase);
+        const windowPhase = getKnockoutWindowPhaseForRound(match.phase);
+        const lock =
+          windowPhase === "KNOCKOUT_STAGE_ONE" ? stageOneLock : stageTwoLock;
+        const windowState = getKnockoutWindowStateForRound({
+          phase: match.phase,
+          stageOne: stageOneLock,
+          stageTwo: stageTwoLock,
+        });
 
-        if (!lock) {
-          throw new Error(`Could not resolve lock state for ${phase}.`);
-        }
-
-        return toRoundMatchViewModel(
-          match,
-          prediction?.predicted_winner_team_id ?? null,
-          prediction?.is_random ?? false,
+        return toRoundMatchViewModel({
+          isRandom: prediction?.is_random ?? false,
           lock,
-        );
+          match,
+          predictedWinnerSlot: prediction?.predicted_winner_slot ?? null,
+          windowState,
+        });
       }),
     phase,
   }));
@@ -232,12 +240,12 @@ export function parseKnockoutPredictionFormData(formData: FormData):
   | { data: SaveKnockoutPredictionInput; error?: undefined }
   | { data?: undefined; error: string } {
   const matchId = String(formData.get("match_id") ?? "").trim();
-  const predictedWinnerTeamId = String(
-    formData.get("predicted_winner_team_id") ?? "",
+  const predictedWinnerSlot = String(
+    formData.get("predicted_winner_slot") ?? "",
   ).trim();
   const phase = String(formData.get("phase") ?? "").trim();
 
-  if (!matchId || !predictedWinnerTeamId || !isKnockoutRoundPhase(phase)) {
+  if (!matchId || !isWinnerSide(predictedWinnerSlot) || !isKnockoutRoundPhase(phase)) {
     return {
       error: "No hemos podido resolver ese pronóstico de eliminatorias.",
     };
@@ -247,50 +255,32 @@ export function parseKnockoutPredictionFormData(formData: FormData):
     data: {
       matchId,
       phase,
-      predictedWinnerTeamId,
+      predictedWinnerSlot,
     },
   };
 }
 
 export function validateKnockoutPredictionInput(input: {
-  awaySlot: BracketSlotViewModel;
-  homeSlot: BracketSlotViewModel;
-  isLocked: boolean;
-  predictedWinnerTeamId: string;
+  predictedWinnerSlot: WinnerSide;
+  windowState: KnockoutWindowState;
 }):
-  | { data: { predictedWinnerTeamId: string }; error?: undefined }
+  | { data: { predictedWinnerSlot: WinnerSide }; error?: undefined }
   | { data?: undefined; error: string } {
-  const canPredict = canPredictKnockoutMatch({
-    awaySlot: input.awaySlot,
-    homeSlot: input.homeSlot,
-    isLocked: input.isLocked,
-  });
-
-  if (input.isLocked) {
+  if (input.windowState === "LOCKED") {
     return {
-      error: "Esa ronda de eliminatorias ya está cerrada.",
+      error: "Esa ventana de eliminatorias ya está cerrada.",
     };
   }
 
-  if (!canPredict) {
+  if (input.windowState === "UPCOMING") {
     return {
-      error: "Elige un ganador cuando ya se conozcan los dos equipos del cruce.",
-    };
-  }
-
-  const validWinnerIds = [input.homeSlot.id, input.awaySlot.id].filter(
-    (value): value is string => value !== null,
-  );
-
-  if (!validWinnerIds.includes(input.predictedWinnerTeamId)) {
-    return {
-      error: "Elige uno de los equipos que aparecen en la tarjeta del cruce.",
+      error: "Esa ronda se abre en la segunda ventana de eliminatorias.",
     };
   }
 
   return {
     data: {
-      predictedWinnerTeamId: input.predictedWinnerTeamId,
+      predictedWinnerSlot: input.predictedWinnerSlot,
     },
   };
 }
@@ -300,7 +290,7 @@ export async function saveKnockoutPrediction(
   userId: string,
   input: SaveKnockoutPredictionInput,
 ) {
-  const [matchResponse, lock] = await Promise.all([
+  const [matchResponse, stageOneLock, stageTwoLock] = await Promise.all([
     supabase
       .from("matches")
       .select(
@@ -309,7 +299,8 @@ export async function saveKnockoutPrediction(
       .eq("id", input.matchId)
       .eq("phase", input.phase)
       .maybeSingle(),
-    getPhaseLock(supabase, input.phase),
+    getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
+    getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
   ]);
 
   if (matchResponse.error) {
@@ -326,22 +317,33 @@ export async function saveKnockoutPrediction(
 
   const homeSlot = toSlot(normalizeTeam(match.home_team), null);
   const awaySlot = toSlot(normalizeTeam(match.away_team), null);
+  const windowState = getKnockoutWindowStateForRound({
+    phase: input.phase,
+    stageOne: stageOneLock,
+    stageTwo: stageTwoLock,
+  });
   const validation = validateKnockoutPredictionInput({
-    awaySlot,
-    homeSlot,
-    isLocked: lock.isLocked,
-    predictedWinnerTeamId: input.predictedWinnerTeamId,
+    predictedWinnerSlot: input.predictedWinnerSlot,
+    windowState,
   });
 
   if (!validation.data) {
     throw new Error(validation.error);
   }
 
+  const predictedWinnerTeamId =
+    validation.data.predictedWinnerSlot === "HOME" ? homeSlot.id : awaySlot.id;
+
   const { error } = await supabase.from("knockout_predictions").upsert(
     {
+      confirmed_at: new Date().toISOString(),
+      confirmed_by: userId,
       is_random: false,
       match_id: input.matchId,
-      predicted_winner_team_id: validation.data.predictedWinnerTeamId,
+      predicted_winner_slot: validation.data.predictedWinnerSlot,
+      predicted_winner_team_id: predictedWinnerTeamId,
+      provenance: "USER_SUBMITTED" as const,
+      provenance_note: null,
       user_id: userId,
     },
     {

@@ -5,7 +5,10 @@ import { Suspense } from "react";
 import { AuthToastSurface } from "@/components/auth/AuthToastSurface";
 import { AppShell } from "@/components/layout/AppShell";
 import { HeaderMinimal } from "@/components/layout/HeaderMinimal";
+import { KnockoutWindowBubble } from "@/components/layout/KnockoutWindowBubble";
 import { AppToaster } from "@/components/ui/AppToaster";
+import { getKnockoutAlertSummary } from "@/lib/services/knockout-window.service";
+import { getPhaseLock } from "@/lib/services/locks.service";
 import {
   ensureProfileForUser,
   isProfileComplete,
@@ -30,6 +33,20 @@ export default async function ProtectedLayout({
 
   const profile = await ensureProfileForUser(user);
   const profileComplete = isProfileComplete(profile);
+  let knockoutNotice = null;
+
+  try {
+    const [stageOneLock, stageTwoLock] = await Promise.all([
+      getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
+      getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
+    ]);
+    knockoutNotice = getKnockoutAlertSummary({
+      stageOne: stageOneLock,
+      stageTwo: stageTwoLock,
+    });
+  } catch {
+    knockoutNotice = null;
+  }
 
   return (
     <>
@@ -57,6 +74,9 @@ export default async function ProtectedLayout({
               </button>
             </form>
           </HeaderMinimal>
+        }
+        overlay={
+          knockoutNotice ? <KnockoutWindowBubble notice={knockoutNotice} /> : undefined
         }
       >
         {children}

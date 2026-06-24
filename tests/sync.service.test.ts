@@ -4,6 +4,7 @@ import {
   applyStaleTeamPrunePlan,
   buildGameLockSyncRows,
   buildStaleTeamPrunePlan,
+  coerceMatchPayloadForStorage,
   findPredictionProtectedTeamGroupDrifts,
   getProviderFallbackChain,
   hasMatchPayloadChanged,
@@ -266,6 +267,7 @@ describe("hasMatchPayloadChanged", () => {
     phase: "GROUP_STAGE" as const,
     status: "FINISHED" as const,
     venue: "BMO Field",
+    winner_side: null,
   };
 
   it("returns false when the payload matches the stored row", () => {
@@ -279,6 +281,60 @@ describe("hasMatchPayloadChanged", () => {
         away_score: 2,
       }),
     ).toBe(true);
+  });
+});
+
+describe("coerceMatchPayloadForStorage", () => {
+  it("clears stray scores from scheduled-style statuses before the upsert", () => {
+    expect(
+      coerceMatchPayloadForStorage({
+        away_placeholder: null,
+        away_score: 1,
+        away_team_id: "team-2",
+        city: "Toronto",
+        group_letter: "A",
+        home_placeholder: null,
+        home_score: 0,
+        home_team_id: "team-1",
+        kickoff: "2026-06-11T19:00:00Z",
+        match_number: 1,
+        phase: "GROUP_STAGE",
+        status: "SCHEDULED",
+        venue: "BMO Field",
+        winner_side: "AWAY",
+      }),
+    ).toMatchObject({
+      away_score: null,
+      home_score: null,
+      status: "SCHEDULED",
+      winner_side: null,
+    });
+  });
+
+  it("downgrades live or finished rows with incomplete scores instead of violating the constraint", () => {
+    expect(
+      coerceMatchPayloadForStorage({
+        away_placeholder: null,
+        away_score: null,
+        away_team_id: "team-2",
+        city: "Toronto",
+        group_letter: "A",
+        home_placeholder: null,
+        home_score: 1,
+        home_team_id: "team-1",
+        kickoff: "2026-06-11T19:00:00Z",
+        match_number: 1,
+        phase: "GROUP_STAGE",
+        status: "FINISHED",
+        venue: "BMO Field",
+        winner_side: "HOME",
+      }),
+    ).toMatchObject({
+      away_score: null,
+      home_score: null,
+      status: "SCHEDULED",
+      winner_side: null,
+    });
   });
 });
 
@@ -514,11 +570,12 @@ describe("findPredictionProtectedTeamGroupDrifts", () => {
 });
 
 describe("buildGameLockSyncRows", () => {
-  it("pins each phase to its first kickoff and reuses the final for champion", () => {
+  it("pins each phase to its first kickoff, including the two knockout windows", () => {
     const rows = buildGameLockSyncRows([
       { kickoff: "2026-06-11T19:00:00Z", phase: "GROUP_STAGE" },
       { kickoff: "2026-06-10T19:00:00Z", phase: "GROUP_STAGE" },
       { kickoff: "2026-07-01T19:00:00Z", phase: "ROUND_OF_32" },
+      { kickoff: "2026-07-09T19:00:00Z", phase: "QUARTER_FINALS" },
       { kickoff: "2026-07-12T19:00:00Z", phase: "FINAL" },
       { kickoff: "2026-07-08T19:00:00Z", phase: "SEMI_FINALS" },
     ]);
@@ -535,6 +592,18 @@ describe("buildGameLockSyncRows", () => {
           lock_at: "2026-07-01T19:00:00Z",
           locked: false,
           locked_by: "AUTOMATIC",
+          phase: "KNOCKOUT_STAGE_ONE",
+        },
+        {
+          lock_at: "2026-07-09T19:00:00Z",
+          locked: false,
+          locked_by: "AUTOMATIC",
+          phase: "KNOCKOUT_STAGE_TWO",
+        },
+        {
+          lock_at: "2026-07-01T19:00:00Z",
+          locked: false,
+          locked_by: "AUTOMATIC",
           phase: "ROUND_OF_32",
         },
         {
@@ -542,12 +611,6 @@ describe("buildGameLockSyncRows", () => {
           locked: false,
           locked_by: "AUTOMATIC",
           phase: "FINAL",
-        },
-        {
-          lock_at: "2026-07-12T19:00:00Z",
-          locked: false,
-          locked_by: "AUTOMATIC",
-          phase: "CHAMPION",
         },
       ]),
     );
@@ -560,11 +623,7 @@ describe("buildGameLockSyncRows", () => {
     );
 
     expect(rows.find((row) => row.phase === "FINAL")).toBeUndefined();
-    expect(rows.find((row) => row.phase === "CHAMPION")).toEqual({
-      lock_at: "2026-07-12T19:00:00Z",
-      locked: false,
-      locked_by: "AUTOMATIC",
-      phase: "CHAMPION",
-    });
+    expect(rows.find((row) => row.phase === "KNOCKOUT_STAGE_ONE")).toBeUndefined();
+    expect(rows.find((row) => row.phase === "KNOCKOUT_STAGE_TWO")).toBeUndefined();
   });
 });

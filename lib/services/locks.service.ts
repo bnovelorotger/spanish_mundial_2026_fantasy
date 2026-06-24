@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { LockPhase, LockType } from "@/lib/types/worldcup";
 import { resolvePhaseLock } from "@/lib/utils/locks";
+import { isKnockoutWindowPhase } from "./knockout-window.service";
 
 interface GameLockRow {
   lock_at: string | null;
@@ -49,6 +50,10 @@ async function getFirstPhaseKickoff(
   return (data as MatchKickoffRow | null)?.kickoff ?? null;
 }
 
+function shouldResolveKickoffFromMatches(phase: LockPhase) {
+  return phase !== "CHAMPION" && !isKnockoutWindowPhase(phase);
+}
+
 export async function getPhaseLock(
   supabase: SupabaseClient,
   phase: LockPhase,
@@ -56,7 +61,9 @@ export async function getPhaseLock(
 ) {
   const lockRow = await getGameLockRow(supabase, phase);
   const firstKickoff =
-    phase === "CHAMPION" ? null : await getFirstPhaseKickoff(supabase, phase);
+    shouldResolveKickoffFromMatches(phase)
+      ? await getFirstPhaseKickoff(supabase, phase)
+      : null;
 
   return resolvePhaseLock({
     firstKickoff,
@@ -82,6 +89,7 @@ export async function getNextOpenLock(
   const { data, error } = await supabase
     .from("game_locks")
     .select(GAME_LOCK_SELECT)
+    .neq("phase", "CHAMPION")
     .eq("locked", false)
     .not("lock_at", "is", null)
     .gt("lock_at", now.toISOString())

@@ -21,7 +21,13 @@ export type KnockoutRoundPhase =
   | "SEMI_FINALS"
   | "FINAL";
 
-export type LockPhase = MatchPhase | "CHAMPION";
+export type KnockoutWindowPhase =
+  | "KNOCKOUT_STAGE_ONE"
+  | "KNOCKOUT_STAGE_TWO";
+
+export type LockPhase = MatchPhase | KnockoutWindowPhase | "CHAMPION";
+
+export type WinnerSide = "HOME" | "AWAY";
 
 export type GroupLetter =
   | "A"
@@ -67,6 +73,8 @@ export type SyncRunStatus = "SUCCESS" | "PARTIAL" | "FAILED";
 
 export type LockType = "AUTOMATIC" | "MANUAL";
 
+export type KnockoutWindowState = "EDITABLE" | "LOCKED" | "UPCOMING";
+
 export interface Team {
   id: string;
   name: string;
@@ -88,6 +96,7 @@ export interface Match {
   away_placeholder: string | null;
   home_score: number | null;
   away_score: number | null;
+  winner_side: WinnerSide | null;
   status: MatchStatus;
   venue: string | null;
   city: string | null;
@@ -133,6 +142,7 @@ export interface KnockoutPrediction {
   id: string;
   user_id: string;
   match_id: string;
+  predicted_winner_slot: WinnerSide | null;
   predicted_winner_team_id: string | null;
   is_random: boolean;
   confirmed_at: string | null;
@@ -224,6 +234,7 @@ export interface MatchDTO {
   away_placeholder?: string;
   home_score?: number;
   away_score?: number;
+  winner_side?: WinnerSide;
   status: MatchStatus;
   venue?: string;
   city?: string;
@@ -343,6 +354,11 @@ export type PredictionStamp =
   | "+1 pto"
   | "+2 pts"
   | "+3 pts"
+  | "+4 pts"
+  | "+6 pts"
+  | "+8 pts"
+  | "+15 pts"
+  | "+25 pts"
   | "Exacto"
   | "Fallo"
   | "Recuperado";
@@ -363,7 +379,7 @@ export interface BracketSlotViewModel {
 
 export interface BracketPredictionViewModel {
   isRandom: boolean;
-  predictedWinnerTeamId: string | null;
+  predictedWinnerSlot: WinnerSide | null;
 }
 
 export interface BracketMatchViewModel {
@@ -378,6 +394,8 @@ export interface BracketMatchViewModel {
   matchNumber: number;
   phase: KnockoutRoundPhase;
   prediction: BracketPredictionViewModel | null;
+  windowLabel: string;
+  windowState: KnockoutWindowState;
   venue: string | null;
 }
 
@@ -385,6 +403,18 @@ export interface BracketRoundViewModel {
   label: string;
   matches: BracketMatchViewModel[];
   phase: KnockoutRoundPhase;
+}
+
+export interface KnockoutWindowSummary {
+  ctaHref: string;
+  description: string;
+  effectiveLockAt: string | null;
+  isAlertActive: boolean;
+  isLocked: boolean;
+  label: string;
+  leadHours: number;
+  phase: KnockoutWindowPhase;
+  roundsLabel: string;
 }
 
 export const MATCH_PHASE_OPTIONS: MatchPhase[] = [

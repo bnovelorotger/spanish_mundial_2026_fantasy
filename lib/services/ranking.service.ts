@@ -99,6 +99,29 @@ function sourcePriority(sourceType: PointsSourceType) {
   return 2;
 }
 
+function pointsStampLabel(pointsAwarded: number) {
+  switch (pointsAwarded) {
+    case 1:
+      return "+1 pto" as const;
+    case 2:
+      return "+2 pts" as const;
+    case 3:
+      return "+3 pts" as const;
+    case 4:
+      return "+4 pts" as const;
+    case 6:
+      return "+6 pts" as const;
+    case 8:
+      return "+8 pts" as const;
+    case 15:
+      return "+15 pts" as const;
+    case 25:
+      return "+25 pts" as const;
+    default:
+      return null;
+  }
+}
+
 export function buildRankingEntries(
   profiles: ProfileRow[],
   pointsRows: PointRow[],
@@ -330,16 +353,13 @@ export function getRankingStamps(
       return [{ label: "Fallo", tone: "miss" as const }, ...provenanceStamp];
     }
 
-    if (detail.pointsAwarded === 1) {
-      return [{ label: "+1 pto", tone: "points" as const }, ...provenanceStamp];
-    }
+    const pointsLabel = pointsStampLabel(detail.pointsAwarded);
 
-    if (detail.pointsAwarded === 2) {
-      return [{ label: "+2 pts", tone: "points" as const }, ...provenanceStamp];
-    }
-
-    if (detail.pointsAwarded === 3) {
-      return [{ label: "+3 pts", tone: "points" as const }, ...provenanceStamp];
+    if (pointsLabel) {
+      return [
+        { label: pointsLabel, tone: "points" as const },
+        ...provenanceStamp,
+      ];
     }
 
     return [{ label: "Fallo", tone: "miss" as const }, ...provenanceStamp];

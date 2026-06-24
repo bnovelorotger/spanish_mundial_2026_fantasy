@@ -21,6 +21,7 @@ import type {
   QualificationStatus,
   SyncRunStatus,
   TeamDTO,
+  WinnerSide,
 } from "../types/worldcup.ts";
 
 interface TeamRow {
@@ -53,6 +54,7 @@ interface MatchRow {
   phase: MatchPhase;
   status: MatchStatus;
   venue: string | null;
+  winner_side?: WinnerSide | null;
 }
 
 interface GroupPredictionRow {
@@ -349,11 +351,12 @@ const SYNCABLE_LOCK_PHASES: readonly LockPhase[] = [
   "GROUP_STAGE",
   "ROUND_OF_32",
   "ROUND_OF_16",
+  "KNOCKOUT_STAGE_ONE",
   "QUARTER_FINALS",
   "SEMI_FINALS",
+  "KNOCKOUT_STAGE_TWO",
   "THIRD_PLACE",
   "FINAL",
-  "CHAMPION",
 ] as const;
 
 function pointRowTouchesStaleTeam(
@@ -560,16 +563,19 @@ export function buildGameLockSyncRows(
     }
   }
 
-  const championKickoff = earliestKickoffByPhase.get("FINAL");
+  const knockoutStageOneKickoff = earliestKickoffByPhase.get("ROUND_OF_32");
+  const knockoutStageTwoKickoff = earliestKickoffByPhase.get("QUARTER_FINALS");
   const existingLockByPhase = new Map(
     existingLocks.map((lock) => [lock.phase, lock] as const),
   );
 
   return SYNCABLE_LOCK_PHASES.flatMap((phase) => {
     const kickoff =
-      phase === "CHAMPION"
-        ? championKickoff
-        : earliestKickoffByPhase.get(phase);
+      phase === "KNOCKOUT_STAGE_ONE"
+        ? knockoutStageOneKickoff
+        : phase === "KNOCKOUT_STAGE_TWO"
+          ? knockoutStageTwoKickoff
+          : earliestKickoffByPhase.get(phase as MatchPhase);
     const existingLock = existingLockByPhase.get(phase);
 
     if (!kickoff || existingLock?.locked_by === "MANUAL") {
@@ -602,6 +608,7 @@ export function hasMatchPayloadChanged(
     phase: MatchPhase;
     status: MatchStatus;
     venue: string | null;
+    winner_side: WinnerSide | null;
   },
 ) {
   if (!existingMatch) {
@@ -617,11 +624,57 @@ export function hasMatchPayloadChanged(
     existingMatch.away_placeholder !== payload.away_placeholder ||
     existingMatch.home_score !== payload.home_score ||
     existingMatch.away_score !== payload.away_score ||
+    existingMatch.winner_side !== payload.winner_side ||
     existingMatch.status !== payload.status ||
     existingMatch.venue !== payload.venue ||
     existingMatch.city !== payload.city ||
     existingMatch.kickoff !== payload.kickoff
   );
+}
+
+export function coerceMatchPayloadForStorage(payload: {
+  away_placeholder: string | null;
+  away_score: number | null;
+  away_team_id: string | null;
+  city: string | null;
+  group_letter: string | null;
+  home_placeholder: string | null;
+  home_score: number | null;
+  home_team_id: string | null;
+  kickoff: string;
+  match_number: number;
+  phase: MatchPhase;
+  status: MatchStatus;
+  venue: string | null;
+  winner_side: WinnerSide | null;
+}) {
+  if (
+    payload.status === "SCHEDULED" ||
+    payload.status === "POSTPONED" ||
+    payload.status === "CANCELLED"
+  ) {
+    return {
+      ...payload,
+      away_score: null,
+      home_score: null,
+      winner_side: null,
+    };
+  }
+
+  if (
+    (payload.status === "LIVE" || payload.status === "FINISHED") &&
+    (payload.home_score === null || payload.away_score === null)
+  ) {
+    return {
+      ...payload,
+      away_score: null,
+      home_score: null,
+      status: "SCHEDULED" as const,
+      winner_side: null,
+    };
+  }
+
+  return payload;
 }
 
 export function hasStandingPayloadChanged(
@@ -716,7 +769,7 @@ async function pruneStaleTeams(
       supabase
         .from("matches")
         .select(
-          "id, match_number, phase, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, home_score, away_score, status, venue, city, kickoff",
+          "id, match_number, phase, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, home_score, away_score, winner_side, status, venue, city, kickoff",
         ),
     ]);
 
@@ -928,7 +981,7 @@ async function syncMatches(
   const existingResponse = await supabase
     .from("matches")
     .select(
-      "match_number, phase, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, home_score, away_score, status, venue, city, kickoff",
+      "match_number, phase, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, home_score, away_score, winner_side, status, venue, city, kickoff",
     )
     .in("match_number", matchNumbers);
 
@@ -945,7 +998,7 @@ async function syncMatches(
 
   let matchesChanged = false;
   const payload = matches.map((match) => {
-    const row = {
+    const row = coerceMatchPayloadForStorage({
       away_placeholder: normalizeNullableString(match.away_placeholder),
       away_score: match.away_score ?? null,
       away_team_id: resolveTeamId(teamMap, match.away_team_code),
@@ -959,7 +1012,8 @@ async function syncMatches(
       phase: match.phase,
       status: match.status,
       venue: normalizeNullableString(match.venue),
-    };
+      winner_side: match.winner_side ?? null,
+    });
 
     if (
       hasMatchPayloadChanged(

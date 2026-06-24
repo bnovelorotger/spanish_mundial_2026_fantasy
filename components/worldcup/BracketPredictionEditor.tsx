@@ -19,6 +19,13 @@ interface BracketPredictionEditorProps {
 }
 
 function matchStateLabel(match: BracketMatchViewModel) {
+  if (match.windowState === "UPCOMING") {
+    return {
+      label: match.windowLabel,
+      variant: "scheduled" as const,
+    };
+  }
+
   if (match.lock.isLocked) {
     return {
       label: "Cerrado",
@@ -120,17 +127,22 @@ export function BracketPredictionEditor({
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
           <span>{match.isFinal ? "Tarjeta premium de la final" : phaseLabel(match)}</span>
+          <span>· {match.windowLabel}</span>
           {match.city ? <span>· {match.city}</span> : null}
           {match.venue ? <span>· {match.venue}</span> : null}
         </div>
 
         <div className="mt-4 space-y-3">
-          {[match.homeSlot, match.awaySlot].map((slot) => {
-            const isSelected = match.prediction?.predictedWinnerTeamId === slot.id;
+          {[
+            { slot: match.homeSlot, winnerSlot: "HOME" as const },
+            { slot: match.awaySlot, winnerSlot: "AWAY" as const },
+          ].map(({ slot, winnerSlot }) => {
+            const isSelected =
+              match.prediction?.predictedWinnerSlot === winnerSlot;
 
             return (
               <button
-                key={`${match.id}-${slot.name}`}
+                key={`${match.id}-${winnerSlot}-${slot.name}`}
                 className={cn(
                   "focus-ring flex w-full items-center justify-between gap-3 rounded-card border px-3 py-3 text-left",
                   slotButtonClassName({
@@ -138,10 +150,10 @@ export function BracketPredictionEditor({
                     isSelected,
                   }),
                 )}
-                disabled={!match.canPredict || !slot.id}
-                name="predicted_winner_team_id"
+                disabled={!match.canPredict}
+                name="predicted_winner_slot"
                 type="submit"
-                value={slot.id ?? ""}
+                value={winnerSlot}
               >
                 <TeamBadge
                   code={slot.code ?? undefined}
@@ -154,7 +166,7 @@ export function BracketPredictionEditor({
                 {isSelected ? (
                   <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
                     <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
-                    Ganador
+                    Avanza
                   </div>
                 ) : null}
               </button>
@@ -175,10 +187,21 @@ export function BracketPredictionEditor({
             >
               {flash.message}
             </p>
+          ) : match.windowState === "UPCOMING" ? (
+            <div className="flex items-start gap-2 text-text-secondary">
+              <Lock className="mt-0.5 size-4 shrink-0 text-accent-primary" strokeWidth={2} />
+              <p>
+                Esta ronda se abre en {match.windowLabel.toLowerCase()}. Podrás
+                rehacerla cuando cierre la primera ventana de eliminatorias.
+              </p>
+            </div>
           ) : match.lock.isLocked ? (
             <div className="flex items-start gap-2 text-text-secondary">
               <Lock className="mt-0.5 size-4 shrink-0 text-status-warning" strokeWidth={2} />
-              <p>Esta ronda está cerrada. Tu ganador guardado se mantiene en el cuadro.</p>
+              <p>
+                {match.windowLabel} ya está cerrada. Tu lado guardado se queda
+                fijado en el cuadro.
+              </p>
             </div>
           ) : match.canPredict ? (
             <div className="flex items-start gap-2 text-text-secondary">
@@ -186,11 +209,17 @@ export function BracketPredictionEditor({
                 className="mt-0.5 size-4 shrink-0 text-accent-secondary"
                 strokeWidth={2}
               />
-              <p>Elige el ganador directamente en la tarjeta. La propagación sigue siendo manual en este cuadro MVP.</p>
+              <p>
+                Elige qué lado del cuadro avanza. Puedes guardar el bracket aunque
+                todavía haya placeholders.
+                {match.isFinal
+                  ? " El ganador de la final también define tu bonus de campeón."
+                  : ""}
+              </p>
             </div>
           ) : (
             <p className="text-text-secondary">
-              Elige un ganador cuando los dos huecos del cuadro estén ocupados por equipos ya conocidos.
+              Este cruce está en solo lectura en esta ventana de eliminatorias.
             </p>
           )}
         </div>

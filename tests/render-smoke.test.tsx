@@ -12,6 +12,7 @@ import { GROUP_LETTER_OPTIONS } from "@/lib/types/worldcup";
 
 const {
   mockCreateClient,
+  mockGetPhaseLock,
   mockGetNextOpenLock,
   mockGetNextScheduledMatch,
   mockGetRankingByPhase,
@@ -22,6 +23,7 @@ const {
   mockGetBracketRounds,
 } = vi.hoisted(() => ({
   mockCreateClient: vi.fn(),
+  mockGetPhaseLock: vi.fn(),
   mockGetNextOpenLock: vi.fn(),
   mockGetNextScheduledMatch: vi.fn(),
   mockGetRankingByPhase: vi.fn(),
@@ -39,6 +41,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 vi.mock("@/lib/services/locks.service", () => ({
+  getPhaseLock: mockGetPhaseLock,
   getNextOpenLock: mockGetNextOpenLock,
 }));
 
@@ -144,13 +147,15 @@ const bracketMatch: BracketMatchViewModel = {
   lock: {
     effectiveLockAt: "2026-07-01T19:00:00Z",
     isLocked: false,
-    phase: "ROUND_OF_32",
+    phase: "KNOCKOUT_STAGE_ONE",
     source: "AUTOMATIC",
   },
   matchNumber: 65,
   phase: "ROUND_OF_32",
   prediction: null,
   venue: "SoFi Stadium",
+  windowLabel: "Ventana 1",
+  windowState: "EDITABLE",
 };
 
 const rankingEntries: RankingEntry[] = [
@@ -246,6 +251,15 @@ describe("render smoke", () => {
       locked_by: "AUTOMATIC",
       phase: "GROUP_STAGE",
     });
+    mockGetPhaseLock.mockImplementation(async (_supabase, phase: string) => ({
+      effectiveLockAt:
+        phase === "KNOCKOUT_STAGE_ONE"
+          ? "2026-07-01T19:00:00Z"
+          : "2026-07-09T19:00:00Z",
+      isLocked: false,
+      phase,
+      source: "AUTOMATIC",
+    }));
     mockGetNextScheduledMatch.mockResolvedValue(nextMatch);
     mockGetRankingByPhase.mockResolvedValue({
       entries: rankingEntries,

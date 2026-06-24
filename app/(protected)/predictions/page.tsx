@@ -8,9 +8,16 @@ import { GroupPredictionEditor } from "@/components/worldcup/GroupPredictionEdit
 import { GroupNavigator } from "@/components/worldcup/GroupNavigator";
 import { ONBOARDING_TOURS, type OnboardingTourId } from "@/lib/onboarding/tours";
 import { getBracketRounds } from "@/lib/services/bracket.service";
-import type { GroupLetter } from "@/lib/types/worldcup";
+import {
+  getCurrentKnockoutWindowSummary,
+} from "@/lib/services/knockout-window.service";
+import { getPhaseLock } from "@/lib/services/locks.service";
 import { getGroupPredictionGroups } from "@/lib/services/predictions.service";
 import { createClient } from "@/lib/supabase/server";
+import type {
+  GroupLetter,
+  KnockoutWindowSummary,
+} from "@/lib/types/worldcup";
 
 import {
   saveGroupPredictionAction,
@@ -71,8 +78,10 @@ function PredictionTabLink({
 }
 
 function PredictionsHeader({
+  knockoutWindowSummary,
   tab,
 }: {
+  knockoutWindowSummary?: KnockoutWindowSummary | null;
   tab: PredictionsTab;
 }) {
   return (
@@ -83,13 +92,25 @@ function PredictionsHeader({
       <h1 className="mt-2 text-2xl font-semibold text-text-primary">
         {tab === "groups"
           ? "Ordena cada grupo hasta clavar tu 1-4."
-          : "Lee el cuadro ronda a ronda y deja cerrados tus ganadores."}
+          : "Rellena el bracket por ventanas y fija el lado que avanza."}
       </h1>
       <p className="mt-3 text-sm leading-6 text-text-secondary">
         {tab === "groups"
           ? "Reordena los cuatro equipos de cada grupo, guarda con un toque y adelántate al cierre antes del primer partido de la fase de grupos."
-          : "El cuadro de eliminatorias sigue siendo legible en móvil, una ronda por columna, y solo deja elegir ganador cuando ya se conocen ambos equipos."}
+          : "El cuadro de eliminatorias se juega en dos ventanas: primero dieciseisavos y octavos; después cuartos, semifinales y final."}
       </p>
+
+      {tab === "knockout" && knockoutWindowSummary?.effectiveLockAt ? (
+        <div className="mt-4 rounded-card border border-accent-primary/25 bg-accent-primary/10 px-4 py-3 text-sm text-text-secondary">
+          <p className="font-semibold uppercase tracking-[0.18em] text-accent-primary">
+            {knockoutWindowSummary.label}
+          </p>
+          <p className="mt-1 text-text-primary">
+            {knockoutWindowSummary.roundsLabel}
+          </p>
+          <p className="mt-1">{knockoutWindowSummary.description}</p>
+        </div>
+      ) : null}
 
       <div className="mt-5 flex flex-wrap gap-2" data-tour="tabs">
         <PredictionTabLink currentTab={tab} label="Grupos" tab="groups" />
@@ -138,11 +159,22 @@ export default async function PredictionsPage({
 
   if (activeTab === "knockout") {
     let rounds: Awaited<ReturnType<typeof getBracketRounds>> | null;
+    let knockoutWindowSummary: KnockoutWindowSummary | null;
 
     try {
-      rounds = await getBracketRounds(supabase, user.id);
+      const [resolvedRounds, stageOneLock, stageTwoLock] = await Promise.all([
+        getBracketRounds(supabase, user.id),
+        getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
+        getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
+      ]);
+      rounds = resolvedRounds;
+      knockoutWindowSummary = getCurrentKnockoutWindowSummary({
+        stageOne: stageOneLock,
+        stageTwo: stageTwoLock,
+      });
     } catch {
       rounds = null;
+      knockoutWindowSummary = null;
     }
 
     return (
@@ -151,7 +183,10 @@ export default async function PredictionsPage({
         tourId={onboardingTourId}
       >
         <section className="space-y-6">
-          <PredictionsHeader tab="knockout" />
+          <PredictionsHeader
+            knockoutWindowSummary={knockoutWindowSummary}
+            tab="knockout"
+          />
 
           {rounds ? (
             <BracketView
@@ -160,6 +195,7 @@ export default async function PredictionsPage({
               rounds={rounds}
               saveAction={saveKnockoutPredictionAction}
               saved={saved}
+              windowSummary={knockoutWindowSummary}
             />
           ) : (
             <PredictionsErrorState title="No hemos podido cargar las predicciones de eliminatorias." />

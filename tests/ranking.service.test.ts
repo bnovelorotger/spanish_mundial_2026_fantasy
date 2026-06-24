@@ -461,4 +461,27 @@ describe("getRankingStamps", () => {
       { label: "Recuperado", tone: "recovered" },
     ]);
   });
+
+  it("supports knockout and champion point stamps from the new scale", () => {
+    const stamps = getRankingStamps(
+      {
+        champion: 25,
+        details: [
+          {
+            metadata: { stamp: "+25 pts" },
+            pointsAwarded: 25,
+            reason: "Champion bonus",
+            sourceId: "champion_final_match-final",
+            sourceType: "CHAMPION",
+          },
+        ],
+        groupStage: 0,
+        knockout: 0,
+        total: 25,
+      },
+      2,
+    );
+
+    expect(stamps).toEqual([{ label: "+25 pts", tone: "points" }]);
+  });
 });

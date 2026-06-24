@@ -1,6 +1,6 @@
 # Roadmap
 
-## MVP 1 — Core Pick'em
+## MVP 1 - Core Pick'em
 
 ### Block 1 (Day 1)
 - [x] Create project documentation.
@@ -32,7 +32,7 @@
 
 > **MVP 1 complete.** All 11 phases plus deployment landed on `main`.
 
-### Post-MVP polish window (2026-05-25 → 2026-05-31)
+### Post-MVP polish window (2026-05-25 -> 2026-05-31)
 
 After MVP 1 shipped, a polish window addressed real-user friction and a
 full frontend audit. Closed in waves:
@@ -49,34 +49,35 @@ full frontend audit. Closed in waves:
   14 of the actionable findings executed in 5 waves: i18n closure,
   fast a11y, onboarding fixes, deeper a11y (focus-visible + semantic
   ranking + radio group avatars), and microcopy editorial polish.
-- **Live scoring**: GROUP_POSITION now evaluates against current
+- **Live scoring**: `GROUP_POSITION` now evaluates against current
   standings instead of waiting for `is_final = true`. Cron raised to
   hourly (72 calls/day, well below TIER_ONE's 10 calls/minute). UI
   shows an `EN DIRECTO` badge while any group standings remain open.
+- **Knockout v1**: two fixed editing windows, in-app 24h lock alerts,
+  slot-based bracket picks, `winner_side` support, `KNOCKOUT_WINNER`
+  scoring, and champion bonus inferred from the final pick.
 
 What was *intentionally* left for later:
 
-- F-002 / F-012 (audit) — tournament-aware editorial copy. Will be
+- F-002 / F-012 (audit) - tournament-aware editorial copy. Will be
   taken on closer to June 2026, when the actual phase of the tournament
   matters.
-- F-008 / F-013 (audit) — debated; the auditor advised against them.
+- F-008 / F-013 (audit) - debated; the auditor advised against them.
 - F-016 closed as part of the microcopy wave above.
-- KNOCKOUT_WINNER and CHAMPION scoring not implemented yet — typed in
-  the schema but no logic. Worth tackling before June.
 
 ---
 
-## MVP 2 — Enhanced experience (future)
+## MVP 2 - Enhanced experience (future)
 
-- Full dynamic knockout bracket with propagation.
+- Full dynamic knockout bracket propagation between rounds.
 - Real-time match updates.
 - Push notifications.
 - Social features (groups, leagues).
-- Match result predictions (exact score).
+- Match result predictions (exact score, extra time, penalties bonuses).
 - Admin panel.
 - Detailed statistics.
 
-## MVP 3 — Monetization (future)
+## MVP 3 - Monetization (future)
 
 - Premium leagues.
 - Custom tournament creation.

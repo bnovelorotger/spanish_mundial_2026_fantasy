@@ -53,7 +53,8 @@
 | away_placeholder | text | nullable |
 | home_score | integer | nullable |
 | away_score | integer | nullable |
-| status | text | not null, default 'SCHEDULED' |
+| winner_side | text | nullable (`HOME`, `AWAY`) |
+| status | text | not null, default `SCHEDULED` |
 | venue | text | |
 | city | text | |
 | kickoff | timestamptz | not null |
@@ -81,8 +82,9 @@
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
-Unique constraint: (group_letter, team_id)
-Unique constraint: (group_letter, position) when is_final = true
+Unique constraint: `(group_letter, team_id)`
+
+Unique constraint: `(group_letter, position)` when `is_final = true`
 
 ### group_predictions
 
@@ -100,8 +102,9 @@ Unique constraint: (group_letter, position) when is_final = true
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
-Unique constraint: (user_id, group_letter, team_id)
-Unique constraint: (user_id, group_letter, predicted_position)
+Unique constraint: `(user_id, group_letter, team_id)`
+
+Unique constraint: `(user_id, group_letter, predicted_position)`
 
 ### knockout_predictions
 
@@ -110,7 +113,8 @@ Unique constraint: (user_id, group_letter, predicted_position)
 | id | uuid | PK, default gen_random_uuid() |
 | user_id | uuid | FK profiles(id), not null |
 | match_id | uuid | FK matches(id), not null |
-| predicted_winner_team_id | uuid | FK teams(id), nullable |
+| predicted_winner_slot | text | nullable (`HOME`, `AWAY`), primary knockout input |
+| predicted_winner_team_id | uuid | FK teams(id), nullable compatibility column |
 | is_random | boolean | default false |
 | provenance | text | not null default USER_SUBMITTED |
 | provenance_note | text | nullable |
@@ -119,7 +123,7 @@ Unique constraint: (user_id, group_letter, predicted_position)
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
-Unique constraint: (user_id, match_id)
+Unique constraint: `(user_id, match_id)`
 
 ### champion_predictions
 
@@ -135,7 +139,9 @@ Unique constraint: (user_id, match_id)
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
-Unique constraint: (user_id)
+Unique constraint: `(user_id)`
+
+Note: `champion_predictions` remains in schema for compatibility, but knockout v1 infers the active champion bonus from the final pick instead of using a separate form.
 
 ### points
 
@@ -150,7 +156,12 @@ Unique constraint: (user_id)
 | metadata | jsonb | nullable |
 | created_at | timestamptz | default now() |
 
-Unique constraint: (user_id, source_type, source_id)
+Unique constraint: `(user_id, source_type, source_id)`
+
+Knockout scoring conventions:
+
+- `KNOCKOUT_WINNER.source_id = knockout_match_{match_id}`
+- `CHAMPION.source_id = champion_final_{match_id}`
 
 ### app_settings
 
@@ -165,14 +176,14 @@ Unique constraint: (user_id, source_type, source_id)
 | Column | Type | Constraints |
 |---|---|---|
 | id | uuid | PK, default gen_random_uuid() |
-| phase | text | not null |
+| phase | text | not null (`GROUP_STAGE`, round locks, `KNOCKOUT_STAGE_ONE`, `KNOCKOUT_STAGE_TWO`, `CHAMPION`) |
 | locked | boolean | default false |
 | lock_at | timestamptz | nullable |
 | locked_by | text | nullable (AUTOMATIC, MANUAL) |
 | created_at | timestamptz | default now() |
 | updated_at | timestamptz | default now() |
 
-Unique constraint: (phase)
+Unique constraint: `(phase)`
 
 ### sync_runs
 
@@ -210,8 +221,7 @@ must be unique.
 
 ### prediction provenance
 
-Prediction rows track whether they were submitted directly by the user or
-recovered during an incident. Current values:
+Prediction rows track whether they were submitted directly by the user or recovered during an incident. Current values:
 
 - USER_SUBMITTED
 - INFERRED_100
@@ -219,25 +229,11 @@ recovered during an incident. Current values:
 - BASELINE
 - IMPORTED_BACKUP
 
-Provenance is copied into points metadata during recalculation for auditability.
+### knockout windows
 
-### sync_runs
+The product uses two shared knockout editing windows:
 
-Every sync execution must be logged for debugging.
+- `KNOCKOUT_STAGE_ONE`: `ROUND_OF_32` + `ROUND_OF_16`, locked at the first `ROUND_OF_32` kickoff.
+- `KNOCKOUT_STAGE_TWO`: `QUARTER_FINALS` + `SEMI_FINALS` + `FINAL`, locked at the first `QUARTER_FINALS` kickoff.
 
-## Security
-
-- RLS must be enabled where appropriate.
-- Authenticated users can read public game data.
-- Users can only write their own predictions.
-- Server/service role writes matches, standings and points.
-- Never expose SUPABASE_SERVICE_ROLE_KEY to the client.
-
-## Indexes
-
-- matches: (phase), (group_letter), (kickoff)
-- group_standings: (group_letter), (team_id)
-- group_predictions: (user_id), (group_letter)
-- points: (user_id), (source_type)
-- game_locks: (phase)
-- profiles: (username)
+The in-app floating notice uses a single configured lead time of `24h` before each active window lock.

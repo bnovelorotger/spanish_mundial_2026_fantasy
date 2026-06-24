@@ -31,4 +31,19 @@ describe("operational migrations", () => {
     expect(sql).toContain("on delete set null");
     expect(sql).toContain("champion_predictions_team_id_fkey");
   });
+
+  it("adds knockout window locks, winner sides and slot-based predictions", () => {
+    const sql = readFileSync(
+      "supabase/migrations/007_knockout_windows_and_slots.sql",
+      "utf8",
+    );
+
+    expect(sql).toContain("add column if not exists winner_side text");
+    expect(sql).toContain("matches_winner_side_check");
+    expect(sql).toContain("add column if not exists predicted_winner_slot text");
+    expect(sql).toContain("knockout_predictions_predicted_winner_slot_check");
+    expect(sql).toContain("'KNOCKOUT_STAGE_ONE'");
+    expect(sql).toContain("'KNOCKOUT_STAGE_TWO'");
+    expect(sql).toContain("delete from public.game_locks");
+  });
 });
