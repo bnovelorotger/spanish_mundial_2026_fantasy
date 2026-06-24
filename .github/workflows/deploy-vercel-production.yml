@@ -1,0 +1,59 @@
+name: Deploy Vercel Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: team_3hftKjZTgVfaA6TXJy3r7LFv
+      VERCEL_PROJECT_ID: prj_jvMR2q3AvPrYBmICYM1YW2H99dCF
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Vercel auth secret exists
+        env:
+          VERCEL_AUTH_JSON: ${{ secrets.VERCEL_AUTH_JSON }}
+        run: |
+          if [ -z "$VERCEL_AUTH_JSON" ]; then
+            echo "::error title=Missing VERCEL_AUTH_JSON::Add the Vercel CLI auth.json payload as the VERCEL_AUTH_JSON repository secret."
+            exit 1
+          fi
+
+      - name: Prepare Vercel CLI auth
+        env:
+          VERCEL_AUTH_JSON: ${{ secrets.VERCEL_AUTH_JSON }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/vercel-config"
+          printf '%s' "$VERCEL_AUTH_JSON" > "$RUNNER_TEMP/vercel-config/auth.json"
+
+      - name: Pull Vercel production settings
+        run: pnpm dlx vercel@54.16.0 pull --yes --environment=production -Q "$RUNNER_TEMP/vercel-config"
+
+      - name: Build Vercel output
+        run: pnpm dlx vercel@54.16.0 build --prod -Q "$RUNNER_TEMP/vercel-config"
+
+      - name: Deploy to Vercel production
+        run: pnpm dlx vercel@54.16.0 deploy --prebuilt --prod -Q "$RUNNER_TEMP/vercel-config"

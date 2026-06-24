@@ -214,12 +214,29 @@ Required GitHub secrets:
 
 ## Vercel deploy
 
-1. Import the repo into Vercel.
-2. Add every required env var from `.env.example`.
-3. Set `APP_URL` and `NEXT_PUBLIC_APP_URL` to the deployed URL.
-4. Ensure the linked Supabase project has the latest migrations.
-5. Trigger a deploy and verify login, protected routes, predictions, ranking,
-   and `/api/sync`.
+Primary path:
+
+1. Add every required env var from `.env.example` in Vercel.
+2. Set `APP_URL` and `NEXT_PUBLIC_APP_URL` to the deployed URL.
+3. Ensure the linked Supabase project has the latest migrations.
+4. Add the GitHub repository secret `VERCEL_AUTH_JSON` with the serialized
+   Vercel CLI `auth.json` payload for the project owner session.
+5. Push to `main` or run `Deploy Vercel Production` from GitHub Actions.
+6. Verify login, protected routes, predictions, ranking, and `/api/sync`.
+
+Fallback path:
+
+1. Authenticate locally with `vercel login`.
+2. Run `vercel pull --environment=production`.
+3. Run `vercel build --prod`.
+4. Run `vercel deploy --prebuilt --prod`.
+
+Current operational note:
+
+- Native Vercel Git auto-deploy is not the trusted path right now because the
+  GitHub user `bnovelorotger` is being attributed to a stale Vercel account
+  during Git-triggered deployments. See
+  `docs/VERCEL_AUTO_DEPLOY_RECOVERY_2026-06-25.md`.
 
 ## Repository layout
 
