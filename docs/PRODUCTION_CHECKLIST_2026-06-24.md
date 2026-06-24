@@ -104,6 +104,8 @@ Conclusion at that point: production was serving an older knockout frontend buil
   - [docs/VERCEL_AUTO_DEPLOY_RECOVERY_2026-06-25.md](/C:/Users/bnove/Documents/projects/folders/app_mundial/docs/VERCEL_AUTO_DEPLOY_RECOVERY_2026-06-25.md:1)
 - The repo now includes a GitHub Actions production deploy workflow that
   bypasses Vercel's Git author attribution using `VERCEL_AUTH_JSON`.
+- That workflow has been verified end to end with successful run `28133920334`
+  and production deployment `dpl_Ccgw7iSPkFuefPxAcjaq4mCqrPNG`.
 
 ## Notes
 

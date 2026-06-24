@@ -80,6 +80,21 @@ Why this works:
 This avoids the limitation that prevented creating a classic token from an
 OAuth-authenticated CLI session.
 
+## Verified Result
+
+The GitHub Actions production deploy path is now active and verified.
+
+- repository secret configured: `VERCEL_AUTH_JSON`
+- workflow: `Deploy Vercel Production`
+- first green verification run: `28133920334`
+- verified production deployment:
+  - deployment id: `dpl_Ccgw7iSPkFuefPxAcjaq4mCqrPNG`
+  - URL: `https://app-mundial-bi7xjmymt-bernardo-novelo-rotger-s-projects.vercel.app`
+  - alias: `https://app-mundial-sage.vercel.app`
+
+At this point, production deploys no longer depend on Vercel's broken native
+Git author attribution for this project.
+
 ## Optional Long-Term Cleanup
 
 If we want to restore native Vercel Git deploys later, the account owner should:
