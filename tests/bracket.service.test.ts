@@ -1,4 +1,13 @@
-import { describe, expect, it } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { describe, expect, it, vi } from "vitest";
+
+const { mockGetPhaseLock } = vi.hoisted(() => ({
+  mockGetPhaseLock: vi.fn(),
+}));
+
+vi.mock("@/lib/services/locks.service", () => ({
+  getPhaseLock: mockGetPhaseLock,
+}));
 
 import {
   getKnockoutSeedSpec,
@@ -10,6 +19,7 @@ import {
   isKnockoutRoundPhase,
   parseKnockoutPredictionFormData,
   resolveQualifiedPlaceholderTeam,
+  saveKnockoutPrediction,
   validateKnockoutPredictionInput,
 } from "@/lib/services/bracket.service";
 
@@ -69,6 +79,98 @@ describe("validateKnockoutPredictionInput", () => {
     expect(result.data).toEqual({
       predictedWinnerSlot: "AWAY",
     });
+  });
+});
+
+describe("saveKnockoutPrediction", () => {
+  it("upserts the chosen side for the user and match", async () => {
+    mockGetPhaseLock.mockResolvedValue({
+      effectiveLockAt: "2026-06-28T19:00:00Z",
+      isLocked: false,
+      phase: "KNOCKOUT_STAGE_ONE",
+      source: "AUTOMATIC",
+    });
+
+    const mockUpsert = vi.fn().mockResolvedValue({ error: null });
+    const supabase = {
+      from(table: string) {
+        if (table === "matches") {
+          return {
+            select() {
+              return {
+                in: async () => ({
+                  data: [
+                    {
+                      away_placeholder: null,
+                      away_team: {
+                        code: "CAN",
+                        flag_url: "https://flagcdn.com/w80/ca.png",
+                        id: "team-can",
+                        is_tbd: false,
+                        name: "Canada",
+                      },
+                      id: "match-73",
+                      home_placeholder: null,
+                      home_team: {
+                        code: "RSA",
+                        flag_url: "https://flagcdn.com/w80/za.png",
+                        id: "team-rsa",
+                        is_tbd: false,
+                        name: "South Africa",
+                      },
+                      match_number: 73,
+                      phase: "ROUND_OF_32",
+                      status: "SCHEDULED",
+                      winner_side: null,
+                    },
+                  ],
+                  error: null,
+                }),
+              };
+            },
+          };
+        }
+
+        if (table === "group_standings") {
+          return {
+            select: async () => ({
+              data: [],
+              error: null,
+            }),
+          };
+        }
+
+        if (table === "knockout_predictions") {
+          return {
+            upsert: mockUpsert,
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      },
+    } as unknown as SupabaseClient;
+
+    await saveKnockoutPrediction(supabase, "user-1", {
+      matchId: "match-73",
+      phase: "ROUND_OF_32",
+      predictedWinnerSlot: "AWAY",
+    });
+
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        confirmed_by: "user-1",
+        is_random: false,
+        match_id: "match-73",
+        predicted_winner_slot: "AWAY",
+        predicted_winner_team_id: "team-can",
+        provenance: "USER_SUBMITTED",
+        user_id: "user-1",
+      }),
+      {
+        onConflict: "user_id,match_id",
+      },
+    );
   });
 });
 
