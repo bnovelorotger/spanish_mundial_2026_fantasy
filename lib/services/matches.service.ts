@@ -8,6 +8,7 @@ import type {
   MatchStatus,
 } from "@/lib/types/worldcup";
 import { MATCH_PHASE_OPTIONS } from "@/lib/types/worldcup";
+import { isRtveBroadcastMatchNumber } from "@/lib/utils/rtve-broadcasts";
 
 interface MatchRow {
   away_placeholder: string | null;
@@ -82,6 +83,7 @@ function toMatchCardViewModel(match: MatchRow): MatchCardViewModel {
     homeScore: match.home_score,
     homeTeam: normalizeTeam(match.home_team),
     id: match.id,
+    isOnRtve: isRtveBroadcastMatchNumber(match.match_number),
     kickoff: match.kickoff,
     matchNumber: match.match_number,
     phase: match.phase,

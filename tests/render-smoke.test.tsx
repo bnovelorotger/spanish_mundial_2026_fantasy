@@ -115,6 +115,7 @@ const nextMatch: MatchCardViewModel = {
     name: "Mexico",
   },
   id: "match-1",
+  isOnRtve: false,
   kickoff: "2026-06-11T19:00:00Z",
   matchNumber: 1,
   phase: "GROUP_STAGE",

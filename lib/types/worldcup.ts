@@ -284,6 +284,7 @@ export interface MatchCardViewModel {
   homeScore: number | null;
   homeTeam: MatchTeamViewModel | null;
   id: string;
+  isOnRtve: boolean;
   kickoff: string;
   matchNumber: number;
   phase: MatchPhase;

@@ -1,4 +1,4 @@
-import { CalendarClock, MapPin, Shield } from "lucide-react";
+import { CalendarClock, MapPin, Shield, Tv } from "lucide-react";
 
 import type {
   MatchCardViewModel,
@@ -114,6 +114,12 @@ export function MatchCard({
             {match.groupLetter ? (
               <span className="rounded-pill border border-border-subtle bg-background-secondary/75 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
                 Grupo {match.groupLetter}
+              </span>
+            ) : null}
+            {match.isOnRtve ? (
+              <span className="inline-flex items-center gap-1.5 rounded-pill border border-accent-primary/35 bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary">
+                <Tv className="size-3.5" strokeWidth={2} />
+                En RTVE
               </span>
             ) : null}
           </div>

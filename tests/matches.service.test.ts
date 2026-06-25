@@ -5,6 +5,7 @@ import {
   isMatchPhase,
   normalizeMatchFilters,
 } from "@/lib/services/matches.service";
+import { isRtveBroadcastMatchNumber } from "@/lib/utils/rtve-broadcasts";
 
 describe("isMatchPhase", () => {
   it("accepts only supported tournament phases", () => {
@@ -45,5 +46,18 @@ describe("normalizeMatchFilters", () => {
       group: "ALL",
       phase: "ALL",
     });
+  });
+});
+
+describe("isRtveBroadcastMatchNumber", () => {
+  it("flags the static RTVE broadcast matches", () => {
+    expect(isRtveBroadcastMatchNumber(55)).toBe(true);
+    expect(isRtveBroadcastMatchNumber(63)).toBe(true);
+    expect(isRtveBroadcastMatchNumber(69)).toBe(true);
+  });
+
+  it("keeps non-broadcast fixtures unflagged", () => {
+    expect(isRtveBroadcastMatchNumber(54)).toBe(false);
+    expect(isRtveBroadcastMatchNumber(70)).toBe(false);
   });
 });
