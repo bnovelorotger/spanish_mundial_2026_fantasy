@@ -74,6 +74,16 @@ export type SyncRunStatus = "SUCCESS" | "PARTIAL" | "FAILED";
 export type LockType = "AUTOMATIC" | "MANUAL";
 
 export type KnockoutWindowState = "EDITABLE" | "LOCKED" | "UPCOMING";
+export type RankingTab = "overview" | "results" | "participants";
+export type PredictionRevealState =
+  | "HIDDEN_UNTIL_LOCK"
+  | "VISIBLE_PENDING"
+  | "VISIBLE_RESOLVED";
+export type ParticipantPredictionResolutionState =
+  | "CORRECT"
+  | "WRONG"
+  | "PENDING"
+  | "EMPTY";
 
 export interface Team {
   id: string;
@@ -415,6 +425,143 @@ export interface KnockoutWindowSummary {
   leadHours: number;
   phase: KnockoutWindowPhase;
   roundsLabel: string;
+}
+
+export interface LeagueImpactSummaryViewModel {
+  description: string;
+  hits: number;
+  misses: number;
+  pointsAwarded: number;
+  sourceType: PointsSourceType;
+}
+
+export interface ResultsFeedMatchScoreViewModel {
+  awayScore: number | null;
+  awayTeam: MatchTeamViewModel | null;
+  homeScore: number | null;
+  homeTeam: MatchTeamViewModel | null;
+  winnerSide: WinnerSide | null;
+}
+
+export interface ResultsFeedStandingEntryViewModel {
+  points: number;
+  position: number;
+  qualificationStatus: QualificationStatus | null;
+  team: MatchTeamViewModel | null;
+}
+
+export type ResultsFeedItemViewModel =
+  | {
+      city: string | null;
+      groupLetter: GroupLetter;
+      id: string;
+      impact: LeagueImpactSummaryViewModel;
+      kickoff: string;
+      phase: "GROUP_STAGE";
+      score: ResultsFeedMatchScoreViewModel;
+      title: string;
+      type: "GROUP_MATCH_RESULT";
+      venue: string | null;
+    }
+  | {
+      groupLetter: GroupLetter;
+      id: string;
+      impact: LeagueImpactSummaryViewModel;
+      standings: ResultsFeedStandingEntryViewModel[];
+      title: string;
+      type: "GROUP_CLOSURE";
+      updatedAt: string;
+    }
+  | {
+      city: string | null;
+      id: string;
+      impact: LeagueImpactSummaryViewModel;
+      kickoff: string;
+      phase: KnockoutRoundPhase;
+      score: ResultsFeedMatchScoreViewModel;
+      title: string;
+      type: "KNOCKOUT_MATCH_RESULT";
+      venue: string | null;
+    }
+  | {
+      city: string | null;
+      championBonusPointsAwarded: number;
+      id: string;
+      impact: LeagueImpactSummaryViewModel;
+      kickoff: string;
+      phase: "FINAL";
+      score: ResultsFeedMatchScoreViewModel;
+      title: string;
+      type: "FINAL_RESULT";
+      venue: string | null;
+    };
+
+export interface ParticipantExplorerEntryViewModel {
+  avatarSource: "photo" | "team" | null;
+  avatarUrl: string | null;
+  championPoints: number;
+  displayName: string;
+  groupPoints: number;
+  isCurrentUser: boolean;
+  knockoutPoints: number;
+  position: number;
+  totalPoints: number;
+  userId: string;
+  username: string;
+}
+
+export interface ParticipantGroupPredictionTeamViewModel {
+  actualPosition: number | null;
+  code: string | null;
+  flagUrl: string | null;
+  id: string | null;
+  isTbd: boolean;
+  name: string;
+  pointsAwarded: number | null;
+  predictedPosition: number;
+  qualificationStatus: QualificationStatus | null;
+  stamp: string | null;
+}
+
+export interface ParticipantGroupPredictionViewModel {
+  groupLetter: GroupLetter;
+  isFinal: boolean;
+  revealState: PredictionRevealState;
+  savedCount: number;
+  teams: ParticipantGroupPredictionTeamViewModel[];
+  totalPoints: number | null;
+}
+
+export interface ParticipantBracketMatchViewModel extends BracketMatchViewModel {
+  awardedPoints: number | null;
+  championBonusPointsAwarded: number | null;
+  predictionRevealState: PredictionRevealState;
+  resolutionState: ParticipantPredictionResolutionState;
+}
+
+export interface ParticipantBracketRoundViewModel {
+  label: string;
+  matches: ParticipantBracketMatchViewModel[];
+  phase: KnockoutRoundPhase;
+  revealState: PredictionRevealState;
+}
+
+export interface ParticipantDetailViewModel {
+  avatarSource: "photo" | "team" | null;
+  avatarUrl: string | null;
+  breakdown: PointsBreakdown;
+  bracketRounds: ParticipantBracketRoundViewModel[];
+  displayName: string;
+  gapCopy: string;
+  groupLock: PhaseLockViewModel;
+  groups: ParticipantGroupPredictionViewModel[];
+  isCurrentUser: boolean;
+  knockoutStageOneLock: PhaseLockViewModel;
+  knockoutStageTwoLock: PhaseLockViewModel;
+  position: number | null;
+  totalPoints: number;
+  userId: string;
+  username: string;
 }
 
 export const MATCH_PHASE_OPTIONS: MatchPhase[] = [
