@@ -4,6 +4,7 @@ import {
   canPredictKnockoutMatch,
   isKnockoutRoundPhase,
   parseKnockoutPredictionFormData,
+  resolveQualifiedPlaceholderTeam,
   validateKnockoutPredictionInput,
 } from "@/lib/services/bracket.service";
 
@@ -90,5 +91,102 @@ describe("parseKnockoutPredictionFormData", () => {
     expect(parseKnockoutPredictionFormData(formData)).toEqual({
       error: "No hemos podido resolver ese pronóstico de eliminatorias.",
     });
+  });
+});
+
+describe("resolveQualifiedPlaceholderTeam", () => {
+  const qualifiedStandings = [
+    {
+      group_letter: "A" as const,
+      is_final: true,
+      position: 1,
+      qualification_status: "QUALIFIED_FIRST" as const,
+      team: {
+        code: "MEX",
+        flag_url: "https://flagcdn.com/w80/mx.png",
+        id: "team-mex",
+        is_tbd: false,
+        name: "Mexico",
+      },
+    },
+    {
+      group_letter: "A" as const,
+      is_final: true,
+      position: 2,
+      qualification_status: "QUALIFIED_SECOND" as const,
+      team: {
+        code: "USA",
+        flag_url: "https://flagcdn.com/w80/us.png",
+        id: "team-usa",
+        is_tbd: false,
+        name: "United States",
+      },
+    },
+    {
+      group_letter: "B" as const,
+      is_final: true,
+      position: 3,
+      qualification_status: "BEST_THIRD" as const,
+      team: {
+        code: "CHL",
+        flag_url: "https://flagcdn.com/w80/cl.png",
+        id: "team-chl",
+        is_tbd: false,
+        name: "Chile",
+      },
+    },
+    {
+      group_letter: "C" as const,
+      is_final: false,
+      position: 1,
+      qualification_status: "QUALIFIED_FIRST" as const,
+      team: {
+        code: "ESP",
+        flag_url: "https://flagcdn.com/w80/es.png",
+        id: "team-esp",
+        is_tbd: false,
+        name: "Spain",
+      },
+    },
+  ];
+
+  it("resolves final-group winners and runners-up into real teams", () => {
+    expect(
+      resolveQualifiedPlaceholderTeam("Winner Group A", qualifiedStandings),
+    )?.toMatchObject({
+      code: "MEX",
+      id: "team-mex",
+      name: "Mexico",
+    });
+
+    expect(
+      resolveQualifiedPlaceholderTeam("Runner-up Group A", qualifiedStandings),
+    )?.toMatchObject({
+      code: "USA",
+      id: "team-usa",
+      name: "United States",
+    });
+  });
+
+  it("resolves final best-third placeholders only when qualification is confirmed", () => {
+    expect(
+      resolveQualifiedPlaceholderTeam("Best Third Group B", qualifiedStandings),
+    )?.toMatchObject({
+      code: "CHL",
+      id: "team-chl",
+      name: "Chile",
+    });
+  });
+
+  it("does not resolve non-final groups or unrelated placeholders", () => {
+    expect(
+      resolveQualifiedPlaceholderTeam("Winner Group C", qualifiedStandings),
+    ).toBeNull();
+    expect(
+      resolveQualifiedPlaceholderTeam(
+        "Winner Round of 16 Slot 1",
+        qualifiedStandings,
+      ),
+    ).toBeNull();
   });
 });

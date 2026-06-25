@@ -10,7 +10,9 @@ import type {
   BracketMatchViewModel,
   BracketRoundViewModel,
   BracketSlotViewModel,
+  GroupLetter,
   KnockoutRoundPhase,
+  QualificationStatus,
   KnockoutWindowState,
   WinnerSide,
 } from "@/lib/types/worldcup";
@@ -42,6 +44,14 @@ interface KnockoutPredictionRow {
   predicted_winner_slot: WinnerSide | null;
 }
 
+interface StandingRow {
+  group_letter: GroupLetter;
+  is_final: boolean;
+  position: number;
+  qualification_status: QualificationStatus | null;
+  team: TeamRow | TeamRow[] | null;
+}
+
 interface SaveKnockoutPredictionInput {
   matchId: string;
   phase: KnockoutRoundPhase;
@@ -49,8 +59,10 @@ interface SaveKnockoutPredictionInput {
 }
 
 interface SaveKnockoutPredictionMatchRow {
+  away_placeholder: string | null;
   away_team: TeamRow | TeamRow[] | null;
   id: string;
+  home_placeholder: string | null;
   home_team: TeamRow | TeamRow[] | null;
   phase: KnockoutRoundPhase;
 }
@@ -66,6 +78,14 @@ const BRACKET_MATCHES_SELECT = `
   kickoff,
   home_team:teams!matches_home_team_id_fkey(id, name, code, flag_url, is_tbd),
   away_team:teams!matches_away_team_id_fkey(id, name, code, flag_url, is_tbd)
+`;
+
+const QUALIFIED_STANDINGS_SELECT = `
+  group_letter,
+  position,
+  qualification_status,
+  is_final,
+  team:teams!group_standings_team_id_fkey(id, name, code, flag_url, is_tbd)
 `;
 
 export const KNOCKOUT_PHASES: KnockoutRoundPhase[] = [
@@ -97,8 +117,10 @@ function normalizeTeam(team: TeamRow | TeamRow[] | null) {
 function toSlot(
   team: TeamRow | TeamRow[] | null,
   placeholder: string | null,
+  resolvedTeam?: TeamRow | null,
 ): BracketSlotViewModel {
   const value = normalizeTeam(team);
+  const fallbackTeam = resolvedTeam ?? null;
 
   if (value) {
     return {
@@ -111,6 +133,17 @@ function toSlot(
     };
   }
 
+  if (fallbackTeam) {
+    return {
+      code: fallbackTeam.code,
+      flagUrl: fallbackTeam.flag_url,
+      id: fallbackTeam.id,
+      isKnown: !fallbackTeam.is_tbd,
+      isTbd: fallbackTeam.is_tbd,
+      name: fallbackTeam.name,
+    };
+  }
+
   return {
     code: null,
     flagUrl: null,
@@ -119,6 +152,83 @@ function toSlot(
     isTbd: true,
     name: placeholder ?? "Por decidir",
   };
+}
+
+function parseQualifiedPlaceholder(placeholder: string | null) {
+  const normalized = placeholder?.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  const winnerMatch = normalized.match(/^Winner Group ([A-L])$/iu);
+
+  if (winnerMatch?.[1]) {
+    return {
+      groupLetter: winnerMatch[1] as GroupLetter,
+      target: "WINNER" as const,
+    };
+  }
+
+  const runnerUpMatch = normalized.match(/^Runner[\s-]?up Group ([A-L])$/iu);
+
+  if (runnerUpMatch?.[1]) {
+    return {
+      groupLetter: runnerUpMatch[1] as GroupLetter,
+      target: "RUNNER_UP" as const,
+    };
+  }
+
+  const bestThirdMatch = normalized.match(/^Best Third Group ([A-L])$/iu);
+
+  if (bestThirdMatch?.[1]) {
+    return {
+      groupLetter: bestThirdMatch[1] as GroupLetter,
+      target: "BEST_THIRD" as const,
+    };
+  }
+
+  return null;
+}
+
+export function resolveQualifiedPlaceholderTeam(
+  placeholder: string | null,
+  standings: StandingRow[],
+) {
+  const parsed = parseQualifiedPlaceholder(placeholder);
+
+  if (!parsed) {
+    return null;
+  }
+
+  const matchingStanding = standings.find((standing) => {
+    if (standing.group_letter !== parsed.groupLetter || !standing.is_final) {
+      return false;
+    }
+
+    if (parsed.target === "WINNER") {
+      return (
+        standing.position === 1 &&
+        (standing.qualification_status === "QUALIFIED_FIRST" ||
+          standing.qualification_status === null)
+      );
+    }
+
+    if (parsed.target === "RUNNER_UP") {
+      return (
+        standing.position === 2 &&
+        (standing.qualification_status === "QUALIFIED_SECOND" ||
+          standing.qualification_status === null)
+      );
+    }
+
+    return (
+      standing.position === 3 &&
+      standing.qualification_status === "BEST_THIRD"
+    );
+  });
+
+  return matchingStanding ? normalizeTeam(matchingStanding.team) : null;
 }
 
 export function isKnockoutRoundPhase(value: string): value is KnockoutRoundPhase {
@@ -137,13 +247,28 @@ export function canPredictKnockoutMatch(input: {
 
 function toRoundMatchViewModel(input: {
   match: MatchRow;
+  qualifiedStandings: StandingRow[];
   predictedWinnerSlot: WinnerSide | null;
   isRandom: boolean;
   lock: Awaited<ReturnType<typeof getPhaseLock>>;
   windowState: KnockoutWindowState;
 }): BracketMatchViewModel {
-  const homeSlot = toSlot(input.match.home_team, input.match.home_placeholder);
-  const awaySlot = toSlot(input.match.away_team, input.match.away_placeholder);
+  const homeSlot = toSlot(
+    input.match.home_team,
+    input.match.home_placeholder,
+    resolveQualifiedPlaceholderTeam(
+      input.match.home_placeholder,
+      input.qualifiedStandings,
+    ),
+  );
+  const awaySlot = toSlot(
+    input.match.away_team,
+    input.match.away_placeholder,
+    resolveQualifiedPlaceholderTeam(
+      input.match.away_placeholder,
+      input.qualifiedStandings,
+    ),
+  );
   const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
 
   return {
@@ -176,7 +301,13 @@ export async function getBracketRounds(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<BracketRoundViewModel[]> {
-  const [matchesResponse, predictionsResponse, stageOneLock, stageTwoLock] =
+  const [
+    matchesResponse,
+    predictionsResponse,
+    standingsResponse,
+    stageOneLock,
+    stageTwoLock,
+  ] =
     await Promise.all([
       supabase
         .from("matches")
@@ -187,6 +318,7 @@ export async function getBracketRounds(
         .from("knockout_predictions")
         .select("match_id, predicted_winner_slot, is_random")
         .eq("user_id", userId),
+      supabase.from("group_standings").select(QUALIFIED_STANDINGS_SELECT),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
     ]);
@@ -201,6 +333,12 @@ export async function getBracketRounds(
     );
   }
 
+  if (standingsResponse.error) {
+    throw new Error(
+      `Could not load current standings for bracket placeholders: ${standingsResponse.error.message}`,
+    );
+  }
+
   const predictionsByMatchId = new Map(
     (predictionsResponse.data as KnockoutPredictionRow[]).map((prediction) => [
       prediction.match_id,
@@ -208,6 +346,7 @@ export async function getBracketRounds(
     ]),
   );
   const matches = matchesResponse.data as MatchRow[];
+  const qualifiedStandings = standingsResponse.data as StandingRow[];
 
   return KNOCKOUT_PHASES.map((phase) => ({
     label: KNOCKOUT_PHASE_LABELS[phase],
@@ -228,6 +367,7 @@ export async function getBracketRounds(
           isRandom: prediction?.is_random ?? false,
           lock,
           match,
+          qualifiedStandings,
           predictedWinnerSlot: prediction?.predicted_winner_slot ?? null,
           windowState,
         });
@@ -290,18 +430,20 @@ export async function saveKnockoutPrediction(
   userId: string,
   input: SaveKnockoutPredictionInput,
 ) {
-  const [matchResponse, stageOneLock, stageTwoLock] = await Promise.all([
-    supabase
-      .from("matches")
-      .select(
-        "id, phase, home_team:teams!matches_home_team_id_fkey(id, name, code, flag_url, is_tbd), away_team:teams!matches_away_team_id_fkey(id, name, code, flag_url, is_tbd)",
-      )
-      .eq("id", input.matchId)
-      .eq("phase", input.phase)
-      .maybeSingle(),
-    getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
-    getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
-  ]);
+  const [matchResponse, standingsResponse, stageOneLock, stageTwoLock] =
+    await Promise.all([
+      supabase
+        .from("matches")
+        .select(
+          "id, phase, home_placeholder, away_placeholder, home_team:teams!matches_home_team_id_fkey(id, name, code, flag_url, is_tbd), away_team:teams!matches_away_team_id_fkey(id, name, code, flag_url, is_tbd)",
+        )
+        .eq("id", input.matchId)
+        .eq("phase", input.phase)
+        .maybeSingle(),
+      supabase.from("group_standings").select(QUALIFIED_STANDINGS_SELECT),
+      getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
+      getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
+    ]);
 
   if (matchResponse.error) {
     throw new Error(
@@ -309,14 +451,35 @@ export async function saveKnockoutPrediction(
     );
   }
 
+  if (standingsResponse.error) {
+    throw new Error(
+      `Could not load current standings for knockout prediction save: ${standingsResponse.error.message}`,
+    );
+  }
+
   const match = matchResponse.data as SaveKnockoutPredictionMatchRow | null;
+  const qualifiedStandings = standingsResponse.data as StandingRow[];
 
   if (!match) {
     throw new Error("No hemos podido encontrar ese partido de eliminatorias.");
   }
 
-  const homeSlot = toSlot(normalizeTeam(match.home_team), null);
-  const awaySlot = toSlot(normalizeTeam(match.away_team), null);
+  const homeSlot = toSlot(
+    normalizeTeam(match.home_team),
+    match.home_placeholder,
+    resolveQualifiedPlaceholderTeam(
+      match.home_placeholder,
+      qualifiedStandings,
+    ),
+  );
+  const awaySlot = toSlot(
+    normalizeTeam(match.away_team),
+    match.away_placeholder,
+    resolveQualifiedPlaceholderTeam(
+      match.away_placeholder,
+      qualifiedStandings,
+    ),
+  );
   const windowState = getKnockoutWindowStateForRound({
     phase: input.phase,
     stageOne: stageOneLock,
