@@ -159,6 +159,20 @@ function buildMatchesByNumber(
   );
 }
 
+function buildPredictedWinnersByMatchNumber(input: {
+  matches: Pick<MatchRow, "id" | "match_number">[];
+  predictionsByMatchId: Map<string, KnockoutPredictionRow>;
+}) {
+  return new Map<number, WinnerSide>(
+    input.matches.flatMap((match) => {
+      const predictedWinnerSlot =
+        input.predictionsByMatchId.get(match.id)?.predicted_winner_slot ?? null;
+
+      return predictedWinnerSlot ? [[match.match_number, predictedWinnerSlot] as const] : [];
+    }),
+  );
+}
+
 async function loadQualifiedStandings(
   supabase: SupabaseClient,
   contextLabel: string,
@@ -350,6 +364,7 @@ export function canPredictKnockoutMatch(input: {
 function toRoundMatchViewModel(input: {
   match: MatchRow;
   matchesByNumber: Map<number, KnockoutSeedMatchRow>;
+  predictedWinnersByMatchNumber: Map<number, WinnerSide>;
   qualifiedStandings: StandingRow[];
   predictedWinnerSlot: WinnerSide | null;
   isRandom: boolean;
@@ -365,6 +380,7 @@ function toRoundMatchViewModel(input: {
     homeSeed
       ? resolveKnockoutSeedTeam({
           matchesByNumber: input.matchesByNumber,
+          predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
           seed: homeSeed,
           standings: input.qualifiedStandings,
         })
@@ -380,6 +396,7 @@ function toRoundMatchViewModel(input: {
     awaySeed
       ? resolveKnockoutSeedTeam({
           matchesByNumber: input.matchesByNumber,
+          predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
           seed: awaySeed,
           standings: input.qualifiedStandings,
         })
@@ -460,6 +477,10 @@ export async function getBracketRounds(
   );
   const matches = matchesResponse.data as MatchRow[];
   const matchesByNumber = buildMatchesByNumber(matches);
+  const predictedWinnersByMatchNumber = buildPredictedWinnersByMatchNumber({
+    matches,
+    predictionsByMatchId,
+  });
 
   return KNOCKOUT_PHASES.map((phase) => ({
     label: KNOCKOUT_PHASE_LABELS[phase],
@@ -481,6 +502,7 @@ export async function getBracketRounds(
           lock,
           match,
           matchesByNumber,
+          predictedWinnersByMatchNumber,
           qualifiedStandings,
           predictedWinnerSlot: prediction?.predicted_winner_slot ?? null,
           windowState,
@@ -544,12 +566,22 @@ export async function saveKnockoutPrediction(
   userId: string,
   input: SaveKnockoutPredictionInput,
 ) {
-  const [matchesResponse, qualifiedStandings, stageOneLock, stageTwoLock] =
+  const [
+    matchesResponse,
+    predictionsResponse,
+    qualifiedStandings,
+    stageOneLock,
+    stageTwoLock,
+  ] =
     await Promise.all([
       supabase
         .from("matches")
         .select(BRACKET_MATCHES_SELECT)
         .in("phase", KNOCKOUT_PHASES),
+      supabase
+        .from("knockout_predictions")
+        .select("match_id, predicted_winner_slot, is_random")
+        .eq("user_id", userId),
       loadQualifiedStandings(supabase, "knockout prediction save"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
@@ -561,8 +593,30 @@ export async function saveKnockoutPrediction(
     );
   }
 
+  if (predictionsResponse.error) {
+    throw new Error(
+      `Could not load knockout predictions: ${predictionsResponse.error.message}`,
+    );
+  }
+
   const matches = matchesResponse.data as SaveKnockoutPredictionMatchRow[];
   const matchesByNumber = buildMatchesByNumber(matches);
+  const predictionsByMatchId = new Map(
+    (predictionsResponse.data as KnockoutPredictionRow[]).map((prediction) => [
+      prediction.match_id,
+      prediction,
+    ]),
+  );
+  const predictedWinnersByMatchNumber = buildPredictedWinnersByMatchNumber({
+    matches,
+    predictionsByMatchId,
+  });
+  const currentMatchNumber =
+    matches.find((candidate) => candidate.id === input.matchId)?.match_number ?? null;
+
+  if (currentMatchNumber !== null) {
+    predictedWinnersByMatchNumber.set(currentMatchNumber, input.predictedWinnerSlot);
+  }
   const match =
     matches.find(
       (candidate) =>
@@ -581,6 +635,7 @@ export async function saveKnockoutPrediction(
     homeSeed
       ? resolveKnockoutSeedTeam({
           matchesByNumber,
+          predictedWinnersByMatchNumber,
           seed: homeSeed,
           standings: qualifiedStandings,
         })
@@ -595,6 +650,7 @@ export async function saveKnockoutPrediction(
     awaySeed
       ? resolveKnockoutSeedTeam({
           matchesByNumber,
+          predictedWinnersByMatchNumber,
           seed: awaySeed,
           standings: qualifiedStandings,
         })

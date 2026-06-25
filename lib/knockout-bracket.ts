@@ -919,6 +919,7 @@ function resolveBestThirdSeedTeam(
 
 export function resolveKnockoutSeedTeam(input: {
   matchesByNumber: Map<number, KnockoutSeedMatchRow>;
+  predictedWinnersByMatchNumber?: Map<number, WinnerSide>;
   seed: BracketSeedSpec;
   standings: KnockoutSeedStandingRow[];
   visitedMatchNumbers?: Set<number>;
@@ -937,12 +938,21 @@ export function resolveKnockoutSeedTeam(input: {
 
       const match = input.matchesByNumber.get(input.seed.matchNumber);
 
-      if (!match || match.status !== "FINISHED" || !match.winner_side) {
+      if (!match) {
+        return null;
+      }
+
+      const resolvedWinnerSide =
+        match.status === "FINISHED" && match.winner_side
+          ? match.winner_side
+          : (input.predictedWinnersByMatchNumber?.get(input.seed.matchNumber) ?? null);
+
+      if (!resolvedWinnerSide) {
         return null;
       }
 
       const actualWinner =
-        match.winner_side === "HOME" ? match.home_team : match.away_team;
+        resolvedWinnerSide === "HOME" ? match.home_team : match.away_team;
 
       if (actualWinner) {
         return actualWinner;
@@ -950,7 +960,7 @@ export function resolveKnockoutSeedTeam(input: {
 
       const nestedSeed = getKnockoutSeedSpec(
         input.seed.matchNumber,
-        match.winner_side,
+        resolvedWinnerSide,
       );
 
       if (!nestedSeed) {
@@ -961,6 +971,7 @@ export function resolveKnockoutSeedTeam(input: {
 
       return resolveKnockoutSeedTeam({
         matchesByNumber: input.matchesByNumber,
+        predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
         seed: nestedSeed,
         standings: input.standings,
         visitedMatchNumbers,

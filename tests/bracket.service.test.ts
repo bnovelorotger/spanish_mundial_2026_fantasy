@@ -142,6 +142,14 @@ describe("saveKnockoutPrediction", () => {
 
         if (table === "knockout_predictions") {
           return {
+            select() {
+              return {
+                eq: async () => ({
+                  data: [],
+                  error: null,
+                }),
+              };
+            },
             upsert: mockUpsert,
           };
         }
@@ -536,6 +544,60 @@ describe("knockout bracket seeds", () => {
     )?.toMatchObject({
       code: "RSA",
       name: "South Africa",
+    });
+  });
+
+  it("propagates saved picks through upcoming matches so the user can preview later rounds", () => {
+    const roundOf16Seed = getKnockoutSeedSpec(92, "HOME");
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map([
+          [
+            79,
+            {
+              away_team: null,
+              home_team: null,
+              match_number: 79,
+              status: "SCHEDULED",
+              winner_side: null,
+            },
+          ],
+        ]),
+        predictedWinnersByMatchNumber: new Map([[79, "HOME"]]),
+        seed: roundOf16Seed!,
+        standings,
+      }),
+    )?.toMatchObject({
+      code: "MEX",
+      name: "Mexico",
+    });
+  });
+
+  it("prioritizes the official finished winner over any stale saved pick", () => {
+    const roundOf16Seed = getKnockoutSeedSpec(92, "HOME");
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map([
+          [
+            79,
+            {
+              away_team: null,
+              home_team: null,
+              match_number: 79,
+              status: "FINISHED",
+              winner_side: "HOME",
+            },
+          ],
+        ]),
+        predictedWinnersByMatchNumber: new Map([[79, "AWAY"]]),
+        seed: roundOf16Seed!,
+        standings,
+      }),
+    )?.toMatchObject({
+      code: "MEX",
+      name: "Mexico",
     });
   });
 });
