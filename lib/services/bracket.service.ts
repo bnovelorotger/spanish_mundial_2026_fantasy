@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  getKnockoutSeedSpec,
+  getKnockoutSlotLabel,
+  resolveKnockoutSeedTeam,
+  type KnockoutSeedMatchRow,
+} from "@/lib/knockout-bracket";
 import { getPhaseLock } from "@/lib/services/locks.service";
 import {
   getKnockoutWindowLabel,
@@ -12,6 +18,7 @@ import type {
   BracketSlotViewModel,
   GroupLetter,
   KnockoutRoundPhase,
+  MatchStatus,
   QualificationStatus,
   KnockoutWindowState,
   WinnerSide,
@@ -35,7 +42,9 @@ interface MatchRow {
   kickoff: string;
   match_number: number;
   phase: KnockoutRoundPhase;
+  status: MatchStatus;
   venue: string | null;
+  winner_side: WinnerSide | null;
 }
 
 interface KnockoutPredictionRow {
@@ -45,11 +54,16 @@ interface KnockoutPredictionRow {
 }
 
 interface StandingRow {
+  goal_difference: number;
+  goals_for: number;
   group_letter: GroupLetter;
   is_final: boolean;
+  played: number;
+  points: number;
   position: number;
   qualification_status: QualificationStatus | null;
-  team: TeamRow | TeamRow[] | null;
+  team: TeamRow | null;
+  team_id: string;
 }
 
 interface SaveKnockoutPredictionInput {
@@ -64,13 +78,18 @@ interface SaveKnockoutPredictionMatchRow {
   id: string;
   home_placeholder: string | null;
   home_team: TeamRow | TeamRow[] | null;
+  match_number: number;
   phase: KnockoutRoundPhase;
+  status: MatchStatus;
+  winner_side: WinnerSide | null;
 }
 
 const BRACKET_MATCHES_SELECT = `
   id,
   match_number,
   phase,
+  status,
+  winner_side,
   home_placeholder,
   away_placeholder,
   venue,
@@ -83,9 +102,13 @@ const BRACKET_MATCHES_SELECT = `
 const QUALIFIED_STANDINGS_SELECT = `
   group_letter,
   position,
+  played,
+  points,
+  goals_for,
+  goal_difference,
+  team_id,
   qualification_status,
-  is_final,
-  team:teams!group_standings_team_id_fkey(id, name, code, flag_url, is_tbd)
+  is_final
 `;
 
 export const KNOCKOUT_PHASES: KnockoutRoundPhase[] = [
@@ -112,6 +135,83 @@ function normalizeTeam(team: TeamRow | TeamRow[] | null) {
   const value = Array.isArray(team) ? team[0] : team;
 
   return value ?? null;
+}
+
+function buildMatchesByNumber(
+  matches: Array<
+    Pick<
+      MatchRow,
+      "away_team" | "home_team" | "match_number" | "status" | "winner_side"
+    >
+  >,
+) {
+  return new Map<number, KnockoutSeedMatchRow>(
+    matches.map((match) => [
+      match.match_number,
+      {
+        away_team: normalizeTeam(match.away_team),
+        home_team: normalizeTeam(match.home_team),
+        match_number: match.match_number,
+        status: match.status,
+        winner_side: match.winner_side,
+      },
+    ]),
+  );
+}
+
+async function loadQualifiedStandings(
+  supabase: SupabaseClient,
+  contextLabel: string,
+): Promise<StandingRow[]> {
+  const standingsResponse = await supabase
+    .from("group_standings")
+    .select(QUALIFIED_STANDINGS_SELECT);
+
+  if (standingsResponse.error) {
+    console.error(
+      `[bracket.service] Failed to load standings for ${contextLabel}`,
+      standingsResponse.error,
+    );
+    return [];
+  }
+
+  const standings = standingsResponse.data as Array<
+    Omit<StandingRow, "team">
+  >;
+  const teamIds = [...new Set(standings.map((standing) => standing.team_id))];
+
+  if (teamIds.length === 0) {
+    return standings.map((standing) => ({
+      ...standing,
+      team: null,
+    }));
+  }
+
+  const teamsResponse = await supabase
+    .from("teams")
+    .select("id, name, code, flag_url, is_tbd")
+    .in("id", teamIds);
+
+  if (teamsResponse.error) {
+    console.error(
+      `[bracket.service] Failed to load teams for ${contextLabel}`,
+      teamsResponse.error,
+    );
+
+    return standings.map((standing) => ({
+      ...standing,
+      team: null,
+    }));
+  }
+
+  const teamsById = new Map(
+    (teamsResponse.data as TeamRow[]).map((team) => [team.id, team] as const),
+  );
+
+  return standings.map((standing) => ({
+    ...standing,
+    team: teamsById.get(standing.team_id) ?? null,
+  }));
 }
 
 function toSlot(
@@ -179,7 +279,9 @@ function parseQualifiedPlaceholder(placeholder: string | null) {
     };
   }
 
-  const bestThirdMatch = normalized.match(/^Best Third Group ([A-L])$/iu);
+  const bestThirdMatch = normalized.match(
+    /^Best (?:Third|3rd place) Group ([A-L])$/iu,
+  );
 
   if (bestThirdMatch?.[1]) {
     return {
@@ -228,7 +330,7 @@ export function resolveQualifiedPlaceholderTeam(
     );
   });
 
-  return matchingStanding ? normalizeTeam(matchingStanding.team) : null;
+  return matchingStanding?.team ?? null;
 }
 
 export function isKnockoutRoundPhase(value: string): value is KnockoutRoundPhase {
@@ -247,27 +349,44 @@ export function canPredictKnockoutMatch(input: {
 
 function toRoundMatchViewModel(input: {
   match: MatchRow;
+  matchesByNumber: Map<number, KnockoutSeedMatchRow>;
   qualifiedStandings: StandingRow[];
   predictedWinnerSlot: WinnerSide | null;
   isRandom: boolean;
   lock: Awaited<ReturnType<typeof getPhaseLock>>;
   windowState: KnockoutWindowState;
 }): BracketMatchViewModel {
+  const homeSeed = getKnockoutSeedSpec(input.match.match_number, "HOME");
+  const awaySeed = getKnockoutSeedSpec(input.match.match_number, "AWAY");
   const homeSlot = toSlot(
     input.match.home_team,
-    input.match.home_placeholder,
-    resolveQualifiedPlaceholderTeam(
+    getKnockoutSlotLabel(input.match.match_number, "HOME") ??
       input.match.home_placeholder,
-      input.qualifiedStandings,
-    ),
+    homeSeed
+      ? resolveKnockoutSeedTeam({
+          matchesByNumber: input.matchesByNumber,
+          seed: homeSeed,
+          standings: input.qualifiedStandings,
+        })
+      : resolveQualifiedPlaceholderTeam(
+          input.match.home_placeholder,
+          input.qualifiedStandings,
+        ),
   );
   const awaySlot = toSlot(
     input.match.away_team,
-    input.match.away_placeholder,
-    resolveQualifiedPlaceholderTeam(
+    getKnockoutSlotLabel(input.match.match_number, "AWAY") ??
       input.match.away_placeholder,
-      input.qualifiedStandings,
-    ),
+    awaySeed
+      ? resolveKnockoutSeedTeam({
+          matchesByNumber: input.matchesByNumber,
+          seed: awaySeed,
+          standings: input.qualifiedStandings,
+        })
+      : resolveQualifiedPlaceholderTeam(
+          input.match.away_placeholder,
+          input.qualifiedStandings,
+        ),
   );
   const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
 
@@ -304,7 +423,7 @@ export async function getBracketRounds(
   const [
     matchesResponse,
     predictionsResponse,
-    standingsResponse,
+    qualifiedStandings,
     stageOneLock,
     stageTwoLock,
   ] =
@@ -318,7 +437,7 @@ export async function getBracketRounds(
         .from("knockout_predictions")
         .select("match_id, predicted_winner_slot, is_random")
         .eq("user_id", userId),
-      supabase.from("group_standings").select(QUALIFIED_STANDINGS_SELECT),
+      loadQualifiedStandings(supabase, "bracket placeholders"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
     ]);
@@ -333,12 +452,6 @@ export async function getBracketRounds(
     );
   }
 
-  if (standingsResponse.error) {
-    throw new Error(
-      `Could not load current standings for bracket placeholders: ${standingsResponse.error.message}`,
-    );
-  }
-
   const predictionsByMatchId = new Map(
     (predictionsResponse.data as KnockoutPredictionRow[]).map((prediction) => [
       prediction.match_id,
@@ -346,7 +459,7 @@ export async function getBracketRounds(
     ]),
   );
   const matches = matchesResponse.data as MatchRow[];
-  const qualifiedStandings = standingsResponse.data as StandingRow[];
+  const matchesByNumber = buildMatchesByNumber(matches);
 
   return KNOCKOUT_PHASES.map((phase) => ({
     label: KNOCKOUT_PHASE_LABELS[phase],
@@ -367,6 +480,7 @@ export async function getBracketRounds(
           isRandom: prediction?.is_random ?? false,
           lock,
           match,
+          matchesByNumber,
           qualifiedStandings,
           predictedWinnerSlot: prediction?.predicted_winner_slot ?? null,
           windowState,
@@ -430,55 +544,64 @@ export async function saveKnockoutPrediction(
   userId: string,
   input: SaveKnockoutPredictionInput,
 ) {
-  const [matchResponse, standingsResponse, stageOneLock, stageTwoLock] =
+  const [matchesResponse, qualifiedStandings, stageOneLock, stageTwoLock] =
     await Promise.all([
       supabase
         .from("matches")
-        .select(
-          "id, phase, home_placeholder, away_placeholder, home_team:teams!matches_home_team_id_fkey(id, name, code, flag_url, is_tbd), away_team:teams!matches_away_team_id_fkey(id, name, code, flag_url, is_tbd)",
-        )
-        .eq("id", input.matchId)
-        .eq("phase", input.phase)
-        .maybeSingle(),
-      supabase.from("group_standings").select(QUALIFIED_STANDINGS_SELECT),
+        .select(BRACKET_MATCHES_SELECT)
+        .in("phase", KNOCKOUT_PHASES),
+      loadQualifiedStandings(supabase, "knockout prediction save"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
     ]);
 
-  if (matchResponse.error) {
+  if (matchesResponse.error) {
     throw new Error(
-      `Could not load knockout match: ${matchResponse.error.message}`,
+      `Could not load knockout matches: ${matchesResponse.error.message}`,
     );
   }
 
-  if (standingsResponse.error) {
-    throw new Error(
-      `Could not load current standings for knockout prediction save: ${standingsResponse.error.message}`,
-    );
-  }
-
-  const match = matchResponse.data as SaveKnockoutPredictionMatchRow | null;
-  const qualifiedStandings = standingsResponse.data as StandingRow[];
+  const matches = matchesResponse.data as SaveKnockoutPredictionMatchRow[];
+  const matchesByNumber = buildMatchesByNumber(matches);
+  const match =
+    matches.find(
+      (candidate) =>
+        candidate.id === input.matchId && candidate.phase === input.phase,
+    ) ?? null;
 
   if (!match) {
     throw new Error("No hemos podido encontrar ese partido de eliminatorias.");
   }
 
+  const homeSeed = getKnockoutSeedSpec(match.match_number, "HOME");
+  const awaySeed = getKnockoutSeedSpec(match.match_number, "AWAY");
   const homeSlot = toSlot(
-    normalizeTeam(match.home_team),
-    match.home_placeholder,
-    resolveQualifiedPlaceholderTeam(
-      match.home_placeholder,
-      qualifiedStandings,
-    ),
+    match.home_team,
+    getKnockoutSlotLabel(match.match_number, "HOME") ?? match.home_placeholder,
+    homeSeed
+      ? resolveKnockoutSeedTeam({
+          matchesByNumber,
+          seed: homeSeed,
+          standings: qualifiedStandings,
+        })
+      : resolveQualifiedPlaceholderTeam(
+          match.home_placeholder,
+          qualifiedStandings,
+        ),
   );
   const awaySlot = toSlot(
-    normalizeTeam(match.away_team),
-    match.away_placeholder,
-    resolveQualifiedPlaceholderTeam(
-      match.away_placeholder,
-      qualifiedStandings,
-    ),
+    match.away_team,
+    getKnockoutSlotLabel(match.match_number, "AWAY") ?? match.away_placeholder,
+    awaySeed
+      ? resolveKnockoutSeedTeam({
+          matchesByNumber,
+          seed: awaySeed,
+          standings: qualifiedStandings,
+        })
+      : resolveQualifiedPlaceholderTeam(
+          match.away_placeholder,
+          qualifiedStandings,
+        ),
   );
   const windowState = getKnockoutWindowStateForRound({
     phase: input.phase,

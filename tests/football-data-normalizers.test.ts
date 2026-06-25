@@ -79,7 +79,7 @@ const sampleStandingsResponse = {
   standings: [
     {
       group: null,
-      stage: "GROUP_STAGE",
+      stage: "ALL",
       table: [
         {
           draw: 0,
@@ -405,5 +405,41 @@ describe("football-data normalizers", () => {
       "ESP",
       "URY",
     ]);
+  });
+
+  it("uses semantic knockout placeholders when football-data leaves LAST_32 teams empty", () => {
+    const groupStageMatches = Array.from({ length: 72 }, (_, index) => ({
+      awayTeam: { name: `Away ${index}`, tla: `A${String(index).padStart(2, "0")}` },
+      group: "GROUP_A",
+      homeTeam: { name: `Home ${index}`, tla: `H${String(index).padStart(2, "0")}` },
+      id: 700000 + index,
+      score: { fullTime: { away: null, home: null } },
+      stage: "GROUP_STAGE",
+      status: "TIMED",
+      utcDate: `2026-06-${String((index % 28) + 1).padStart(2, "0")}T19:00:00Z`,
+      venue: `Venue ${index}`,
+    }));
+    const last32Match = {
+      awayTeam: null,
+      group: null,
+      homeTeam: null,
+      id: 800073,
+      score: { fullTime: { away: null, home: null } },
+      stage: "LAST_32",
+      status: "TIMED",
+      utcDate: "2026-06-28T19:00:00Z",
+      venue: "SoFi Stadium",
+    };
+
+    const matches = normalizeFootballDataMatches({
+      matches: [...groupStageMatches, last32Match],
+    });
+    const roundOf32Match = matches.find((match) => match.match_number === 73);
+
+    expect(roundOf32Match).toMatchObject({
+      away_placeholder: "Runner-up Group B",
+      home_placeholder: "Runner-up Group A",
+      phase: "ROUND_OF_32",
+    });
   });
 });

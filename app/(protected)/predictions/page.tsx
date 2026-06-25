@@ -172,7 +172,11 @@ export default async function PredictionsPage({
         stageOne: stageOneLock,
         stageTwo: stageTwoLock,
       });
-    } catch {
+    } catch (caughtError) {
+      console.error(
+        "[predictions/page] Failed to load knockout predictions page",
+        caughtError,
+      );
       rounds = null;
       knockoutWindowSummary = null;
     }

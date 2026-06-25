@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getKnockoutSeedSpec,
+  getKnockoutSlotLabel,
+  resolveKnockoutSeedTeam,
+} from "@/lib/knockout-bracket";
+import {
   canPredictKnockoutMatch,
   isKnockoutRoundPhase,
   parseKnockoutPredictionFormData,
@@ -97,8 +102,12 @@ describe("parseKnockoutPredictionFormData", () => {
 describe("resolveQualifiedPlaceholderTeam", () => {
   const qualifiedStandings = [
     {
+      goal_difference: 5,
+      goals_for: 7,
       group_letter: "A" as const,
       is_final: true,
+      played: 3,
+      points: 7,
       position: 1,
       qualification_status: "QUALIFIED_FIRST" as const,
       team: {
@@ -108,23 +117,33 @@ describe("resolveQualifiedPlaceholderTeam", () => {
         is_tbd: false,
         name: "Mexico",
       },
+      team_id: "team-mex",
     },
     {
+      goal_difference: 2,
+      goals_for: 4,
       group_letter: "A" as const,
       is_final: true,
+      played: 3,
+      points: 5,
       position: 2,
       qualification_status: "QUALIFIED_SECOND" as const,
       team: {
-        code: "USA",
-        flag_url: "https://flagcdn.com/w80/us.png",
-        id: "team-usa",
+        code: "RSA",
+        flag_url: "https://flagcdn.com/w80/za.png",
+        id: "team-rsa",
         is_tbd: false,
-        name: "United States",
+        name: "South Africa",
       },
+      team_id: "team-rsa",
     },
     {
+      goal_difference: 0,
+      goals_for: 3,
       group_letter: "B" as const,
       is_final: true,
+      played: 3,
+      points: 4,
       position: 3,
       qualification_status: "BEST_THIRD" as const,
       team: {
@@ -134,10 +153,15 @@ describe("resolveQualifiedPlaceholderTeam", () => {
         is_tbd: false,
         name: "Chile",
       },
+      team_id: "team-chl",
     },
     {
+      goal_difference: 4,
+      goals_for: 6,
       group_letter: "C" as const,
       is_final: false,
+      played: 2,
+      points: 4,
       position: 1,
       qualification_status: "QUALIFIED_FIRST" as const,
       team: {
@@ -147,6 +171,7 @@ describe("resolveQualifiedPlaceholderTeam", () => {
         is_tbd: false,
         name: "Spain",
       },
+      team_id: "team-esp",
     },
   ];
 
@@ -162,9 +187,9 @@ describe("resolveQualifiedPlaceholderTeam", () => {
     expect(
       resolveQualifiedPlaceholderTeam("Runner-up Group A", qualifiedStandings),
     )?.toMatchObject({
-      code: "USA",
-      id: "team-usa",
-      name: "United States",
+      code: "RSA",
+      id: "team-rsa",
+      name: "South Africa",
     });
   });
 
@@ -188,5 +213,227 @@ describe("resolveQualifiedPlaceholderTeam", () => {
         qualifiedStandings,
       ),
     ).toBeNull();
+  });
+});
+
+describe("knockout bracket seeds", () => {
+  const standings = [
+    {
+      goal_difference: 5,
+      goals_for: 7,
+      group_letter: "A" as const,
+      is_final: true,
+      played: 3,
+      points: 7,
+      position: 1,
+      qualification_status: "QUALIFIED_FIRST" as const,
+      team: {
+        code: "MEX",
+        flag_url: "https://flagcdn.com/w80/mx.png",
+        id: "team-mex",
+        is_tbd: false,
+        name: "Mexico",
+      },
+      team_id: "team-mex",
+    },
+    {
+      goal_difference: 2,
+      goals_for: 4,
+      group_letter: "A" as const,
+      is_final: true,
+      played: 3,
+      points: 5,
+      position: 2,
+      qualification_status: "QUALIFIED_SECOND" as const,
+      team: {
+        code: "RSA",
+        flag_url: "https://flagcdn.com/w80/za.png",
+        id: "team-rsa",
+        is_tbd: false,
+        name: "South Africa",
+      },
+      team_id: "team-rsa",
+    },
+    {
+      goal_difference: -1,
+      goals_for: 3,
+      group_letter: "A" as const,
+      is_final: true,
+      played: 3,
+      points: 4,
+      position: 3,
+      qualification_status: "BEST_THIRD" as const,
+      team: {
+        code: "KOR",
+        flag_url: "https://flagcdn.com/w80/kr.png",
+        id: "team-kor",
+        is_tbd: false,
+        name: "South Korea",
+      },
+      team_id: "team-kor",
+    },
+    {
+      goal_difference: -6,
+      goals_for: 1,
+      group_letter: "A" as const,
+      is_final: true,
+      played: 3,
+      points: 0,
+      position: 4,
+      qualification_status: "ELIMINATED" as const,
+      team: {
+        code: "CZE",
+        flag_url: "https://flagcdn.com/w80/cz.png",
+        id: "team-cze",
+        is_tbd: false,
+        name: "Czechia",
+      },
+      team_id: "team-cze",
+    },
+    {
+      goal_difference: 3,
+      goals_for: 5,
+      group_letter: "I" as const,
+      is_final: false,
+      played: 2,
+      points: 4,
+      position: 1,
+      qualification_status: "QUALIFIED_FIRST" as const,
+      team: {
+        code: "FRA",
+        flag_url: "https://flagcdn.com/w80/fr.png",
+        id: "team-fra",
+        is_tbd: false,
+        name: "France",
+      },
+      team_id: "team-fra",
+    },
+    {
+      goal_difference: 1,
+      goals_for: 3,
+      group_letter: "I" as const,
+      is_final: false,
+      played: 2,
+      points: 4,
+      position: 2,
+      qualification_status: "QUALIFIED_SECOND" as const,
+      team: {
+        code: "NOR",
+        flag_url: "https://flagcdn.com/w80/no.png",
+        id: "team-nor",
+        is_tbd: false,
+        name: "Norway",
+      },
+      team_id: "team-nor",
+    },
+    {
+      goal_difference: 0,
+      goals_for: 2,
+      group_letter: "I" as const,
+      is_final: false,
+      played: 2,
+      points: 3,
+      position: 3,
+      qualification_status: "ELIMINATED" as const,
+      team: {
+        code: "SEN",
+        flag_url: "https://flagcdn.com/w80/sn.png",
+        id: "team-sen",
+        is_tbd: false,
+        name: "Senegal",
+      },
+      team_id: "team-sen",
+    },
+    {
+      goal_difference: -4,
+      goals_for: 1,
+      group_letter: "I" as const,
+      is_final: false,
+      played: 2,
+      points: 0,
+      position: 4,
+      qualification_status: "ELIMINATED" as const,
+      team: {
+        code: "IRQ",
+        flag_url: "https://flagcdn.com/w80/iq.png",
+        id: "team-irq",
+        is_tbd: false,
+        name: "Iraq",
+      },
+      team_id: "team-irq",
+    },
+  ];
+
+  it("uses semantic labels from the official 2026 bracket config", () => {
+    expect(getKnockoutSlotLabel(73, "HOME")).toBe("Runner-up Group A");
+    expect(getKnockoutSlotLabel(79, "AWAY")).toBe(
+      "Best 3rd place Group C/E/F/H/I",
+    );
+    expect(getKnockoutSlotLabel(89, "AWAY")).toBe("Winner Match 75");
+  });
+
+  it("resolves exact final seeds but keeps ambiguous non-final seeds unresolved", () => {
+    const winnerGroupA = getKnockoutSeedSpec(79, "HOME");
+    const winnerGroupI = getKnockoutSeedSpec(77, "HOME");
+
+    expect(winnerGroupA).not.toBeNull();
+    expect(winnerGroupI).not.toBeNull();
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map(),
+        seed: winnerGroupA!,
+        standings,
+      }),
+    )?.toMatchObject({
+      code: "MEX",
+      name: "Mexico",
+    });
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map(),
+        seed: winnerGroupI!,
+        standings,
+      }),
+    ).toBeNull();
+  });
+
+  it("does not resolve exact group seeds from partial standings snapshots", () => {
+    const winnerGroupA = getKnockoutSeedSpec(79, "HOME");
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map(),
+        seed: winnerGroupA!,
+        standings: standings.filter((row) => row.team_id !== "team-cze"),
+      }),
+    ).toBeNull();
+  });
+
+  it("propagates resolved winners from previous matches", () => {
+    const quarterFinalSeed = getKnockoutSeedSpec(89, "HOME");
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map([
+          [
+            73,
+            {
+              away_team: null,
+              home_team: null,
+              match_number: 73,
+              status: "FINISHED",
+              winner_side: "HOME",
+            },
+          ],
+        ]),
+        seed: quarterFinalSeed!,
+        standings,
+      }),
+    )?.toMatchObject({
+      code: "RSA",
+      name: "South Africa",
+    });
   });
 });

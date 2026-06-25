@@ -8,6 +8,7 @@ import type {
   TeamDTO,
   WinnerSide,
 } from "../types/worldcup.ts";
+import { getKnockoutSlotLabel } from "../knockout-bracket.ts";
 import { getFlagUrlForTeamCode } from "./team-flags.ts";
 
 export const FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4";
@@ -84,6 +85,12 @@ export interface FootballDataStandingRow {
     tla?: string | null;
   } | null;
   won?: number | null;
+}
+
+interface NormalizedFootballDataMatchRow extends MatchDTO {
+  fixtureId: number | null;
+  raw_away_name: string | null;
+  raw_home_name: string | null;
 }
 
 function normalizeText(value: string | null | undefined) {
@@ -400,7 +407,7 @@ export function normalizeFootballDataMatches(
   assertArrayField(matchesResponse, "matches", "matches");
 
   const matches = (matchesResponse.matches as FootballDataMatch[])
-    .map((match, index) => {
+    .map<NormalizedFootballDataMatchRow>((match, index) => {
       const phase = parseMatchPhase(match.stage);
       const homeCode = canonicalTeamCode(match.homeTeam?.tla);
       const awayCode = canonicalTeamCode(match.awayTeam?.tla);
@@ -411,28 +418,14 @@ export function normalizeFootballDataMatches(
 
       return {
         away_score: match.score?.fullTime?.away ?? undefined,
-        away_placeholder: awayCode
-          ? undefined
-          : createUnknownTeamPlaceholder({
-              matchId: match.id,
-              name: awayName,
-              phase,
-              side: "Away",
-            }),
         away_team_code: awayCode ?? undefined,
         city: undefined,
         fixtureId: match.id ?? null,
         group_letter: phase === "GROUP_STAGE" ? toGroupLetter(match.group) ?? undefined : undefined,
         home_score: match.score?.fullTime?.home ?? undefined,
-        home_placeholder: homeCode
-          ? undefined
-          : createUnknownTeamPlaceholder({
-              matchId: match.id,
-              name: homeName,
-              phase,
-              side: "Home",
-            }),
         home_team_code: homeCode ?? undefined,
+        raw_away_name: awayName,
+        raw_home_name: homeName,
         kickoff: normalizeText(match.utcDate) ?? new Date(0).toISOString(),
         match_number: index + 1,
         phase,
@@ -443,7 +436,7 @@ export function normalizeFootballDataMatches(
           homeScore: match.score?.fullTime?.home,
           winner: match.score?.winner,
         }) ?? undefined,
-      } satisfies MatchDTO & { fixtureId: number | null };
+      };
     })
     .sort((left, right) => {
       const kickoffDifference =
@@ -462,12 +455,28 @@ export function normalizeFootballDataMatches(
 
   return matches.map((match, index) => ({
     away_score: match.away_score,
-    away_placeholder: match.away_placeholder,
+    away_placeholder: match.away_team_code
+      ? undefined
+      : createUnknownTeamPlaceholder({
+          matchId: match.fixtureId,
+          matchNumber: index + 1,
+          name: match.raw_away_name,
+          phase: match.phase,
+          side: "Away",
+        }),
     away_team_code: match.away_team_code,
     city: match.city,
     group_letter: match.group_letter,
     home_score: match.home_score,
-    home_placeholder: match.home_placeholder,
+    home_placeholder: match.home_team_code
+      ? undefined
+      : createUnknownTeamPlaceholder({
+          matchId: match.fixtureId,
+          matchNumber: index + 1,
+          name: match.raw_home_name,
+          phase: match.phase,
+          side: "Home",
+        }),
     home_team_code: match.home_team_code,
     kickoff: match.kickoff,
     match_number: index + 1,
@@ -499,10 +508,20 @@ function phasePlaceholderLabel(phase: MatchPhase) {
 
 function createUnknownTeamPlaceholder(input: {
   matchId: number | null | undefined;
+  matchNumber: number;
   name?: string | null;
   phase: MatchPhase;
   side: "Home" | "Away";
 }) {
+  if (input.phase !== "GROUP_STAGE") {
+    const side = input.side === "Home" ? "HOME" : "AWAY";
+    const semanticPlaceholder = getKnockoutSlotLabel(input.matchNumber, side);
+
+    if (semanticPlaceholder) {
+      return semanticPlaceholder;
+    }
+  }
+
   const knownName = normalizeText(input.name);
 
   if (knownName) {
@@ -560,12 +579,16 @@ export function normalizeFootballDataStandings(input: {
 
   const totalStanding = (input.standingsResponse.standings as FootballDataStandingGroup[]).find(
     (standing) =>
-      normalizeText(standing.stage)?.toUpperCase() === "GROUP_STAGE" &&
+      ["ALL", "GROUP_STAGE"].includes(
+        normalizeText(standing.stage)?.toUpperCase() ?? "",
+      ) &&
       normalizeText(standing.type)?.toUpperCase() === "TOTAL",
   );
 
   if (!totalStanding?.table || totalStanding.table.length === 0) {
-    throw new Error("football-data.org standings response did not include a GROUP_STAGE TOTAL table.");
+    throw new Error(
+      "football-data.org standings response did not include an ALL/GROUP_STAGE TOTAL table.",
+    );
   }
 
   const byGroup = new Map<GroupLetter, GroupStandingDTO[]>();
