@@ -79,6 +79,10 @@ interface PointRow {
   user_id: string;
 }
 
+interface GetParticipantDetailOptions {
+  predictionReadClient?: SupabaseClient;
+}
+
 const FINISHED_MATCHES_SELECT = `
   id,
   phase,
@@ -132,6 +136,14 @@ function metadataNumber(
 ): number | null {
   const value = metadata?.[key];
   return typeof value === "number" ? value : null;
+}
+
+function metadataTeamId(
+  metadata: Record<string, unknown> | null,
+  key: string,
+) {
+  const value = metadata?.[key];
+  return typeof value === "string" ? value : null;
 }
 
 function metadataGroupLetter(
@@ -278,15 +290,30 @@ function toRevealState(input: {
 }
 
 function toParticipantResolutionState(input: {
+  actualWinnerTeamId: string | null;
   predictionVisible: boolean;
   predictedWinnerSlot: WinnerSide | null;
+  predictedWinnerTeamId: string | null;
   winnerSide: WinnerSide | null;
 }): ParticipantPredictionResolutionState {
-  if (!input.predictionVisible || !input.predictedWinnerSlot) {
+  if (
+    !input.predictionVisible ||
+    (!input.predictedWinnerSlot && !input.predictedWinnerTeamId)
+  ) {
     return "EMPTY";
   }
 
-  if (!input.winnerSide) {
+  if (!input.winnerSide && !input.actualWinnerTeamId) {
+    return "PENDING";
+  }
+
+  if (input.predictedWinnerTeamId && input.actualWinnerTeamId) {
+    return input.predictedWinnerTeamId === input.actualWinnerTeamId
+      ? "CORRECT"
+      : "WRONG";
+  }
+
+  if (!input.predictedWinnerSlot || !input.winnerSide) {
     return "PENDING";
   }
 
@@ -472,9 +499,17 @@ function buildParticipantBracketRounds(input: {
             : null,
         predictionRevealState,
         resolutionState: toParticipantResolutionState({
+          actualWinnerTeamId: metadataTeamId(
+            pointsRow?.metadata ?? null,
+            "actualWinnerTeamId",
+          ),
           predictionVisible,
           predictedWinnerSlot:
             predictionVisible ? match.prediction?.predictedWinnerSlot ?? null : null,
+          predictedWinnerTeamId:
+            predictionVisible
+              ? match.prediction?.predictedWinnerTeam?.id ?? null
+              : null,
           winnerSide: metadataWinnerSide(pointsRow?.metadata ?? null),
         }),
       };
@@ -529,6 +564,25 @@ async function loadGroupStandingsWithTeams(supabase: SupabaseClient) {
       (teamsResponse.data as TeamRow[]).map((team) => [team.id, team] as const),
     ),
   };
+}
+
+async function getParticipantPredictionReadClient(input: {
+  currentUserId: string;
+  fallbackClient: SupabaseClient;
+  overrideClient?: SupabaseClient;
+  participantUserId: string;
+}) {
+  if (input.overrideClient) {
+    return input.overrideClient;
+  }
+
+  if (input.currentUserId === input.participantUserId) {
+    return input.fallbackClient;
+  }
+
+  const { createAdminClient } = await import("../supabase/admin");
+
+  return createAdminClient();
 }
 
 export async function getResultsFeed(
@@ -709,7 +763,14 @@ export async function getParticipantDetail(
   supabase: SupabaseClient,
   currentUserId: string,
   participantUserId: string,
+  options?: GetParticipantDetailOptions,
 ): Promise<ParticipantDetailViewModel | null> {
+  const predictionReadClient = await getParticipantPredictionReadClient({
+    currentUserId,
+    fallbackClient: supabase,
+    overrideClient: options?.predictionReadClient,
+    participantUserId,
+  });
   const [
     rankingModel,
     breakdown,
@@ -726,7 +787,7 @@ export async function getParticipantDetail(
     getGroupStageLock(supabase),
     getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
     getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
-    supabase
+    predictionReadClient
       .from("group_predictions")
       .select("group_letter, team_id, predicted_position")
       .eq("user_id", participantUserId),
@@ -735,7 +796,9 @@ export async function getParticipantDetail(
       .from("points")
       .select("user_id, source_type, source_id, points_awarded, metadata")
       .eq("user_id", participantUserId),
-    getBracketRounds(supabase, participantUserId),
+    getBracketRounds(supabase, participantUserId, {
+      predictionsClient: predictionReadClient,
+    }),
   ]);
 
   if (groupPredictionsResponse.error) {

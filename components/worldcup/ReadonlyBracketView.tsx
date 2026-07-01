@@ -44,6 +44,34 @@ function slotClassName(isSelected: boolean) {
   return "border-border-subtle bg-background-secondary/70";
 }
 
+function persistedPickCopy(match: ParticipantBracketRoundViewModel["matches"][number]) {
+  if (!match.prediction?.predictedWinnerTeam) {
+    return null;
+  }
+
+  const selectedSlot =
+    match.prediction.currentWinnerSlot === "HOME"
+      ? match.homeSlot
+      : match.prediction.currentWinnerSlot === "AWAY"
+        ? match.awaySlot
+        : null;
+  const shouldShow =
+    match.prediction.isOutdated ||
+    selectedSlot?.id !== match.prediction.predictedWinnerTeam.id;
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return {
+    description: match.prediction.isOutdated
+      ? "Ese equipo ya no sigue en este cruce. El pick se conserva tal y como se guardÃ³."
+      : "El pick queda asociado a ese equipo aunque el slot todavÃ­a no estÃ© resuelto en pantalla.",
+    title: `Pick fijado: ${match.prediction.predictedWinnerTeam.name}`,
+    tone: match.prediction.isOutdated ? "warning" : "default",
+  } as const;
+}
+
 export function ReadonlyBracketView({
   isCurrentUser,
   rounds,
@@ -108,6 +136,7 @@ export function ReadonlyBracketView({
                   ) : (
                     round.matches.map((match) => {
                       const badge = resolutionBadge(match);
+                      const persistedPick = persistedPickCopy(match);
 
                       return (
                         <article
@@ -149,7 +178,7 @@ export function ReadonlyBracketView({
                               { side: "AWAY" as const, slot: match.awaySlot },
                             ].map(({ side, slot }) => {
                               const isSelected =
-                                match.prediction?.predictedWinnerSlot === side;
+                                match.prediction?.currentWinnerSlot === side;
 
                               return (
                                 <div
@@ -177,6 +206,17 @@ export function ReadonlyBracketView({
                               );
                             })}
                           </div>
+
+                          {persistedPick ? (
+                            <div className="mt-3">
+                              <StateCard
+                                description={persistedPick.description}
+                                eyebrow="Pick guardado"
+                                title={persistedPick.title}
+                                tone={persistedPick.tone}
+                              />
+                            </div>
+                          ) : null}
 
                           <div className="mt-4 rounded-card border border-border-subtle bg-background-secondary/60 px-4 py-3">
                             <div className="flex items-start justify-between gap-3">

@@ -159,6 +159,32 @@ const bracketMatch: BracketMatchViewModel = {
   windowState: "EDITABLE",
 };
 
+const outdatedBracketMatch: BracketMatchViewModel = {
+  ...bracketMatch,
+  awaySlot: {
+    code: "PAR",
+    flagUrl: "https://flagcdn.com/w80/py.png",
+    id: "team-par",
+    isKnown: true,
+    isTbd: false,
+    name: "Paraguay",
+  },
+  prediction: {
+    currentWinnerSlot: null,
+    isOutdated: true,
+    isRandom: false,
+    predictedWinnerSlot: "AWAY",
+    predictedWinnerTeam: {
+      code: "GER",
+      flagUrl: "https://flagcdn.com/w80/de.png",
+      id: "team-ger",
+      isKnown: true,
+      isTbd: false,
+      name: "Germany",
+    },
+  },
+};
+
 const rankingEntries: RankingEntry[] = [
   {
     avatarSource: "photo",
@@ -309,6 +335,18 @@ describe("render smoke", () => {
     expect(markup).toContain("Partido #65");
     expect(markup).toContain('id="match-bracket-match-1"');
     expect(markup).toContain("21:00");
+  });
+
+  it("renders the persisted team snapshot when an old knockout pick no longer matches the slot", () => {
+    const markup = renderToStaticMarkup(
+      <BracketPredictionEditor
+        match={outdatedBracketMatch}
+        saveAction={async () => {}}
+      />,
+    );
+
+    expect(markup).toContain("Pick fijado: Germany");
+    expect(markup).toContain("no se convertir");
   });
 
   it("renders ranking avatars for uploaded photos and team crests", () => {

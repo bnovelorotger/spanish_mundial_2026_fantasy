@@ -16,6 +16,7 @@ import {
 } from "@/lib/knockout-bracket";
 import {
   canPredictKnockoutMatch,
+  getBracketRounds,
   isKnockoutRoundPhase,
   parseKnockoutPredictionFormData,
   resolveQualifiedPlaceholderTeam,
@@ -179,6 +180,136 @@ describe("saveKnockoutPrediction", () => {
         onConflict: "user_id,match_id",
       },
     );
+  });
+});
+
+describe("getBracketRounds", () => {
+  it("reads knockout predictions from the supplied server-side client", async () => {
+    mockGetPhaseLock.mockImplementation(async (_supabase, phase: string) => ({
+      effectiveLockAt:
+        phase === "KNOCKOUT_STAGE_ONE"
+          ? "2026-06-28T19:00:00Z"
+          : "2026-07-09T19:00:00Z",
+      isLocked: false,
+      phase,
+      source: "AUTOMATIC",
+    }));
+
+    const publicSupabase = {
+      from(table: string) {
+        if (table === "matches") {
+          return {
+            select() {
+              return {
+                in() {
+                  return {
+                    order: async () => ({
+                      data: [
+                        {
+                          away_placeholder: null,
+                          away_team: {
+                            code: "CAN",
+                            flag_url: "https://flagcdn.com/ca.svg",
+                            id: "team-can",
+                            is_tbd: false,
+                            name: "Canada",
+                          },
+                          city: "Mexico City",
+                          home_placeholder: null,
+                          home_team: {
+                            code: "RSA",
+                            flag_url: "https://flagcdn.com/za.svg",
+                            id: "team-rsa",
+                            is_tbd: false,
+                            name: "South Africa",
+                          },
+                          id: "match-73",
+                          kickoff: "2026-06-28T19:00:00Z",
+                          match_number: 73,
+                          phase: "ROUND_OF_32",
+                          status: "SCHEDULED",
+                          venue: "Azteca",
+                          winner_side: null,
+                        },
+                      ],
+                      error: null,
+                    }),
+                  };
+                },
+              };
+            },
+          };
+        }
+
+        if (table === "group_standings") {
+          return {
+            select: async () => ({
+              data: [],
+              error: null,
+            }),
+          };
+        }
+
+        if (table === "teams") {
+          return {
+            select() {
+              return {
+                in: async () => ({
+                  data: [],
+                  error: null,
+                }),
+              };
+            },
+          };
+        }
+
+        if (table === "knockout_predictions") {
+          throw new Error("Public client should not read knockout predictions here.");
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      },
+    } as unknown as SupabaseClient;
+
+    const predictionsClient = {
+      from(table: string) {
+        if (table === "knockout_predictions") {
+          return {
+            select() {
+              return {
+                eq: async () => ({
+                  data: [
+                    {
+                      is_random: false,
+                      match_id: "match-73",
+                      predicted_winner_slot: "AWAY",
+                      predicted_winner_team_id: "team-can",
+                    },
+                  ],
+                  error: null,
+                }),
+              };
+            },
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      },
+    } as unknown as SupabaseClient;
+
+    const rounds = await getBracketRounds(publicSupabase, "user-2", {
+      predictionsClient,
+    });
+
+    expect(rounds[0]?.matches[0]?.prediction).toMatchObject({
+      currentWinnerSlot: "AWAY",
+      isOutdated: false,
+      predictedWinnerSlot: "AWAY",
+      predictedWinnerTeam: {
+        id: "team-can",
+        name: "Canada",
+      },
+    });
   });
 });
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockGetBracketRounds,
+  mockCreateAdminClient,
   mockGetGroupStageLock,
   mockGetPhaseLock,
   mockGetRankingByPhase,
@@ -9,6 +10,7 @@ const {
   mockGetUserPointsBreakdown,
 } = vi.hoisted(() => ({
   mockGetBracketRounds: vi.fn(),
+  mockCreateAdminClient: vi.fn(),
   mockGetGroupStageLock: vi.fn(),
   mockGetPhaseLock: vi.fn(),
   mockGetRankingByPhase: vi.fn(),
@@ -18,6 +20,10 @@ const {
 
 vi.mock("@/lib/services/bracket.service", () => ({
   getBracketRounds: mockGetBracketRounds,
+}));
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: mockCreateAdminClient,
 }));
 
 vi.mock("@/lib/services/locks.service", () => ({
@@ -514,6 +520,7 @@ describe("getParticipantExplorerEntries", () => {
 describe("getParticipantDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateAdminClient.mockReturnValue(createParticipantSupabaseMock() as never);
     mockGetRankingByPhase.mockResolvedValue({
       entries: rankingEntries,
       isLive: true,
@@ -526,6 +533,156 @@ describe("getParticipantDetail", () => {
       total: 3,
     });
     mockGetUserGapCopy.mockReturnValue("Estás a 3 pts de Ana.");
+  });
+
+  it("reads revealed participant group picks from the server-side prediction client", async () => {
+    mockGetGroupStageLock.mockResolvedValue({
+      effectiveLockAt: "2026-06-26T19:00:00Z",
+      isLocked: true,
+      phase: "GROUP_STAGE",
+      source: "AUTOMATIC",
+    });
+    mockGetPhaseLock.mockImplementation(async (_supabase, phase: string) => ({
+      effectiveLockAt: "2026-07-01T19:00:00Z",
+      isLocked: false,
+      phase,
+      source: "AUTOMATIC",
+    }));
+    mockGetBracketRounds.mockResolvedValue([]);
+
+    const predictionReadClient = {
+      from(table: string) {
+        if (table === "group_predictions") {
+          return {
+            select() {
+              return {
+                eq() {
+                  return Promise.resolve({
+                    data: [
+                      {
+                        group_letter: "A",
+                        predicted_position: 1,
+                        team_id: "team-mex",
+                      },
+                    ],
+                    error: null,
+                  });
+                },
+              };
+            },
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      },
+    };
+
+    const detail = await getParticipantDetail(
+      {
+        from(table: string) {
+          if (table === "group_predictions") {
+            return {
+              select() {
+                return {
+                  eq() {
+                    return Promise.resolve({
+                      data: [],
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          }
+
+          if (table === "group_standings") {
+            return {
+              select() {
+                return Promise.resolve({
+                  data: [
+                    {
+                      goal_difference: 4,
+                      goals_for: 6,
+                      group_letter: "A",
+                      is_final: true,
+                      points: 7,
+                      position: 1,
+                      qualification_status: "QUALIFIED_FIRST",
+                      team_id: "team-mex",
+                      updated_at: "2026-06-20T22:00:00Z",
+                    },
+                  ],
+                  error: null,
+                });
+              },
+            };
+          }
+
+          if (table === "teams") {
+            return {
+              select() {
+                return {
+                  in() {
+                    return Promise.resolve({
+                      data: [
+                        {
+                          code: "MEX",
+                          flag_url: "https://flagcdn.com/mx.svg",
+                          id: "team-mex",
+                          is_tbd: false,
+                          name: "Mexico",
+                        },
+                      ],
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          }
+
+          if (table === "points") {
+            return {
+              select() {
+                return {
+                  eq() {
+                    return Promise.resolve({
+                      data: [],
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          }
+
+          throw new Error(`Unexpected table ${table}`);
+        },
+      } as never,
+      "user-1",
+      "user-2",
+      {
+        predictionReadClient: predictionReadClient as never,
+      },
+    );
+
+    expect(detail?.groups[0]).toMatchObject({
+      groupLetter: "A",
+      revealState: "VISIBLE_RESOLVED",
+      savedCount: 1,
+    });
+    expect(detail?.groups[0]?.teams[0]).toMatchObject({
+      id: "team-mex",
+      name: "Mexico",
+      predictedPosition: 1,
+    });
+    expect(mockGetBracketRounds).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-2",
+      expect.objectContaining({
+        predictionsClient: predictionReadClient,
+      }),
+    );
   });
 
   it("keeps other users hidden until the corresponding lock closes", async () => {
@@ -576,8 +733,18 @@ describe("getParticipantDetail", () => {
             matchNumber: 73,
             phase: "ROUND_OF_32",
             prediction: {
+              currentWinnerSlot: "HOME",
+              isOutdated: false,
               isRandom: false,
               predictedWinnerSlot: "HOME",
+              predictedWinnerTeam: {
+                code: "MEX",
+                flagUrl: null,
+                id: "team-mex",
+                isKnown: true,
+                isTbd: false,
+                name: "Mexico",
+              },
             },
             venue: "SoFi",
             windowLabel: "Ventana 1",
@@ -647,8 +814,18 @@ describe("getParticipantDetail", () => {
             matchNumber: 73,
             phase: "ROUND_OF_32",
             prediction: {
+              currentWinnerSlot: "HOME",
+              isOutdated: false,
               isRandom: false,
               predictedWinnerSlot: "HOME",
+              predictedWinnerTeam: {
+                code: "MEX",
+                flagUrl: null,
+                id: "team-mex",
+                isKnown: true,
+                isTbd: false,
+                name: "Mexico",
+              },
             },
             venue: "SoFi",
             windowLabel: "Ventana 1",
@@ -770,6 +947,167 @@ describe("getParticipantDetail", () => {
     expect(detail?.bracketRounds[0]?.matches[0]).toMatchObject({
       awardedPoints: 4,
       resolutionState: "CORRECT",
+    });
+  });
+
+  it("marks a knockout pick as wrong when the slot wins but the saved team does not", async () => {
+    mockGetGroupStageLock.mockResolvedValue({
+      effectiveLockAt: "2026-06-26T19:00:00Z",
+      isLocked: true,
+      phase: "GROUP_STAGE",
+      source: "AUTOMATIC",
+    });
+    mockGetPhaseLock.mockImplementation(async (_supabase, phase: string) => ({
+      effectiveLockAt: "2026-07-01T19:00:00Z",
+      isLocked: true,
+      phase,
+      source: "AUTOMATIC",
+    }));
+    mockGetBracketRounds.mockResolvedValue([
+      {
+        label: "Octavos de final",
+        matches: [
+          {
+            awaySlot: {
+              code: "PAR",
+              flagUrl: null,
+              id: "team-par",
+              isKnown: true,
+              isTbd: false,
+              name: "Paraguay",
+            },
+            canPredict: false,
+            city: "Dallas",
+            homeSlot: {
+              code: "BRA",
+              flagUrl: null,
+              id: "team-bra",
+              isKnown: true,
+              isTbd: false,
+              name: "Brazil",
+            },
+            id: "match-89",
+            isFinal: false,
+            kickoff: "2026-07-04T19:00:00Z",
+            lock: {
+              effectiveLockAt: "2026-06-28T19:00:00Z",
+              isLocked: true,
+              phase: "KNOCKOUT_STAGE_ONE",
+              source: "AUTOMATIC",
+            },
+            matchNumber: 89,
+            phase: "ROUND_OF_16",
+            prediction: {
+              currentWinnerSlot: null,
+              isOutdated: true,
+              isRandom: false,
+              predictedWinnerSlot: "AWAY",
+              predictedWinnerTeam: {
+                code: "GER",
+                flagUrl: null,
+                id: "team-ger",
+                isKnown: true,
+                isTbd: false,
+                name: "Germany",
+              },
+            },
+            venue: "AT&T Stadium",
+            windowLabel: "Ventana 1",
+            windowState: "LOCKED",
+          },
+        ],
+        phase: "ROUND_OF_16",
+      },
+    ]);
+
+    const detail = await getParticipantDetail(
+      {
+        from(table: string) {
+          if (table === "group_predictions") {
+            return {
+              select() {
+                return {
+                  eq() {
+                    return Promise.resolve({
+                      data: [],
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          }
+
+          if (table === "group_standings") {
+            return {
+              select() {
+                return Promise.resolve({
+                  data: [],
+                  error: null,
+                });
+              },
+            };
+          }
+
+          if (table === "teams") {
+            return {
+              select() {
+                return {
+                  in() {
+                    return Promise.resolve({
+                      data: [],
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          }
+
+          if (table === "points") {
+            return {
+              select() {
+                return {
+                  eq() {
+                    return Promise.resolve({
+                      data: [
+                        {
+                          metadata: {
+                            actualWinnerTeamId: "team-par",
+                            matchId: "match-89",
+                            predictedWinnerSlot: "AWAY",
+                            predictedWinnerTeamId: "team-ger",
+                            stamp: "Miss",
+                            winnerSide: "AWAY",
+                          },
+                          points_awarded: 0,
+                          source_id: "knockout_match_match-89",
+                          source_type: "KNOCKOUT_WINNER",
+                          user_id: "user-2",
+                        },
+                      ],
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          }
+
+          throw new Error(`Unexpected table ${table}`);
+        },
+      } as never,
+      "user-1",
+      "user-2",
+    );
+
+    expect(detail?.bracketRounds[0]?.matches[0]).toMatchObject({
+      awardedPoints: 0,
+      prediction: {
+        isOutdated: true,
+        predictedWinnerSlot: "AWAY",
+      },
+      resolutionState: "WRONG",
     });
   });
 });

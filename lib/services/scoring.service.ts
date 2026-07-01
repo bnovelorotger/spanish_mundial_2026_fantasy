@@ -30,6 +30,8 @@ interface GroupPredictionRow {
 }
 
 interface KnockoutMatchRow {
+  away_team_id: string | null;
+  home_team_id: string | null;
   id: string;
   phase: KnockoutRoundPhase;
   status: MatchStatus;
@@ -40,6 +42,7 @@ interface KnockoutPredictionRow {
   confirmed_at: string | null;
   match_id: string;
   predicted_winner_slot: WinnerSide | null;
+  predicted_winner_team_id: string | null;
   provenance: PredictionProvenance;
   provenance_note: string | null;
   user_id: string;
@@ -67,12 +70,14 @@ interface GroupPredictionScoreInput {
 }
 
 interface KnockoutPredictionScoreInput {
+  actualWinnerTeamId?: string | null;
   matchId: string;
   phase: KnockoutRoundPhase;
   predictionConfirmedAt?: string | null;
   predictionProvenance?: PredictionProvenance;
   predictionProvenanceNote?: string | null;
   predictedWinnerSlot: WinnerSide;
+  predictedWinnerTeamId?: string | null;
   winnerSide: WinnerSide;
 }
 
@@ -204,17 +209,23 @@ export function scoreKnockoutPrediction(
   input: KnockoutPredictionScoreInput,
 ): GroupPredictionScoreResult {
   const pointsAwarded =
-    input.predictedWinnerSlot === input.winnerSide
-      ? KNOCKOUT_POINTS_BY_PHASE[input.phase]
-      : 0;
+    input.predictedWinnerTeamId && input.actualWinnerTeamId
+      ? input.predictedWinnerTeamId === input.actualWinnerTeamId
+        ? KNOCKOUT_POINTS_BY_PHASE[input.phase]
+        : 0
+      : input.predictedWinnerSlot === input.winnerSide
+        ? KNOCKOUT_POINTS_BY_PHASE[input.phase]
+        : 0;
   const reason =
     pointsAwarded > 0 ? knockoutPhaseReason(input.phase) : "Miss";
 
   return {
     metadata: {
+      actualWinnerTeamId: input.actualWinnerTeamId ?? null,
       matchId: input.matchId,
       phase: input.phase,
       predictedWinnerSlot: input.predictedWinnerSlot,
+      predictedWinnerTeamId: input.predictedWinnerTeamId ?? null,
       predictionConfirmedAt: input.predictionConfirmedAt ?? null,
       predictionProvenance: input.predictionProvenance ?? "USER_SUBMITTED",
       predictionProvenanceNote: input.predictionProvenanceNote ?? null,
@@ -225,6 +236,117 @@ export function scoreKnockoutPrediction(
     reason,
     sourceId: buildKnockoutPointSourceId(input.matchId),
   };
+}
+
+function actualWinnerTeamIdForMatch(match: KnockoutMatchRow) {
+  if (match.winner_side === "HOME") {
+    return match.home_team_id;
+  }
+
+  if (match.winner_side === "AWAY") {
+    return match.away_team_id;
+  }
+
+  return null;
+}
+
+export function buildKnockoutPointsRows(
+  predictions: KnockoutPredictionRow[],
+  matches: KnockoutMatchRow[],
+): PointsRow[] {
+  const matchesById = new Map(
+    matches
+      .filter(
+        (match) => match.status === "FINISHED" && match.winner_side !== null,
+      )
+      .map((match) => [match.id, match] as const),
+  );
+
+  const rows = predictions.reduce<PointsRow[]>((currentRows, prediction) => {
+    if (!prediction.predicted_winner_slot) {
+      return currentRows;
+    }
+
+    const match = matchesById.get(prediction.match_id);
+
+    if (!match?.winner_side) {
+      return currentRows;
+    }
+
+    const actualWinnerTeamId = actualWinnerTeamIdForMatch(match);
+
+    if (prediction.predicted_winner_team_id && !actualWinnerTeamId) {
+      return currentRows;
+    }
+
+    const scored = scoreKnockoutPrediction({
+      actualWinnerTeamId,
+      matchId: match.id,
+      phase: match.phase,
+      predictionConfirmedAt: prediction.confirmed_at,
+      predictionProvenance: prediction.provenance,
+      predictionProvenanceNote: prediction.provenance_note,
+      predictedWinnerSlot: prediction.predicted_winner_slot,
+      predictedWinnerTeamId: prediction.predicted_winner_team_id,
+      winnerSide: match.winner_side,
+    });
+
+    currentRows.push({
+      metadata: scored.metadata,
+      points_awarded: scored.pointsAwarded,
+      reason: scored.reason,
+      source_id: scored.sourceId,
+      source_type: "KNOCKOUT_WINNER" as const,
+      user_id: prediction.user_id,
+    });
+
+    if (match.phase === "FINAL") {
+      const championPointsAwarded =
+        prediction.predicted_winner_team_id && actualWinnerTeamId
+          ? prediction.predicted_winner_team_id === actualWinnerTeamId
+            ? 25
+            : 0
+          : prediction.predicted_winner_slot === match.winner_side
+            ? 25
+            : 0;
+      const championReason =
+        championPointsAwarded > 0 ? "Champion bonus" : "Miss";
+
+      currentRows.push({
+        metadata: {
+          actualWinnerTeamId,
+          matchId: match.id,
+          phase: match.phase,
+          predictedWinnerSlot: prediction.predicted_winner_slot,
+          predictedWinnerTeamId: prediction.predicted_winner_team_id,
+          predictionConfirmedAt: prediction.confirmed_at,
+          predictionProvenance: prediction.provenance,
+          predictionProvenanceNote: prediction.provenance_note,
+          stamp: buildStamp(championPointsAwarded, championReason),
+          winnerSide: match.winner_side,
+        },
+        points_awarded: championPointsAwarded,
+        reason: championReason,
+        source_id: buildChampionPointSourceId(match.id),
+        source_type: "CHAMPION" as const,
+        user_id: prediction.user_id,
+      });
+    }
+
+    return currentRows;
+  }, []);
+
+  return rows.sort((left, right) => {
+    if (pointsRowSortOrder(left.source_type) !== pointsRowSortOrder(right.source_type)) {
+      return pointsRowSortOrder(left.source_type) - pointsRowSortOrder(right.source_type);
+    }
+
+    if (left.source_id !== right.source_id) {
+      return left.source_id.localeCompare(right.source_id);
+    }
+
+    return left.user_id.localeCompare(right.user_id);
+  });
 }
 
 export function buildGroupStagePointsRows(
@@ -277,89 +399,6 @@ export function buildGroupStagePointsRows(
     .sort((left, right) => left.source_id.localeCompare(right.source_id));
 }
 
-export function buildKnockoutPointsRows(
-  predictions: KnockoutPredictionRow[],
-  matches: KnockoutMatchRow[],
-): PointsRow[] {
-  const matchesById = new Map(
-    matches
-      .filter(
-        (match) => match.status === "FINISHED" && match.winner_side !== null,
-      )
-      .map((match) => [match.id, match] as const),
-  );
-
-  const rows = predictions.reduce<PointsRow[]>((currentRows, prediction) => {
-    if (!prediction.predicted_winner_slot) {
-      return currentRows;
-    }
-
-    const match = matchesById.get(prediction.match_id);
-
-    if (!match?.winner_side) {
-      return currentRows;
-    }
-
-    const scored = scoreKnockoutPrediction({
-      matchId: match.id,
-      phase: match.phase,
-      predictionConfirmedAt: prediction.confirmed_at,
-      predictionProvenance: prediction.provenance,
-      predictionProvenanceNote: prediction.provenance_note,
-      predictedWinnerSlot: prediction.predicted_winner_slot,
-      winnerSide: match.winner_side,
-    });
-
-    currentRows.push({
-      metadata: scored.metadata,
-      points_awarded: scored.pointsAwarded,
-      reason: scored.reason,
-      source_id: scored.sourceId,
-      source_type: "KNOCKOUT_WINNER" as const,
-      user_id: prediction.user_id,
-    });
-
-    if (match.phase === "FINAL") {
-      const championPointsAwarded =
-        prediction.predicted_winner_slot === match.winner_side ? 25 : 0;
-      const championReason =
-        championPointsAwarded > 0 ? "Champion bonus" : "Miss";
-
-      currentRows.push({
-        metadata: {
-          matchId: match.id,
-          phase: match.phase,
-          predictedWinnerSlot: prediction.predicted_winner_slot,
-          predictionConfirmedAt: prediction.confirmed_at,
-          predictionProvenance: prediction.provenance,
-          predictionProvenanceNote: prediction.provenance_note,
-          stamp: buildStamp(championPointsAwarded, championReason),
-          winnerSide: match.winner_side,
-        },
-        points_awarded: championPointsAwarded,
-        reason: championReason,
-        source_id: buildChampionPointSourceId(match.id),
-        source_type: "CHAMPION" as const,
-        user_id: prediction.user_id,
-      });
-    }
-
-    return currentRows;
-  }, []);
-
-  return rows.sort((left, right) => {
-    if (pointsRowSortOrder(left.source_type) !== pointsRowSortOrder(right.source_type)) {
-      return pointsRowSortOrder(left.source_type) - pointsRowSortOrder(right.source_type);
-    }
-
-    if (left.source_id !== right.source_id) {
-      return left.source_id.localeCompare(right.source_id);
-    }
-
-    return left.user_id.localeCompare(right.user_id);
-  });
-}
-
 async function loadScoringInputs(supabase: SupabaseClient) {
   const [
     groupPredictionsResponse,
@@ -378,11 +417,11 @@ async function loadScoringInputs(supabase: SupabaseClient) {
     supabase
       .from("knockout_predictions")
       .select(
-        "user_id, match_id, predicted_winner_slot, provenance, provenance_note, confirmed_at",
+        "user_id, match_id, predicted_winner_slot, predicted_winner_team_id, provenance, provenance_note, confirmed_at",
       ),
     supabase
       .from("matches")
-      .select("id, phase, status, winner_side")
+      .select("id, phase, status, winner_side, home_team_id, away_team_id")
       .in("phase", [
         "ROUND_OF_32",
         "ROUND_OF_16",

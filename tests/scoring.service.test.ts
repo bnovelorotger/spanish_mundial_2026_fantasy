@@ -233,9 +233,11 @@ describe("buildGroupStagePointsRows", () => {
 describe("scoreKnockoutPrediction", () => {
   it("awards the configured round points when the winner side matches", () => {
     const result = scoreKnockoutPrediction({
+      actualWinnerTeamId: "team-mex",
       matchId: "match-final",
       phase: "FINAL",
       predictedWinnerSlot: "HOME",
+      predictedWinnerTeamId: "team-mex",
       winnerSide: "HOME",
     });
 
@@ -246,15 +248,33 @@ describe("scoreKnockoutPrediction", () => {
 
   it("returns a miss when the selected side does not advance", () => {
     const result = scoreKnockoutPrediction({
+      actualWinnerTeamId: "team-usa",
       matchId: "match-semi",
       phase: "SEMI_FINALS",
       predictedWinnerSlot: "HOME",
+      predictedWinnerTeamId: "team-mex",
       winnerSide: "AWAY",
     });
 
     expect(result.pointsAwarded).toBe(0);
     expect(result.reason).toBe("Miss");
     expect(result.metadata.stamp).toBe("Miss");
+  });
+
+  it("returns a miss when the slot matches but the saved team does not", () => {
+    const result = scoreKnockoutPrediction({
+      actualWinnerTeamId: "team-par",
+      matchId: "match-r16",
+      phase: "ROUND_OF_16",
+      predictedWinnerSlot: "AWAY",
+      predictedWinnerTeamId: "team-ger",
+      winnerSide: "AWAY",
+    });
+
+    expect(result.pointsAwarded).toBe(0);
+    expect(result.reason).toBe("Miss");
+    expect(result.metadata.actualWinnerTeamId).toBe("team-par");
+    expect(result.metadata.predictedWinnerTeamId).toBe("team-ger");
   });
 });
 
@@ -266,6 +286,7 @@ describe("buildKnockoutPointsRows", () => {
           confirmed_at: "2026-07-01T12:00:00Z",
           match_id: "match-r32",
           predicted_winner_slot: "HOME",
+          predicted_winner_team_id: "team-rsa",
           provenance: "USER_SUBMITTED",
           provenance_note: null,
           user_id: "user-1",
@@ -274,6 +295,7 @@ describe("buildKnockoutPointsRows", () => {
           confirmed_at: "2026-07-19T12:00:00Z",
           match_id: "match-final",
           predicted_winner_slot: "AWAY",
+          predicted_winner_team_id: "team-usa",
           provenance: "USER_SUBMITTED",
           provenance_note: null,
           user_id: "user-1",
@@ -281,12 +303,16 @@ describe("buildKnockoutPointsRows", () => {
       ],
       [
         {
+          away_team_id: "team-can",
+          home_team_id: "team-rsa",
           id: "match-r32",
           phase: "ROUND_OF_32",
           status: "FINISHED",
           winner_side: "HOME",
         },
         {
+          away_team_id: "team-ger",
+          home_team_id: "team-bra",
           id: "match-final",
           phase: "FINAL",
           status: "FINISHED",
@@ -328,6 +354,7 @@ describe("buildKnockoutPointsRows", () => {
           confirmed_at: "2026-07-01T12:00:00Z",
           match_id: "match-r32",
           predicted_winner_slot: "HOME",
+          predicted_winner_team_id: "team-rsa",
           provenance: "USER_SUBMITTED",
           provenance_note: null,
           user_id: "user-1",
@@ -335,6 +362,8 @@ describe("buildKnockoutPointsRows", () => {
       ],
       [
         {
+          away_team_id: "team-can",
+          home_team_id: "team-rsa",
           id: "match-r32",
           phase: "ROUND_OF_32",
           status: "FINISHED",
@@ -344,6 +373,45 @@ describe("buildKnockoutPointsRows", () => {
     );
 
     expect(rows).toEqual([]);
+  });
+
+  it("does not award points when the real winner occupies the same slot but is a different team", () => {
+    const rows = buildKnockoutPointsRows(
+      [
+        {
+          confirmed_at: "2026-07-04T12:00:00Z",
+          match_id: "match-r16",
+          predicted_winner_slot: "AWAY",
+          predicted_winner_team_id: "team-ger",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          user_id: "user-1",
+        },
+      ],
+      [
+        {
+          away_team_id: "team-par",
+          home_team_id: "team-bra",
+          id: "match-r16",
+          phase: "ROUND_OF_16",
+          status: "FINISHED",
+          winner_side: "AWAY",
+        },
+      ],
+    );
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      points_awarded: 0,
+      reason: "Miss",
+      source_type: "KNOCKOUT_WINNER",
+    });
+    expect(rows[0]?.metadata).toMatchObject({
+      actualWinnerTeamId: "team-par",
+      predictedWinnerTeamId: "team-ger",
+      predictedWinnerSlot: "AWAY",
+      winnerSide: "AWAY",
+    });
   });
 });
 

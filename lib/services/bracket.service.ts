@@ -51,6 +51,7 @@ interface KnockoutPredictionRow {
   is_random: boolean;
   match_id: string;
   predicted_winner_slot: WinnerSide | null;
+  predicted_winner_team_id: string | null;
 }
 
 interface StandingRow {
@@ -70,6 +71,10 @@ interface SaveKnockoutPredictionInput {
   matchId: string;
   phase: KnockoutRoundPhase;
   predictedWinnerSlot: WinnerSide;
+}
+
+interface GetBracketRoundsOptions {
+  predictionsClient?: SupabaseClient;
 }
 
 interface SaveKnockoutPredictionMatchRow {
@@ -173,6 +178,34 @@ function buildPredictedWinnersByMatchNumber(input: {
   );
 }
 
+function buildTeamsById(input: {
+  matches: Pick<MatchRow, "away_team" | "home_team">[];
+  qualifiedStandings: StandingRow[];
+}) {
+  const teamsById = new Map<string, TeamRow>();
+
+  for (const match of input.matches) {
+    const homeTeam = normalizeTeam(match.home_team);
+    const awayTeam = normalizeTeam(match.away_team);
+
+    if (homeTeam) {
+      teamsById.set(homeTeam.id, homeTeam);
+    }
+
+    if (awayTeam) {
+      teamsById.set(awayTeam.id, awayTeam);
+    }
+  }
+
+  for (const standing of input.qualifiedStandings) {
+    if (standing.team) {
+      teamsById.set(standing.team.id, standing.team);
+    }
+  }
+
+  return teamsById;
+}
+
 async function loadQualifiedStandings(
   supabase: SupabaseClient,
   contextLabel: string,
@@ -265,6 +298,17 @@ function toSlot(
     isKnown: false,
     isTbd: true,
     name: placeholder ?? "Por decidir",
+  };
+}
+
+function toTeamSlot(team: TeamRow): BracketSlotViewModel {
+  return {
+    code: team.code,
+    flagUrl: team.flag_url,
+    id: team.id,
+    isKnown: !team.is_tbd,
+    isTbd: team.is_tbd,
+    name: team.name,
   };
 }
 
@@ -365,9 +409,9 @@ function toRoundMatchViewModel(input: {
   match: MatchRow;
   matchesByNumber: Map<number, KnockoutSeedMatchRow>;
   predictedWinnersByMatchNumber: Map<number, WinnerSide>;
+  predictionsByMatchId: Map<string, KnockoutPredictionRow>;
   qualifiedStandings: StandingRow[];
-  predictedWinnerSlot: WinnerSide | null;
-  isRandom: boolean;
+  teamsById: Map<string, TeamRow>;
   lock: Awaited<ReturnType<typeof getPhaseLock>>;
   windowState: KnockoutWindowState;
 }): BracketMatchViewModel {
@@ -405,6 +449,38 @@ function toRoundMatchViewModel(input: {
           input.qualifiedStandings,
         ),
   );
+  const prediction = input.predictionsByMatchId.get(input.match.id) ?? null;
+  const predictedWinnerTeam =
+    prediction?.predicted_winner_team_id
+      ? (() => {
+          const team = input.teamsById.get(prediction.predicted_winner_team_id);
+          return team ? toTeamSlot(team) : null;
+        })()
+      : null;
+  const selectedCurrentSlot =
+    prediction?.predicted_winner_slot === "HOME"
+      ? homeSlot
+      : prediction?.predicted_winner_slot === "AWAY"
+        ? awaySlot
+        : null;
+  const isOutdated =
+    prediction !== null &&
+    prediction.predicted_winner_team_id !== null &&
+    prediction.predicted_winner_slot !== null &&
+    selectedCurrentSlot?.id != null &&
+    selectedCurrentSlot?.id !== prediction.predicted_winner_team_id;
+  const predictionViewModel =
+    prediction && prediction.predicted_winner_slot !== null
+      ? {
+          currentWinnerSlot: isOutdated
+            ? null
+            : prediction.predicted_winner_slot,
+          isOutdated,
+          isRandom: prediction.is_random,
+          predictedWinnerSlot: prediction.predicted_winner_slot,
+          predictedWinnerTeam,
+        }
+      : null;
   const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
 
   return {
@@ -420,13 +496,7 @@ function toRoundMatchViewModel(input: {
     lock: input.lock,
     matchNumber: input.match.match_number,
     phase: input.match.phase,
-    prediction:
-      input.predictedWinnerSlot !== null
-        ? {
-            isRandom: input.isRandom,
-            predictedWinnerSlot: input.predictedWinnerSlot,
-          }
-        : null,
+    prediction: predictionViewModel,
     venue: input.match.venue,
     windowLabel: getKnockoutWindowLabel(windowPhase),
     windowState: input.windowState,
@@ -436,7 +506,9 @@ function toRoundMatchViewModel(input: {
 export async function getBracketRounds(
   supabase: SupabaseClient,
   userId: string,
+  options?: GetBracketRoundsOptions,
 ): Promise<BracketRoundViewModel[]> {
+  const predictionsClient = options?.predictionsClient ?? supabase;
   const [
     matchesResponse,
     predictionsResponse,
@@ -450,9 +522,11 @@ export async function getBracketRounds(
         .select(BRACKET_MATCHES_SELECT)
         .in("phase", KNOCKOUT_PHASES)
         .order("kickoff", { ascending: true }),
-      supabase
+      predictionsClient
         .from("knockout_predictions")
-        .select("match_id, predicted_winner_slot, is_random")
+        .select(
+          "match_id, predicted_winner_slot, predicted_winner_team_id, is_random",
+        )
         .eq("user_id", userId),
       loadQualifiedStandings(supabase, "bracket placeholders"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
@@ -481,13 +555,16 @@ export async function getBracketRounds(
     matches,
     predictionsByMatchId,
   });
+  const teamsById = buildTeamsById({
+    matches,
+    qualifiedStandings,
+  });
 
   return KNOCKOUT_PHASES.map((phase) => ({
     label: KNOCKOUT_PHASE_LABELS[phase],
     matches: matches
       .filter((match) => match.phase === phase)
       .map((match) => {
-        const prediction = predictionsByMatchId.get(match.id);
         const windowPhase = getKnockoutWindowPhaseForRound(match.phase);
         const lock =
           windowPhase === "KNOCKOUT_STAGE_ONE" ? stageOneLock : stageTwoLock;
@@ -498,13 +575,13 @@ export async function getBracketRounds(
         });
 
         return toRoundMatchViewModel({
-          isRandom: prediction?.is_random ?? false,
           lock,
           match,
           matchesByNumber,
           predictedWinnersByMatchNumber,
+          predictionsByMatchId,
           qualifiedStandings,
-          predictedWinnerSlot: prediction?.predicted_winner_slot ?? null,
+          teamsById,
           windowState,
         });
       }),
@@ -580,7 +657,9 @@ export async function saveKnockoutPrediction(
         .in("phase", KNOCKOUT_PHASES),
       supabase
         .from("knockout_predictions")
-        .select("match_id, predicted_winner_slot, is_random")
+        .select(
+          "match_id, predicted_winner_slot, predicted_winner_team_id, is_random",
+        )
         .eq("user_id", userId),
       loadQualifiedStandings(supabase, "knockout prediction save"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
