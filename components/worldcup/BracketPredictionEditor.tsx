@@ -7,6 +7,7 @@ import { useFormStatus } from "react-dom";
 import type { BracketMatchViewModel, WinnerSide } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
+import { getPersistedPickNotice } from "./knockoutPersistedPick";
 import { LocalKickoff } from "./LocalKickoff";
 import { PhaseBadge } from "./PhaseBadge";
 import { TeamBadge } from "./TeamBadge";
@@ -123,18 +124,7 @@ function BracketEditorFormBody({
         variant: "pending" as const,
       }
     : matchStateLabel(match);
-
-  const selectedSlot =
-    displayedWinnerSlot === "HOME"
-      ? match.homeSlot
-      : displayedWinnerSlot === "AWAY"
-        ? match.awaySlot
-        : null;
-  const persistedPredictionTeam = pending ? null : match.prediction?.predictedWinnerTeam ?? null;
-  const shouldShowPersistedPick =
-    persistedPredictionTeam !== null &&
-    (match.prediction?.isOutdated === true ||
-      selectedSlot?.id !== persistedPredictionTeam.id);
+  const persistedPickNotice = pending ? null : getPersistedPickNotice(match);
 
   return (
     <>
@@ -256,23 +246,17 @@ function BracketEditorFormBody({
             {flash.message}
           </p>
         </div>
-      ) : shouldShowPersistedPick && persistedPredictionTeam ? (
+      ) : persistedPickNotice ? (
         <div
           className={cn(
             "mt-3 rounded-card border px-4 py-3 text-sm",
-            match.prediction?.isOutdated
+            persistedPickNotice.tone === "warning"
               ? "border-status-warning/30 bg-status-warning/10 text-text-primary"
               : "border-accent-primary/20 bg-background-secondary/70 text-text-secondary",
           )}
         >
-          <p className="font-medium">
-            Pick fijado: {persistedPredictionTeam.name}
-          </p>
-          <p className="mt-1 text-text-secondary">
-            {match.prediction?.isOutdated
-              ? "Ese equipo ya no sigue en este cruce. Tu pick queda fijado como lo guardaste y no se convertirÃ¡ en otro lado."
-              : "Tu pick queda asociado a ese equipo aunque el slot todavÃ­a no estÃ© resuelto en pantalla."}
-          </p>
+          <p className="font-medium">{persistedPickNotice.title}</p>
+          <p className="mt-1 text-text-secondary">{persistedPickNotice.description}</p>
         </div>
       ) : null}
     </>

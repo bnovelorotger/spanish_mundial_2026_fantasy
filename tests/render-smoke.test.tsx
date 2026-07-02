@@ -345,8 +345,9 @@ describe("render smoke", () => {
       />,
     );
 
-    expect(markup).toContain("Pick fijado: Germany");
-    expect(markup).toContain("no se convertir");
+    expect(markup).toContain("Tu pick guardado: Germany");
+    expect(markup).toContain("Ahora lo ocupa Paraguay");
+    expect(markup).toContain("no sumara como acierto");
   });
 
   it("renders ranking avatars for uploaded photos and team crests", () => {

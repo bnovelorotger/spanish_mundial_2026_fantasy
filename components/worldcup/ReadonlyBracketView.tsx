@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { StateCard } from "@/components/ui/StateCard";
 
+import { getPersistedPickNotice } from "./knockoutPersistedPick";
 import { LocalKickoff } from "./LocalKickoff";
 import { TeamBadge } from "./TeamBadge";
 
@@ -26,13 +27,25 @@ function lockCopy(lock: PhaseLockViewModel, label: string, isCurrentUser: boolea
 function resolutionBadge(match: ParticipantBracketRoundViewModel["matches"][number]) {
   switch (match.resolutionState) {
     case "CORRECT":
-      return { label: "Acierto", style: "border-status-success/30 bg-status-success/10 text-status-success" };
+      return {
+        label: "Acierto",
+        style: "border-status-success/30 bg-status-success/10 text-status-success",
+      };
     case "WRONG":
-      return { label: "Fallo", style: "border-status-live/30 bg-status-live/10 text-status-live" };
+      return {
+        label: "Fallo",
+        style: "border-status-live/30 bg-status-live/10 text-status-live",
+      };
     case "EMPTY":
-      return { label: "Sin pick", style: "border-border-subtle bg-background-secondary/70 text-text-muted" };
+      return {
+        label: "Sin pick",
+        style: "border-border-subtle bg-background-secondary/70 text-text-muted",
+      };
     default:
-      return { label: "Pendiente", style: "border-status-warning/30 bg-status-warning/10 text-status-warning" };
+      return {
+        label: "Pendiente",
+        style: "border-status-warning/30 bg-status-warning/10 text-status-warning",
+      };
   }
 }
 
@@ -42,34 +55,6 @@ function slotClassName(isSelected: boolean) {
   }
 
   return "border-border-subtle bg-background-secondary/70";
-}
-
-function persistedPickCopy(match: ParticipantBracketRoundViewModel["matches"][number]) {
-  if (!match.prediction?.predictedWinnerTeam) {
-    return null;
-  }
-
-  const selectedSlot =
-    match.prediction.currentWinnerSlot === "HOME"
-      ? match.homeSlot
-      : match.prediction.currentWinnerSlot === "AWAY"
-        ? match.awaySlot
-        : null;
-  const shouldShow =
-    match.prediction.isOutdated ||
-    selectedSlot?.id !== match.prediction.predictedWinnerTeam.id;
-
-  if (!shouldShow) {
-    return null;
-  }
-
-  return {
-    description: match.prediction.isOutdated
-      ? "Ese equipo ya no sigue en este cruce. El pick se conserva tal y como se guardÃ³."
-      : "El pick queda asociado a ese equipo aunque el slot todavÃ­a no estÃ© resuelto en pantalla.",
-    title: `Pick fijado: ${match.prediction.predictedWinnerTeam.name}`,
-    tone: match.prediction.isOutdated ? "warning" : "default",
-  } as const;
 }
 
 export function ReadonlyBracketView({
@@ -106,9 +91,10 @@ export function ReadonlyBracketView({
       <div className="overflow-x-auto pb-2">
         <div className="flex min-w-max gap-4">
           {rounds.map((round) => {
-            const lock = round.phase === "ROUND_OF_32" || round.phase === "ROUND_OF_16"
-              ? stageOneLock
-              : stageTwoLock;
+            const lock =
+              round.phase === "ROUND_OF_32" || round.phase === "ROUND_OF_16"
+                ? stageOneLock
+                : stageTwoLock;
             const isHidden = round.revealState === "HIDDEN_UNTIL_LOCK";
 
             return (
@@ -128,7 +114,11 @@ export function ReadonlyBracketView({
                 <div className="mt-4 space-y-4">
                   {isHidden ? (
                     <StateCard
-                      description={lockCopy(lock, round.matches[0]?.windowLabel ?? "esta ventana", isCurrentUser)}
+                      description={lockCopy(
+                        lock,
+                        round.matches[0]?.windowLabel ?? "esta ventana",
+                        isCurrentUser,
+                      )}
                       eyebrow="Ventana protegida"
                       title="Este tramo del cuadro aún no se revela."
                       tone="warning"
@@ -136,7 +126,7 @@ export function ReadonlyBracketView({
                   ) : (
                     round.matches.map((match) => {
                       const badge = resolutionBadge(match);
-                      const persistedPick = persistedPickCopy(match);
+                      const persistedPick = getPersistedPickNotice(match);
 
                       return (
                         <article
@@ -161,7 +151,9 @@ export function ReadonlyBracketView({
                                 )}
                               </h3>
                             </div>
-                            <span className={`inline-flex rounded-pill border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badge.style}`}>
+                            <span
+                              className={`inline-flex rounded-pill border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badge.style}`}
+                            >
                               {badge.label}
                             </span>
                           </div>
@@ -177,8 +169,7 @@ export function ReadonlyBracketView({
                               { side: "HOME" as const, slot: match.homeSlot },
                               { side: "AWAY" as const, slot: match.awaySlot },
                             ].map(({ side, slot }) => {
-                              const isSelected =
-                                match.prediction?.currentWinnerSlot === side;
+                              const isSelected = match.prediction?.currentWinnerSlot === side;
 
                               return (
                                 <div
@@ -198,7 +189,10 @@ export function ReadonlyBracketView({
 
                                   {isSelected ? (
                                     <div className="inline-flex items-center gap-2 rounded-pill border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
-                                      <Crown className="size-3.5 text-accent-primary" strokeWidth={2} />
+                                      <Crown
+                                        className="size-3.5 text-accent-primary"
+                                        strokeWidth={2}
+                                      />
                                       Pick
                                     </div>
                                   ) : null}
