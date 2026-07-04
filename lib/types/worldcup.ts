@@ -389,11 +389,13 @@ export interface BracketSlotViewModel {
 }
 
 export interface BracketPredictionViewModel {
+  canonicalMatchNumber: number;
   currentWinnerSlot: WinnerSide | null;
   isRandom: boolean;
   isOutdated: boolean;
   predictedWinnerSlot: WinnerSide | null;
   predictedWinnerTeam: BracketSlotViewModel | null;
+  warningState: "NONE" | "STALE_UNRESOLVED";
 }
 
 export interface BracketMatchViewModel {

@@ -103,6 +103,7 @@ describe("saveKnockoutPrediction", () => {
                   data: [
                     {
                       away_placeholder: null,
+                      away_team_id: "team-can",
                       away_team: {
                         code: "CAN",
                         flag_url: "https://flagcdn.com/w80/ca.png",
@@ -111,6 +112,7 @@ describe("saveKnockoutPrediction", () => {
                         name: "Canada",
                       },
                       id: "match-73",
+                      home_team_id: "team-rsa",
                       home_placeholder: null,
                       home_team: {
                         code: "RSA",
@@ -205,21 +207,23 @@ describe("getBracketRounds", () => {
                   return {
                     order: async () => ({
                       data: [
-                        {
-                          away_placeholder: null,
-                          away_team: {
-                            code: "CAN",
-                            flag_url: "https://flagcdn.com/ca.svg",
-                            id: "team-can",
-                            is_tbd: false,
+                    {
+                      away_placeholder: null,
+                      away_team_id: "team-can",
+                      away_team: {
+                        code: "CAN",
+                        flag_url: "https://flagcdn.com/ca.svg",
+                        id: "team-can",
+                        is_tbd: false,
                             name: "Canada",
                           },
-                          city: "Mexico City",
-                          home_placeholder: null,
-                          home_team: {
-                            code: "RSA",
-                            flag_url: "https://flagcdn.com/za.svg",
-                            id: "team-rsa",
+                      city: "Mexico City",
+                      home_team_id: "team-rsa",
+                      home_placeholder: null,
+                      home_team: {
+                        code: "RSA",
+                        flag_url: "https://flagcdn.com/za.svg",
+                        id: "team-rsa",
                             is_tbd: false,
                             name: "South Africa",
                           },
@@ -284,6 +288,7 @@ describe("getBracketRounds", () => {
                       match_id: "match-73",
                       predicted_winner_slot: "AWAY",
                       predicted_winner_team_id: "team-can",
+                      updated_at: "2026-06-27T20:00:00Z",
                     },
                   ],
                   error: null,
@@ -302,6 +307,7 @@ describe("getBracketRounds", () => {
     });
 
     expect(rounds[0]?.matches[0]?.prediction).toMatchObject({
+      canonicalMatchNumber: 73,
       currentWinnerSlot: "AWAY",
       isOutdated: false,
       predictedWinnerSlot: "AWAY",
@@ -309,6 +315,159 @@ describe("getBracketRounds", () => {
         id: "team-can",
         name: "Canada",
       },
+      warningState: "NONE",
+    });
+  });
+
+  it("remaps a saved team to the current match where that team now appears", async () => {
+    mockGetPhaseLock.mockImplementation(async (_supabase, phase: string) => ({
+      effectiveLockAt:
+        phase === "KNOCKOUT_STAGE_ONE"
+          ? "2026-06-28T19:00:00Z"
+          : "2026-07-09T19:00:00Z",
+      isLocked: false,
+      phase,
+      source: "AUTOMATIC",
+    }));
+
+    const supabase = {
+      from(table: string) {
+        if (table === "matches") {
+          return {
+            select() {
+              return {
+                in() {
+                  return {
+                    order: async () => ({
+                      data: [
+                        {
+                          away_placeholder: null,
+                          away_team: {
+                            code: "PAR",
+                            flag_url: null,
+                            id: "team-par",
+                            is_tbd: false,
+                            name: "Paraguay",
+                          },
+                          away_team_id: "team-par",
+                          city: "Dallas",
+                          home_placeholder: null,
+                          home_team: {
+                            code: "FRA",
+                            flag_url: null,
+                            id: "team-fra",
+                            is_tbd: false,
+                            name: "France",
+                          },
+                          home_team_id: "team-fra",
+                          id: "match-90",
+                          kickoff: "2026-07-04T19:00:00Z",
+                          match_number: 90,
+                          phase: "ROUND_OF_16",
+                          status: "SCHEDULED",
+                          venue: "AT&T Stadium",
+                          winner_side: null,
+                        },
+                        {
+                          away_placeholder: null,
+                          away_team: {
+                            code: "NOR",
+                            flag_url: null,
+                            id: "team-nor",
+                            is_tbd: false,
+                            name: "Norway",
+                          },
+                          away_team_id: "team-nor",
+                          city: "Houston",
+                          home_placeholder: null,
+                          home_team: {
+                            code: "BRA",
+                            flag_url: null,
+                            id: "team-bra",
+                            is_tbd: false,
+                            name: "Brazil",
+                          },
+                          home_team_id: "team-bra",
+                          id: "match-91",
+                          kickoff: "2026-07-05T22:00:00Z",
+                          match_number: 91,
+                          phase: "ROUND_OF_16",
+                          status: "SCHEDULED",
+                          venue: "NRG Stadium",
+                          winner_side: null,
+                        },
+                      ],
+                      error: null,
+                    }),
+                  };
+                },
+              };
+            },
+          };
+        }
+
+        if (table === "group_standings") {
+          return {
+            select: async () => ({
+              data: [],
+              error: null,
+            }),
+          };
+        }
+
+        if (table === "teams") {
+          return {
+            select() {
+              return {
+                in: async () => ({
+                  data: [],
+                  error: null,
+                }),
+              };
+            },
+          };
+        }
+
+        if (table === "knockout_predictions") {
+          return {
+            select() {
+              return {
+                eq: async () => ({
+                  data: [
+                    {
+                      is_random: false,
+                      match_id: "match-90",
+                      predicted_winner_slot: "AWAY",
+                      predicted_winner_team_id: "team-bra",
+                      updated_at: "2026-07-04T12:00:00Z",
+                    },
+                  ],
+                  error: null,
+                }),
+              };
+            },
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      },
+    } as unknown as SupabaseClient;
+
+    const rounds = await getBracketRounds(supabase, "user-1");
+    const roundOf16 = rounds.find((round) => round.phase === "ROUND_OF_16");
+
+    expect(roundOf16?.matches.find((match) => match.id === "match-90")?.prediction).toBeNull();
+    expect(
+      roundOf16?.matches.find((match) => match.id === "match-91")?.prediction,
+    ).toMatchObject({
+      canonicalMatchNumber: 91,
+      currentWinnerSlot: "HOME",
+      predictedWinnerSlot: "HOME",
+      predictedWinnerTeam: {
+        id: "team-bra",
+        name: "Brazil",
+      },
+      warningState: "NONE",
     });
   });
 });

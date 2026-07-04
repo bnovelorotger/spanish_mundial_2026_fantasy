@@ -733,6 +733,7 @@ describe("getParticipantDetail", () => {
             matchNumber: 73,
             phase: "ROUND_OF_32",
             prediction: {
+              canonicalMatchNumber: 73,
               currentWinnerSlot: "HOME",
               isOutdated: false,
               isRandom: false,
@@ -745,6 +746,7 @@ describe("getParticipantDetail", () => {
                 isTbd: false,
                 name: "Mexico",
               },
+              warningState: "NONE",
             },
             venue: "SoFi",
             windowLabel: "Ventana 1",
@@ -814,6 +816,7 @@ describe("getParticipantDetail", () => {
             matchNumber: 73,
             phase: "ROUND_OF_32",
             prediction: {
+              canonicalMatchNumber: 73,
               currentWinnerSlot: "HOME",
               isOutdated: false,
               isRandom: false,
@@ -826,6 +829,7 @@ describe("getParticipantDetail", () => {
                 isTbd: false,
                 name: "Mexico",
               },
+              warningState: "NONE",
             },
             venue: "SoFi",
             windowLabel: "Ventana 1",
@@ -998,6 +1002,7 @@ describe("getParticipantDetail", () => {
             matchNumber: 89,
             phase: "ROUND_OF_16",
             prediction: {
+              canonicalMatchNumber: 89,
               currentWinnerSlot: null,
               isOutdated: true,
               isRandom: false,
@@ -1010,6 +1015,7 @@ describe("getParticipantDetail", () => {
                 isTbd: false,
                 name: "Germany",
               },
+              warningState: "STALE_UNRESOLVED",
             },
             venue: "AT&T Stadium",
             windowLabel: "Ventana 1",

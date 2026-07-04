@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { buildCanonicalKnockoutPredictionMap } from "@/lib/knockout-predictions";
+
 import type {
   GroupLetter,
   KnockoutRoundPhase,
@@ -33,6 +35,7 @@ interface KnockoutMatchRow {
   away_team_id: string | null;
   home_team_id: string | null;
   id: string;
+  match_number: number;
   phase: KnockoutRoundPhase;
   status: MatchStatus;
   winner_side: WinnerSide | null;
@@ -45,6 +48,7 @@ interface KnockoutPredictionRow {
   predicted_winner_team_id: string | null;
   provenance: PredictionProvenance;
   provenance_note: string | null;
+  updated_at?: string | null;
   user_id: string;
 }
 
@@ -254,6 +258,10 @@ export function buildKnockoutPointsRows(
   predictions: KnockoutPredictionRow[],
   matches: KnockoutMatchRow[],
 ): PointsRow[] {
+  const canonicalPredictions = buildCanonicalKnockoutPredictionMap({
+    matches,
+    predictions,
+  });
   const matchesById = new Map(
     matches
       .filter(
@@ -262,79 +270,98 @@ export function buildKnockoutPointsRows(
       .map((match) => [match.id, match] as const),
   );
 
-  const rows = predictions.reduce<PointsRow[]>((currentRows, prediction) => {
-    if (!prediction.predicted_winner_slot) {
-      return currentRows;
-    }
+  const rows = [...canonicalPredictions.predictionsByMatchId.values()].reduce<PointsRow[]>(
+    (currentRows, prediction) => {
+      const effectiveWinnerSlot =
+        prediction.predictedWinnerSlot ?? prediction.currentWinnerSlot;
 
-    const match = matchesById.get(prediction.match_id);
+      if (!effectiveWinnerSlot && !prediction.predictedWinnerTeamId) {
+        return currentRows;
+      }
 
-    if (!match?.winner_side) {
-      return currentRows;
-    }
+      const match = matchesById.get(prediction.canonicalMatchId);
 
-    const actualWinnerTeamId = actualWinnerTeamIdForMatch(match);
+      if (!match?.winner_side) {
+        return currentRows;
+      }
 
-    if (prediction.predicted_winner_team_id && !actualWinnerTeamId) {
-      return currentRows;
-    }
+      const actualWinnerTeamId = actualWinnerTeamIdForMatch(match);
 
-    const scored = scoreKnockoutPrediction({
-      actualWinnerTeamId,
-      matchId: match.id,
-      phase: match.phase,
-      predictionConfirmedAt: prediction.confirmed_at,
-      predictionProvenance: prediction.provenance,
-      predictionProvenanceNote: prediction.provenance_note,
-      predictedWinnerSlot: prediction.predicted_winner_slot,
-      predictedWinnerTeamId: prediction.predicted_winner_team_id,
-      winnerSide: match.winner_side,
-    });
+      if (prediction.predictedWinnerTeamId && !actualWinnerTeamId) {
+        return currentRows;
+      }
 
-    currentRows.push({
-      metadata: scored.metadata,
-      points_awarded: scored.pointsAwarded,
-      reason: scored.reason,
-      source_id: scored.sourceId,
-      source_type: "KNOCKOUT_WINNER" as const,
-      user_id: prediction.user_id,
-    });
-
-    if (match.phase === "FINAL") {
-      const championPointsAwarded =
-        prediction.predicted_winner_team_id && actualWinnerTeamId
-          ? prediction.predicted_winner_team_id === actualWinnerTeamId
-            ? 25
-            : 0
-          : prediction.predicted_winner_slot === match.winner_side
-            ? 25
-            : 0;
-      const championReason =
-        championPointsAwarded > 0 ? "Champion bonus" : "Miss";
+      const scored = scoreKnockoutPrediction({
+        actualWinnerTeamId,
+        matchId: match.id,
+        phase: match.phase,
+        predictionConfirmedAt: prediction.predictionConfirmedAt,
+        predictionProvenance:
+          (prediction.predictionProvenance as PredictionProvenance | null) ??
+          "USER_SUBMITTED",
+        predictionProvenanceNote: prediction.predictionProvenanceNote,
+        predictedWinnerSlot: effectiveWinnerSlot ?? "HOME",
+        predictedWinnerTeamId: prediction.predictedWinnerTeamId,
+        winnerSide: match.winner_side,
+      });
 
       currentRows.push({
         metadata: {
-          actualWinnerTeamId,
-          matchId: match.id,
-          phase: match.phase,
-          predictedWinnerSlot: prediction.predicted_winner_slot,
-          predictedWinnerTeamId: prediction.predicted_winner_team_id,
-          predictionConfirmedAt: prediction.confirmed_at,
-          predictionProvenance: prediction.provenance,
-          predictionProvenanceNote: prediction.provenance_note,
-          stamp: buildStamp(championPointsAwarded, championReason),
-          winnerSide: match.winner_side,
+          ...scored.metadata,
+          canonicalMatchNumber: prediction.canonicalMatchNumber,
+          sourceMatchId: prediction.sourceMatchId,
+          sourceMatchNumber: prediction.sourceMatchNumber,
+          warningState: prediction.warningState,
         },
-        points_awarded: championPointsAwarded,
-        reason: championReason,
-        source_id: buildChampionPointSourceId(match.id),
-        source_type: "CHAMPION" as const,
-        user_id: prediction.user_id,
+        points_awarded: scored.pointsAwarded,
+        reason: scored.reason,
+        source_id: scored.sourceId,
+        source_type: "KNOCKOUT_WINNER" as const,
+        user_id: prediction.userId ?? "unknown",
       });
-    }
 
-    return currentRows;
-  }, []);
+      if (match.phase === "FINAL") {
+        const championPointsAwarded =
+          prediction.predictedWinnerTeamId && actualWinnerTeamId
+            ? prediction.predictedWinnerTeamId === actualWinnerTeamId
+              ? 25
+              : 0
+            : effectiveWinnerSlot === match.winner_side
+              ? 25
+              : 0;
+        const championReason =
+          championPointsAwarded > 0 ? "Champion bonus" : "Miss";
+
+        currentRows.push({
+          metadata: {
+            actualWinnerTeamId,
+            canonicalMatchNumber: prediction.canonicalMatchNumber,
+            matchId: match.id,
+            phase: match.phase,
+            predictedWinnerSlot: effectiveWinnerSlot,
+            predictedWinnerTeamId: prediction.predictedWinnerTeamId,
+            predictionConfirmedAt: prediction.predictionConfirmedAt,
+            predictionProvenance:
+              prediction.predictionProvenance ?? "USER_SUBMITTED",
+            predictionProvenanceNote: prediction.predictionProvenanceNote,
+            sourceMatchId: prediction.sourceMatchId,
+            sourceMatchNumber: prediction.sourceMatchNumber,
+            stamp: buildStamp(championPointsAwarded, championReason),
+            warningState: prediction.warningState,
+            winnerSide: match.winner_side,
+          },
+          points_awarded: championPointsAwarded,
+          reason: championReason,
+          source_id: buildChampionPointSourceId(match.id),
+          source_type: "CHAMPION" as const,
+          user_id: prediction.userId ?? "unknown",
+        });
+      }
+
+      return currentRows;
+    },
+    [],
+  );
 
   return rows.sort((left, right) => {
     if (pointsRowSortOrder(left.source_type) !== pointsRowSortOrder(right.source_type)) {
@@ -417,11 +444,11 @@ async function loadScoringInputs(supabase: SupabaseClient) {
     supabase
       .from("knockout_predictions")
       .select(
-        "user_id, match_id, predicted_winner_slot, predicted_winner_team_id, provenance, provenance_note, confirmed_at",
+        "user_id, match_id, predicted_winner_slot, predicted_winner_team_id, provenance, provenance_note, confirmed_at, updated_at",
       ),
     supabase
       .from("matches")
-      .select("id, phase, status, winner_side, home_team_id, away_team_id")
+      .select("id, match_number, phase, status, winner_side, home_team_id, away_team_id")
       .in("phase", [
         "ROUND_OF_32",
         "ROUND_OF_16",

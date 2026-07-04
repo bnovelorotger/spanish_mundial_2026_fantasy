@@ -6,6 +6,10 @@ import {
   resolveKnockoutSeedTeam,
   type KnockoutSeedMatchRow,
 } from "@/lib/knockout-bracket";
+import {
+  buildCanonicalKnockoutPredictionMap,
+  type CanonicalKnockoutPrediction,
+} from "@/lib/knockout-predictions";
 import { getPhaseLock } from "@/lib/services/locks.service";
 import {
   getKnockoutWindowLabel,
@@ -34,8 +38,10 @@ interface TeamRow {
 
 interface MatchRow {
   away_placeholder: string | null;
+  away_team_id: string | null;
   away_team: TeamRow | TeamRow[] | null;
   city: string | null;
+  home_team_id: string | null;
   home_placeholder: string | null;
   home_team: TeamRow | TeamRow[] | null;
   id: string;
@@ -52,6 +58,8 @@ interface KnockoutPredictionRow {
   match_id: string;
   predicted_winner_slot: WinnerSide | null;
   predicted_winner_team_id: string | null;
+  updated_at: string | null;
+  user_id?: string | null;
 }
 
 interface StandingRow {
@@ -79,8 +87,10 @@ interface GetBracketRoundsOptions {
 
 interface SaveKnockoutPredictionMatchRow {
   away_placeholder: string | null;
+  away_team_id: string | null;
   away_team: TeamRow | TeamRow[] | null;
   id: string;
+  home_team_id: string | null;
   home_placeholder: string | null;
   home_team: TeamRow | TeamRow[] | null;
   match_number: number;
@@ -95,6 +105,8 @@ const BRACKET_MATCHES_SELECT = `
   phase,
   status,
   winner_side,
+  home_team_id,
+  away_team_id,
   home_placeholder,
   away_placeholder,
   venue,
@@ -165,18 +177,135 @@ function buildMatchesByNumber(
   );
 }
 
-function buildPredictedWinnersByMatchNumber(input: {
-  matches: Pick<MatchRow, "id" | "match_number">[];
-  predictionsByMatchId: Map<string, KnockoutPredictionRow>;
-}) {
+function buildPredictedWinnersByMatchNumber(
+  predictionsByMatchNumber: Map<number, CanonicalKnockoutPrediction>,
+) {
   return new Map<number, WinnerSide>(
-    input.matches.flatMap((match) => {
-      const predictedWinnerSlot =
-        input.predictionsByMatchId.get(match.id)?.predicted_winner_slot ?? null;
+    [...predictionsByMatchNumber.entries()].flatMap(([matchNumber, prediction]) =>
+      prediction.currentWinnerSlot
+        ? [[matchNumber, prediction.currentWinnerSlot] as const]
+        : [],
+    ),
+  );
+}
 
-      return predictedWinnerSlot ? [[match.match_number, predictedWinnerSlot] as const] : [];
+function buildRawPredictedWinnersByMatchNumber(input: {
+  matches: Pick<MatchRow, "id" | "match_number">[];
+  predictions: KnockoutPredictionRow[];
+}) {
+  const matchNumbersById = new Map(
+    input.matches.map((match) => [match.id, match.match_number] as const),
+  );
+
+  return new Map<number, WinnerSide>(
+    input.predictions.flatMap((prediction) => {
+      const matchNumber = matchNumbersById.get(prediction.match_id) ?? null;
+
+      return matchNumber !== null && prediction.predicted_winner_slot
+        ? [[matchNumber, prediction.predicted_winner_slot] as const]
+        : [];
     }),
   );
+}
+
+function resolveMatchSlots(input: {
+  match: Pick<
+    MatchRow,
+    | "away_placeholder"
+    | "away_team"
+    | "home_placeholder"
+    | "home_team"
+    | "match_number"
+    | "phase"
+  >;
+  matchesByNumber: Map<number, KnockoutSeedMatchRow>;
+  predictedWinnersByMatchNumber: Map<number, WinnerSide>;
+  qualifiedStandings: StandingRow[];
+}) {
+  const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
+  const homeSeed = getKnockoutSeedSpec(input.match.match_number, "HOME");
+  const awaySeed = getKnockoutSeedSpec(input.match.match_number, "AWAY");
+  const homeSlot = toSlot(
+    input.match.home_team,
+    getKnockoutSlotLabel(input.match.match_number, "HOME") ??
+      input.match.home_placeholder,
+    homeSeed
+      ? resolveKnockoutSeedTeam({
+          matchesByNumber: input.matchesByNumber,
+          predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
+          seed: homeSeed,
+          standings: input.qualifiedStandings,
+          targetWindowPhase: windowPhase,
+        })
+      : resolveQualifiedPlaceholderTeam(
+          input.match.home_placeholder,
+          input.qualifiedStandings,
+        ),
+  );
+  const awaySlot = toSlot(
+    input.match.away_team,
+    getKnockoutSlotLabel(input.match.match_number, "AWAY") ??
+      input.match.away_placeholder,
+    awaySeed
+      ? resolveKnockoutSeedTeam({
+          matchesByNumber: input.matchesByNumber,
+          predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
+          seed: awaySeed,
+          standings: input.qualifiedStandings,
+          targetWindowPhase: windowPhase,
+        })
+      : resolveQualifiedPlaceholderTeam(
+          input.match.away_placeholder,
+          input.qualifiedStandings,
+        ),
+  );
+
+  return {
+    awaySlot,
+    homeSlot,
+  };
+}
+
+function buildCanonicalPredictions(input: {
+  matches: Pick<
+    MatchRow,
+    | "away_placeholder"
+    | "away_team"
+    | "home_placeholder"
+    | "home_team"
+    | "id"
+    | "match_number"
+    | "phase"
+  >[];
+  matchesByNumber: Map<number, KnockoutSeedMatchRow>;
+  predictedWinnersByMatchNumber: Map<number, WinnerSide>;
+  predictions: KnockoutPredictionRow[];
+  qualifiedStandings: StandingRow[];
+  userId: string;
+}) {
+  return buildCanonicalKnockoutPredictionMap({
+    matches: input.matches.map((match) => {
+      const resolvedSlots = resolveMatchSlots({
+        match,
+        matchesByNumber: input.matchesByNumber,
+        predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
+        qualifiedStandings: input.qualifiedStandings,
+      });
+
+      return {
+        away_team_id: resolvedSlots.awaySlot.id,
+        home_team_id: resolvedSlots.homeSlot.id,
+        id: match.id,
+        match_number: match.match_number,
+        phase: match.phase,
+      };
+    }),
+    predictions: input.predictions.map((prediction) => ({
+      ...prediction,
+      user_id: prediction.user_id ?? input.userId,
+    })),
+    userId: input.userId,
+  });
 }
 
 function buildTeamsById(input: {
@@ -410,79 +539,39 @@ function toRoundMatchViewModel(input: {
   match: MatchRow;
   matchesByNumber: Map<number, KnockoutSeedMatchRow>;
   predictedWinnersByMatchNumber: Map<number, WinnerSide>;
-  predictionsByMatchId: Map<string, KnockoutPredictionRow>;
+  predictionsByMatchId: Map<string, CanonicalKnockoutPrediction>;
   qualifiedStandings: StandingRow[];
   teamsById: Map<string, TeamRow>;
   lock: Awaited<ReturnType<typeof getPhaseLock>>;
   windowState: KnockoutWindowState;
 }): BracketMatchViewModel {
   const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
-  const homeSeed = getKnockoutSeedSpec(input.match.match_number, "HOME");
-  const awaySeed = getKnockoutSeedSpec(input.match.match_number, "AWAY");
-  const homeSlot = toSlot(
-    input.match.home_team,
-    getKnockoutSlotLabel(input.match.match_number, "HOME") ??
-      input.match.home_placeholder,
-    homeSeed
-      ? resolveKnockoutSeedTeam({
-          matchesByNumber: input.matchesByNumber,
-          predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
-          seed: homeSeed,
-          standings: input.qualifiedStandings,
-          targetWindowPhase: windowPhase,
-        })
-      : resolveQualifiedPlaceholderTeam(
-          input.match.home_placeholder,
-          input.qualifiedStandings,
-        ),
-  );
-  const awaySlot = toSlot(
-    input.match.away_team,
-    getKnockoutSlotLabel(input.match.match_number, "AWAY") ??
-      input.match.away_placeholder,
-    awaySeed
-      ? resolveKnockoutSeedTeam({
-          matchesByNumber: input.matchesByNumber,
-          predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
-          seed: awaySeed,
-          standings: input.qualifiedStandings,
-          targetWindowPhase: windowPhase,
-        })
-      : resolveQualifiedPlaceholderTeam(
-          input.match.away_placeholder,
-          input.qualifiedStandings,
-        ),
-  );
+  const { awaySlot, homeSlot } = resolveMatchSlots({
+    match: input.match,
+    matchesByNumber: input.matchesByNumber,
+    predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
+    qualifiedStandings: input.qualifiedStandings,
+  });
   const prediction = input.predictionsByMatchId.get(input.match.id) ?? null;
   const predictedWinnerTeam =
-    prediction?.predicted_winner_team_id
+    prediction?.predictedWinnerTeamId
       ? (() => {
-          const team = input.teamsById.get(prediction.predicted_winner_team_id);
+          const team = input.teamsById.get(prediction.predictedWinnerTeamId);
           return team ? toTeamSlot(team) : null;
         })()
       : null;
-  const selectedCurrentSlot =
-    prediction?.predicted_winner_slot === "HOME"
-      ? homeSlot
-      : prediction?.predicted_winner_slot === "AWAY"
-        ? awaySlot
-        : null;
-  const isOutdated =
-    prediction !== null &&
-    prediction.predicted_winner_team_id !== null &&
-    prediction.predicted_winner_slot !== null &&
-    selectedCurrentSlot?.id != null &&
-    selectedCurrentSlot?.id !== prediction.predicted_winner_team_id;
   const predictionViewModel =
-    prediction && prediction.predicted_winner_slot !== null
+    prediction &&
+    (prediction.predictedWinnerSlot !== null ||
+      prediction.predictedWinnerTeamId !== null)
       ? {
-          currentWinnerSlot: isOutdated
-            ? null
-            : prediction.predicted_winner_slot,
-          isOutdated,
-          isRandom: prediction.is_random,
-          predictedWinnerSlot: prediction.predicted_winner_slot,
+          canonicalMatchNumber: prediction.canonicalMatchNumber,
+          currentWinnerSlot: prediction.currentWinnerSlot,
+          isOutdated: prediction.warningState === "STALE_UNRESOLVED",
+          isRandom: prediction.isRandom,
+          predictedWinnerSlot: prediction.predictedWinnerSlot,
           predictedWinnerTeam,
+          warningState: prediction.warningState,
         }
       : null;
   return {
@@ -527,7 +616,7 @@ export async function getBracketRounds(
       predictionsClient
         .from("knockout_predictions")
         .select(
-          "match_id, predicted_winner_slot, predicted_winner_team_id, is_random",
+          "match_id, predicted_winner_slot, predicted_winner_team_id, is_random, updated_at",
         )
         .eq("user_id", userId),
       loadQualifiedStandings(supabase, "bracket placeholders"),
@@ -545,18 +634,23 @@ export async function getBracketRounds(
     );
   }
 
-  const predictionsByMatchId = new Map(
-    (predictionsResponse.data as KnockoutPredictionRow[]).map((prediction) => [
-      prediction.match_id,
-      prediction,
-    ]),
-  );
   const matches = matchesResponse.data as MatchRow[];
   const matchesByNumber = buildMatchesByNumber(matches);
-  const predictedWinnersByMatchNumber = buildPredictedWinnersByMatchNumber({
+  const rawPredictedWinnersByMatchNumber = buildRawPredictedWinnersByMatchNumber({
     matches,
-    predictionsByMatchId,
+    predictions: predictionsResponse.data as KnockoutPredictionRow[],
   });
+  const canonicalPredictions = buildCanonicalPredictions({
+    matches,
+    matchesByNumber,
+    predictedWinnersByMatchNumber: rawPredictedWinnersByMatchNumber,
+    predictions: predictionsResponse.data as KnockoutPredictionRow[],
+    qualifiedStandings,
+    userId,
+  });
+  const predictedWinnersByMatchNumber = buildPredictedWinnersByMatchNumber(
+    canonicalPredictions.predictionsByMatchNumber,
+  );
   const teamsById = buildTeamsById({
     matches,
     qualifiedStandings,
@@ -581,7 +675,7 @@ export async function getBracketRounds(
           match,
           matchesByNumber,
           predictedWinnersByMatchNumber,
-          predictionsByMatchId,
+          predictionsByMatchId: canonicalPredictions.predictionsByMatchId,
           qualifiedStandings,
           teamsById,
           windowState,
@@ -660,7 +754,7 @@ export async function saveKnockoutPrediction(
       supabase
         .from("knockout_predictions")
         .select(
-          "match_id, predicted_winner_slot, predicted_winner_team_id, is_random",
+          "match_id, predicted_winner_slot, predicted_winner_team_id, is_random, updated_at",
         )
         .eq("user_id", userId),
       loadQualifiedStandings(supabase, "knockout prediction save"),
@@ -682,16 +776,21 @@ export async function saveKnockoutPrediction(
 
   const matches = matchesResponse.data as SaveKnockoutPredictionMatchRow[];
   const matchesByNumber = buildMatchesByNumber(matches);
-  const predictionsByMatchId = new Map(
-    (predictionsResponse.data as KnockoutPredictionRow[]).map((prediction) => [
-      prediction.match_id,
-      prediction,
-    ]),
-  );
-  const predictedWinnersByMatchNumber = buildPredictedWinnersByMatchNumber({
+  const rawPredictedWinnersByMatchNumber = buildRawPredictedWinnersByMatchNumber({
     matches,
-    predictionsByMatchId,
+    predictions: predictionsResponse.data as KnockoutPredictionRow[],
   });
+  const canonicalPredictions = buildCanonicalPredictions({
+    matches,
+    matchesByNumber,
+    predictedWinnersByMatchNumber: rawPredictedWinnersByMatchNumber,
+    predictions: predictionsResponse.data as KnockoutPredictionRow[],
+    qualifiedStandings,
+    userId,
+  });
+  const predictedWinnersByMatchNumber = buildPredictedWinnersByMatchNumber(
+    canonicalPredictions.predictionsByMatchNumber,
+  );
   const currentMatchNumber =
     matches.find((candidate) => candidate.id === input.matchId)?.match_number ?? null;
 
