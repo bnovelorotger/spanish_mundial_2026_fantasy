@@ -383,8 +383,8 @@ describe("render smoke", () => {
       />,
     );
 
-    expect(markup).toContain("Tu pick guardado: Germany");
-    expect(markup).toContain("ya no ocupa ningun lado resoluble");
+    expect(markup).toContain("Pick anterior no disponible");
+    expect(markup).toContain("ya no coincide con el pick que habias elegido antes");
   });
 
   it("highlights the persisted team when it still appears in the current matchup", () => {

@@ -16,8 +16,9 @@ export function getPersistedPickNotice(match: BracketMatchViewModel) {
   }
 
   return {
-    description: `Tu pick sigue siendo ${persistedTeam.name}, pero ese equipo ya no ocupa ningun lado resoluble de este cruce. No se marcara otro equipo como seleccionado.`,
-    title: `Tu pick guardado: ${persistedTeam.name}`,
+    description:
+      "Lo sentimos, este cruce ya no coincide con el pick que habias elegido antes.",
+    title: "Pick anterior no disponible",
     tone: "warning" as const,
   };
 }
