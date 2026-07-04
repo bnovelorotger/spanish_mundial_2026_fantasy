@@ -664,6 +664,7 @@ describe("knockout bracket seeds", () => {
               away_team: null,
               home_team: null,
               match_number: 73,
+              phase: "ROUND_OF_32",
               status: "FINISHED",
               winner_side: "HOME",
             },
@@ -690,6 +691,7 @@ describe("knockout bracket seeds", () => {
               away_team: null,
               home_team: null,
               match_number: 79,
+              phase: "ROUND_OF_32",
               status: "SCHEDULED",
               winner_side: null,
             },
@@ -698,6 +700,7 @@ describe("knockout bracket seeds", () => {
         predictedWinnersByMatchNumber: new Map([[79, "HOME"]]),
         seed: roundOf16Seed!,
         standings,
+        targetWindowPhase: "KNOCKOUT_STAGE_ONE",
       }),
     )?.toMatchObject({
       code: "MEX",
@@ -705,7 +708,7 @@ describe("knockout bracket seeds", () => {
     });
   });
 
-  it("prioritizes the official finished winner over any stale saved pick", () => {
+  it("keeps the saved path within the same knockout window even if the source match is finished", () => {
     const roundOf16Seed = getKnockoutSeedSpec(92, "HOME");
 
     expect(
@@ -714,9 +717,22 @@ describe("knockout bracket seeds", () => {
           [
             79,
             {
-              away_team: null,
-              home_team: null,
+              away_team: {
+                code: "BRA",
+                flag_url: null,
+                id: "team-bra",
+                is_tbd: false,
+                name: "Brazil",
+              },
+              home_team: {
+                code: "MEX",
+                flag_url: null,
+                id: "team-mex",
+                is_tbd: false,
+                name: "Mexico",
+              },
               match_number: 79,
+              phase: "ROUND_OF_32",
               status: "FINISHED",
               winner_side: "HOME",
             },
@@ -725,10 +741,52 @@ describe("knockout bracket seeds", () => {
         predictedWinnersByMatchNumber: new Map([[79, "AWAY"]]),
         seed: roundOf16Seed!,
         standings,
+        targetWindowPhase: "KNOCKOUT_STAGE_ONE",
       }),
     )?.toMatchObject({
-      code: "MEX",
-      name: "Mexico",
+      code: "BRA",
+      name: "Brazil",
+    });
+  });
+
+  it("uses the official finished winner when resolving a later knockout window", () => {
+    const quarterFinalSeed = getKnockoutSeedSpec(97, "HOME");
+
+    expect(
+      resolveKnockoutSeedTeam({
+        matchesByNumber: new Map([
+          [
+            89,
+            {
+              away_team: {
+                code: "MAR",
+                flag_url: null,
+                id: "team-mar",
+                is_tbd: false,
+                name: "Morocco",
+              },
+              home_team: {
+                code: "CAN",
+                flag_url: null,
+                id: "team-can",
+                is_tbd: false,
+                name: "Canada",
+              },
+              match_number: 89,
+              phase: "ROUND_OF_16",
+              status: "FINISHED",
+              winner_side: "AWAY",
+            },
+          ],
+        ]),
+        predictedWinnersByMatchNumber: new Map([[89, "HOME"]]),
+        seed: quarterFinalSeed!,
+        standings,
+        targetWindowPhase: "KNOCKOUT_STAGE_TWO",
+      }),
+    )?.toMatchObject({
+      code: "MAR",
+      name: "Morocco",
     });
   });
 });

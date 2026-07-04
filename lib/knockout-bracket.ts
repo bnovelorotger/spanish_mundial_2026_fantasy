@@ -1,4 +1,12 @@
-import type { GroupLetter, MatchStatus, WinnerSide } from "@/lib/types/worldcup";
+import type {
+  GroupLetter,
+  KnockoutRoundPhase,
+  KnockoutWindowPhase,
+  MatchStatus,
+  WinnerSide,
+} from "@/lib/types/worldcup";
+
+import { getKnockoutWindowPhaseForRound } from "@/lib/services/knockout-window.service";
 
 export type BestThirdSlotKey = "A" | "B" | "D" | "E" | "G" | "I" | "K" | "L";
 
@@ -26,6 +34,7 @@ export interface KnockoutSeedMatchRow {
   away_team: KnockoutSeedTeam | null;
   home_team: KnockoutSeedTeam | null;
   match_number: number;
+  phase: KnockoutRoundPhase;
   status: MatchStatus;
   winner_side: WinnerSide | null;
 }
@@ -922,6 +931,7 @@ export function resolveKnockoutSeedTeam(input: {
   predictedWinnersByMatchNumber?: Map<number, WinnerSide>;
   seed: BracketSeedSpec;
   standings: KnockoutSeedStandingRow[];
+  targetWindowPhase?: KnockoutWindowPhase;
   visitedMatchNumbers?: Set<number>;
 }): KnockoutSeedTeam | null {
   switch (input.seed.kind) {
@@ -942,10 +952,18 @@ export function resolveKnockoutSeedTeam(input: {
         return null;
       }
 
-      const resolvedWinnerSide =
-        match.status === "FINISHED" && match.winner_side
+      const predictedWinnerSide =
+        input.predictedWinnersByMatchNumber?.get(input.seed.matchNumber) ?? null;
+      const sourceWindowPhase = getKnockoutWindowPhaseForRound(match.phase);
+      const shouldPreferPredictedWinner =
+        predictedWinnerSide !== null &&
+        input.targetWindowPhase !== undefined &&
+        sourceWindowPhase === input.targetWindowPhase;
+      const resolvedWinnerSide = shouldPreferPredictedWinner
+        ? predictedWinnerSide
+        : match.status === "FINISHED" && match.winner_side
           ? match.winner_side
-          : (input.predictedWinnersByMatchNumber?.get(input.seed.matchNumber) ?? null);
+          : predictedWinnerSide;
 
       if (!resolvedWinnerSide) {
         return null;
@@ -974,6 +992,7 @@ export function resolveKnockoutSeedTeam(input: {
         predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
         seed: nestedSeed,
         standings: input.standings,
+        targetWindowPhase: input.targetWindowPhase,
         visitedMatchNumbers,
       });
     }

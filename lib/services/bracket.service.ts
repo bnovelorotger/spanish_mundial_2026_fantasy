@@ -146,7 +146,7 @@ function buildMatchesByNumber(
   matches: Array<
     Pick<
       MatchRow,
-      "away_team" | "home_team" | "match_number" | "status" | "winner_side"
+      "away_team" | "home_team" | "match_number" | "phase" | "status" | "winner_side"
     >
   >,
 ) {
@@ -157,6 +157,7 @@ function buildMatchesByNumber(
         away_team: normalizeTeam(match.away_team),
         home_team: normalizeTeam(match.home_team),
         match_number: match.match_number,
+        phase: match.phase,
         status: match.status,
         winner_side: match.winner_side,
       },
@@ -415,6 +416,7 @@ function toRoundMatchViewModel(input: {
   lock: Awaited<ReturnType<typeof getPhaseLock>>;
   windowState: KnockoutWindowState;
 }): BracketMatchViewModel {
+  const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
   const homeSeed = getKnockoutSeedSpec(input.match.match_number, "HOME");
   const awaySeed = getKnockoutSeedSpec(input.match.match_number, "AWAY");
   const homeSlot = toSlot(
@@ -427,6 +429,7 @@ function toRoundMatchViewModel(input: {
           predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
           seed: homeSeed,
           standings: input.qualifiedStandings,
+          targetWindowPhase: windowPhase,
         })
       : resolveQualifiedPlaceholderTeam(
           input.match.home_placeholder,
@@ -443,6 +446,7 @@ function toRoundMatchViewModel(input: {
           predictedWinnersByMatchNumber: input.predictedWinnersByMatchNumber,
           seed: awaySeed,
           standings: input.qualifiedStandings,
+          targetWindowPhase: windowPhase,
         })
       : resolveQualifiedPlaceholderTeam(
           input.match.away_placeholder,
@@ -481,8 +485,6 @@ function toRoundMatchViewModel(input: {
           predictedWinnerTeam,
         }
       : null;
-  const windowPhase = getKnockoutWindowPhaseForRound(input.match.phase);
-
   return {
     awaySlot,
     canPredict: canPredictKnockoutMatch({
@@ -708,6 +710,7 @@ export async function saveKnockoutPrediction(
 
   const homeSeed = getKnockoutSeedSpec(match.match_number, "HOME");
   const awaySeed = getKnockoutSeedSpec(match.match_number, "AWAY");
+  const windowPhase = getKnockoutWindowPhaseForRound(input.phase);
   const homeSlot = toSlot(
     match.home_team,
     getKnockoutSlotLabel(match.match_number, "HOME") ?? match.home_placeholder,
@@ -717,6 +720,7 @@ export async function saveKnockoutPrediction(
           predictedWinnersByMatchNumber,
           seed: homeSeed,
           standings: qualifiedStandings,
+          targetWindowPhase: windowPhase,
         })
       : resolveQualifiedPlaceholderTeam(
           match.home_placeholder,
@@ -732,6 +736,7 @@ export async function saveKnockoutPrediction(
           predictedWinnersByMatchNumber,
           seed: awaySeed,
           standings: qualifiedStandings,
+          targetWindowPhase: windowPhase,
         })
       : resolveQualifiedPlaceholderTeam(
           match.away_placeholder,
