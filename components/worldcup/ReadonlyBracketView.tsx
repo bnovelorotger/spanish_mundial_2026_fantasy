@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils";
 
 import { StateCard } from "@/components/ui/StateCard";
 
-import { getPersistedPickNotice } from "./knockoutPersistedPick";
+import {
+  getDisplayedWinnerSlot,
+  getPersistedPickNotice,
+} from "./knockoutPersistedPick";
 import { LocalKickoff } from "./LocalKickoff";
 import { TeamBadge } from "./TeamBadge";
 
@@ -169,7 +172,7 @@ export function ReadonlyBracketView({
                               { side: "HOME" as const, slot: match.homeSlot },
                               { side: "AWAY" as const, slot: match.awaySlot },
                             ].map(({ side, slot }) => {
-                              const isSelected = match.prediction?.currentWinnerSlot === side;
+                              const isSelected = getDisplayedWinnerSlot(match) === side;
 
                               return (
                                 <div

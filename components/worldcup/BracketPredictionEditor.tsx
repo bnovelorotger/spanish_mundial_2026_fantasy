@@ -7,7 +7,10 @@ import { useFormStatus } from "react-dom";
 import type { BracketMatchViewModel, WinnerSide } from "@/lib/types/worldcup";
 import { cn } from "@/lib/utils";
 
-import { getPersistedPickNotice } from "./knockoutPersistedPick";
+import {
+  getDisplayedWinnerSlot,
+  getPersistedPickNotice,
+} from "./knockoutPersistedPick";
 import { LocalKickoff } from "./LocalKickoff";
 import { PhaseBadge } from "./PhaseBadge";
 import { TeamBadge } from "./TeamBadge";
@@ -117,7 +120,7 @@ function BracketEditorFormBody({
 
   const displayedWinnerSlot = pending
     ? pressedWinnerSlot
-    : (match.prediction?.currentWinnerSlot ?? null);
+    : getDisplayedWinnerSlot(match);
   const stateBadge = pending
     ? {
         label: "Guardando",

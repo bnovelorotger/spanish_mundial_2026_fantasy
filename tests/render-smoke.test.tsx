@@ -185,6 +185,40 @@ const outdatedBracketMatch: BracketMatchViewModel = {
   },
 };
 
+const remappedVisibleBracketMatch: BracketMatchViewModel = {
+  ...bracketMatch,
+  homeSlot: {
+    code: "USA",
+    flagUrl: "https://flagcdn.com/w80/us.png",
+    id: "team-usa",
+    isKnown: true,
+    isTbd: false,
+    name: "United States",
+  },
+  awaySlot: {
+    code: "BEL",
+    flagUrl: "https://flagcdn.com/w80/be.png",
+    id: "team-bel",
+    isKnown: true,
+    isTbd: false,
+    name: "Belgium",
+  },
+  prediction: {
+    currentWinnerSlot: null,
+    isOutdated: true,
+    isRandom: false,
+    predictedWinnerSlot: "HOME",
+    predictedWinnerTeam: {
+      code: "BEL",
+      flagUrl: "https://flagcdn.com/w80/be.png",
+      id: "team-bel",
+      isKnown: true,
+      isTbd: false,
+      name: "Belgium",
+    },
+  },
+};
+
 const rankingEntries: RankingEntry[] = [
   {
     avatarSource: "photo",
@@ -348,6 +382,19 @@ describe("render smoke", () => {
     expect(markup).toContain("Tu pick guardado: Germany");
     expect(markup).toContain("Ahora lo ocupa Paraguay");
     expect(markup).toContain("no sumara como acierto");
+  });
+
+  it("highlights the persisted team when it still appears in the current matchup", () => {
+    const markup = renderToStaticMarkup(
+      <BracketPredictionEditor
+        match={remappedVisibleBracketMatch}
+        saveAction={async () => {}}
+      />,
+    );
+
+    expect(markup).toContain("Belgium");
+    expect(markup).toContain("Avanza");
+    expect(markup).toContain("Ahora lo ocupa United States");
   });
 
   it("renders ranking avatars for uploaded photos and team crests", () => {

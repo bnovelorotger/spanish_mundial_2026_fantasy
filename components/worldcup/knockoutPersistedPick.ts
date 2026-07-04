@@ -1,4 +1,4 @@
-import type { BracketMatchViewModel } from "@/lib/types/worldcup";
+import type { BracketMatchViewModel, WinnerSide } from "@/lib/types/worldcup";
 
 function currentSlotForPrediction(match: BracketMatchViewModel) {
   if (!match.prediction?.predictedWinnerSlot) {
@@ -8,6 +8,30 @@ function currentSlotForPrediction(match: BracketMatchViewModel) {
   return match.prediction.predictedWinnerSlot === "HOME"
     ? match.homeSlot
     : match.awaySlot;
+}
+
+export function getDisplayedWinnerSlot(match: BracketMatchViewModel): WinnerSide | null {
+  const currentWinnerSlot = match.prediction?.currentWinnerSlot ?? null;
+
+  if (currentWinnerSlot) {
+    return currentWinnerSlot;
+  }
+
+  const persistedTeamId = match.prediction?.predictedWinnerTeam?.id ?? null;
+
+  if (!persistedTeamId) {
+    return null;
+  }
+
+  if (match.homeSlot.id === persistedTeamId) {
+    return "HOME";
+  }
+
+  if (match.awaySlot.id === persistedTeamId) {
+    return "AWAY";
+  }
+
+  return null;
 }
 
 export function getPersistedPickNotice(match: BracketMatchViewModel) {
