@@ -468,6 +468,60 @@ describe("buildKnockoutPointsRows", () => {
       sourceMatchId: "match-90",
     });
   });
+
+  it("does not collapse knockout points across different users sharing the same finished match", () => {
+    const rows = buildKnockoutPointsRows(
+      [
+        {
+          confirmed_at: "2026-07-01T12:00:00Z",
+          match_id: "match-r32",
+          predicted_winner_slot: "HOME",
+          predicted_winner_team_id: "team-rsa",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          updated_at: "2026-07-01T12:00:00Z",
+          user_id: "user-1",
+        },
+        {
+          confirmed_at: "2026-07-01T12:05:00Z",
+          match_id: "match-r32",
+          predicted_winner_slot: "AWAY",
+          predicted_winner_team_id: "team-can",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          updated_at: "2026-07-01T12:05:00Z",
+          user_id: "user-2",
+        },
+      ],
+      [
+        {
+          away_team_id: "team-can",
+          home_team_id: "team-rsa",
+          id: "match-r32",
+          match_number: 73,
+          phase: "ROUND_OF_32",
+          status: "FINISHED",
+          winner_side: "HOME",
+        },
+      ],
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(rows).toEqual([
+      expect.objectContaining({
+        points_awarded: 4,
+        source_id: "knockout_match_match-r32",
+        source_type: "KNOCKOUT_WINNER",
+        user_id: "user-1",
+      }),
+      expect.objectContaining({
+        points_awarded: 0,
+        source_id: "knockout_match_match-r32",
+        source_type: "KNOCKOUT_WINNER",
+        user_id: "user-2",
+      }),
+    ]);
+  });
 });
 
 describe("getPointsBreakdownFromRows", () => {

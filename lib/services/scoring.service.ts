@@ -258,10 +258,6 @@ export function buildKnockoutPointsRows(
   predictions: KnockoutPredictionRow[],
   matches: KnockoutMatchRow[],
 ): PointsRow[] {
-  const canonicalPredictions = buildCanonicalKnockoutPredictionMap({
-    matches,
-    predictions,
-  });
   const matchesById = new Map(
     matches
       .filter(
@@ -269,8 +265,27 @@ export function buildKnockoutPointsRows(
       )
       .map((match) => [match.id, match] as const),
   );
+  const predictionsByUser = new Map<string, KnockoutPredictionRow[]>();
 
-  const rows = [...canonicalPredictions.predictionsByMatchId.values()].reduce<PointsRow[]>(
+  for (const prediction of predictions) {
+    const userId = prediction.user_id ?? "unknown";
+    const currentPredictions = predictionsByUser.get(userId) ?? [];
+    currentPredictions.push(prediction);
+    predictionsByUser.set(userId, currentPredictions);
+  }
+
+  const canonicalPredictions = [...predictionsByUser.entries()].flatMap(
+    ([userId, userPredictions]) =>
+      [
+        ...buildCanonicalKnockoutPredictionMap({
+          matches,
+          predictions: userPredictions,
+          userId,
+        }).predictionsByMatchId.values(),
+      ],
+  );
+
+  const rows = canonicalPredictions.reduce<PointsRow[]>(
     (currentRows, prediction) => {
       const effectiveWinnerSlot =
         prediction.predictedWinnerSlot ?? prediction.currentWinnerSlot;
