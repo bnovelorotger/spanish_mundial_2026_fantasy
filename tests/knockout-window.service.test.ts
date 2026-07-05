@@ -93,4 +93,74 @@ describe("getKnockoutWindowStateForRound", () => {
       }),
     ).toBe("EDITABLE");
   });
+
+  it("keeps semi-finals and final upcoming until stage one is closed", () => {
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "SEMI_FINALS",
+        stageOne: stageOneLock,
+        stageTwo: stageTwoLock,
+      }),
+    ).toBe("UPCOMING");
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "FINAL",
+        stageOne: stageOneLock,
+        stageTwo: stageTwoLock,
+      }),
+    ).toBe("UPCOMING");
+  });
+
+  it("opens quarter-finals, semi-finals and final once stage one is closed", () => {
+    const lockedStageOne = { ...stageOneLock, isLocked: true };
+
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "QUARTER_FINALS",
+        stageOne: lockedStageOne,
+        stageTwo: stageTwoLock,
+      }),
+    ).toBe("EDITABLE");
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "SEMI_FINALS",
+        stageOne: lockedStageOne,
+        stageTwo: stageTwoLock,
+      }),
+    ).toBe("EDITABLE");
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "FINAL",
+        stageOne: lockedStageOne,
+        stageTwo: stageTwoLock,
+      }),
+    ).toBe("EDITABLE");
+  });
+
+  it("locks quarter-finals, semi-finals and final once stage two closes", () => {
+    const lockedStageOne = { ...stageOneLock, isLocked: true };
+    const lockedStageTwo = { ...stageTwoLock, isLocked: true };
+
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "QUARTER_FINALS",
+        stageOne: lockedStageOne,
+        stageTwo: lockedStageTwo,
+      }),
+    ).toBe("LOCKED");
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "SEMI_FINALS",
+        stageOne: lockedStageOne,
+        stageTwo: lockedStageTwo,
+      }),
+    ).toBe("LOCKED");
+    expect(
+      getKnockoutWindowStateForRound({
+        phase: "FINAL",
+        stageOne: lockedStageOne,
+        stageTwo: lockedStageTwo,
+      }),
+    ).toBe("LOCKED");
+  });
 });

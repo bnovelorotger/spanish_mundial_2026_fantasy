@@ -408,6 +408,24 @@ function resolveMatchGroupLetter(input: {
   return undefined;
 }
 
+function resolveMatchNumber(
+  fixtureId: number | null,
+  fallbackIndex: number,
+) {
+  // Preserve explicit World Cup numbering from curated/static fixtures while
+  // ignoring provider-native IDs, which are large unrelated identifiers.
+  if (
+    Number.isInteger(fixtureId) &&
+    fixtureId !== null &&
+    fixtureId >= 1 &&
+    fixtureId <= 104
+  ) {
+    return fixtureId;
+  }
+
+  return fallbackIndex + 1;
+}
+
 export function normalizeApiFootballFixtures(
   fixturesResponse: unknown,
   teamGroups: Map<string, GroupLetter>,
@@ -475,7 +493,7 @@ export function normalizeApiFootballFixtures(
     home_score: match.home_score,
     home_team_code: match.home_team_code,
     kickoff: match.kickoff,
-    match_number: index + 1,
+    match_number: resolveMatchNumber(match.fixtureId, index),
     phase: match.phase,
     status: match.status,
     venue: match.venue,

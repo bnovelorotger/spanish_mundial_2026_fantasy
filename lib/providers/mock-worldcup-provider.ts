@@ -3,6 +3,7 @@ import type {
   MatchDTO,
   TeamDTO,
 } from "../types/worldcup.ts";
+import { getKnockoutSlotLabel } from "../knockout-bracket.ts";
 import { getFlagUrlForTeamCode } from "./team-flags.ts";
 import type { WorldCupProvider } from "./worldcup-provider.types.ts";
 
@@ -57,6 +58,65 @@ export const mockTeams = [
   { code: "TBD", flag_url: getFlagUrlForTeamCode("TBD", true), group_letter: "L", is_tbd: true, name: "TBD Group L Slot 4" },
 ] satisfies TeamDTO[];
 
+const mockKnockoutFixtures = [
+  { city: "Los Angeles", kickoff: "2026-07-01T19:00:00Z", match_number: 73, phase: "ROUND_OF_32", venue: "SoFi Stadium" },
+  { city: "Houston", kickoff: "2026-07-01T23:00:00Z", match_number: 74, phase: "ROUND_OF_32", venue: "NRG Stadium" },
+  { city: "Seattle", kickoff: "2026-07-02T02:00:00Z", match_number: 75, phase: "ROUND_OF_32", venue: "Lumen Field" },
+  { city: "Atlanta", kickoff: "2026-07-02T19:00:00Z", match_number: 76, phase: "ROUND_OF_32", venue: "Mercedes-Benz Stadium" },
+  { city: "Philadelphia", kickoff: "2026-07-02T23:00:00Z", match_number: 77, phase: "ROUND_OF_32", venue: "Lincoln Financial Field" },
+  { city: "Dallas", kickoff: "2026-07-03T02:00:00Z", match_number: 78, phase: "ROUND_OF_32", venue: "AT&T Stadium" },
+  { city: "Mexico City", kickoff: "2026-07-03T19:00:00Z", match_number: 79, phase: "ROUND_OF_32", venue: "Estadio Azteca" },
+  { city: "Monterrey", kickoff: "2026-07-03T23:00:00Z", match_number: 80, phase: "ROUND_OF_32", venue: "Estadio BBVA" },
+  { city: "Kansas City", kickoff: "2026-07-04T02:00:00Z", match_number: 81, phase: "ROUND_OF_32", venue: "GEHA Field at Arrowhead" },
+  { city: "Miami Gardens", kickoff: "2026-07-04T19:00:00Z", match_number: 82, phase: "ROUND_OF_32", venue: "Hard Rock Stadium" },
+  { city: "Foxborough", kickoff: "2026-07-04T23:00:00Z", match_number: 83, phase: "ROUND_OF_32", venue: "Gillette Stadium" },
+  { city: "Santa Clara", kickoff: "2026-07-05T02:00:00Z", match_number: 84, phase: "ROUND_OF_32", venue: "Levi's Stadium" },
+  { city: "Toronto", kickoff: "2026-07-05T19:00:00Z", match_number: 85, phase: "ROUND_OF_32", venue: "BMO Field" },
+  { city: "Vancouver", kickoff: "2026-07-05T23:00:00Z", match_number: 86, phase: "ROUND_OF_32", venue: "BC Place" },
+  { city: "Orlando", kickoff: "2026-07-06T02:00:00Z", match_number: 87, phase: "ROUND_OF_32", venue: "Camping World Stadium" },
+  { city: "Glendale", kickoff: "2026-07-06T19:00:00Z", match_number: 88, phase: "ROUND_OF_32", venue: "State Farm Stadium" },
+  { city: "New York", kickoff: "2026-07-07T19:00:00Z", match_number: 89, phase: "ROUND_OF_16", venue: "MetLife Stadium" },
+  { city: "Los Angeles", kickoff: "2026-07-07T23:00:00Z", match_number: 90, phase: "ROUND_OF_16", venue: "SoFi Stadium" },
+  { city: "Houston", kickoff: "2026-07-08T02:00:00Z", match_number: 91, phase: "ROUND_OF_16", venue: "NRG Stadium" },
+  { city: "Seattle", kickoff: "2026-07-08T19:00:00Z", match_number: 92, phase: "ROUND_OF_16", venue: "Lumen Field" },
+  { city: "Atlanta", kickoff: "2026-07-08T23:00:00Z", match_number: 93, phase: "ROUND_OF_16", venue: "Mercedes-Benz Stadium" },
+  { city: "Philadelphia", kickoff: "2026-07-09T02:00:00Z", match_number: 94, phase: "ROUND_OF_16", venue: "Lincoln Financial Field" },
+  { city: "Dallas", kickoff: "2026-07-09T05:00:00Z", match_number: 95, phase: "ROUND_OF_16", venue: "AT&T Stadium" },
+  { city: "Mexico City", kickoff: "2026-07-09T08:00:00Z", match_number: 96, phase: "ROUND_OF_16", venue: "Estadio Azteca" },
+  { city: "Santa Clara", kickoff: "2026-07-09T19:00:00Z", match_number: 97, phase: "QUARTER_FINALS", venue: "Levi's Stadium" },
+  { city: "Miami Gardens", kickoff: "2026-07-10T19:00:00Z", match_number: 98, phase: "QUARTER_FINALS", venue: "Hard Rock Stadium" },
+  { city: "Dallas", kickoff: "2026-07-10T23:00:00Z", match_number: 99, phase: "QUARTER_FINALS", venue: "AT&T Stadium" },
+  { city: "Mexico City", kickoff: "2026-07-11T02:00:00Z", match_number: 100, phase: "QUARTER_FINALS", venue: "Estadio Azteca" },
+  { city: "Atlanta", kickoff: "2026-07-14T19:00:00Z", match_number: 101, phase: "SEMI_FINALS", venue: "Mercedes-Benz Stadium" },
+  { city: "New York", kickoff: "2026-07-15T19:00:00Z", match_number: 102, phase: "SEMI_FINALS", venue: "MetLife Stadium" },
+  { city: "Miami Gardens", kickoff: "2026-07-18T19:00:00Z", match_number: 103, phase: "THIRD_PLACE", venue: "Hard Rock Stadium" },
+  { city: "New York", kickoff: "2026-07-19T19:00:00Z", match_number: 104, phase: "FINAL", venue: "MetLife Stadium" },
+] satisfies Array<Pick<MatchDTO, "city" | "kickoff" | "match_number" | "phase" | "venue">>;
+
+function createMockKnockoutMatch(
+  fixture: Pick<MatchDTO, "city" | "kickoff" | "match_number" | "phase" | "venue">,
+): MatchDTO {
+  if (fixture.phase === "THIRD_PLACE") {
+    return {
+      ...fixture,
+      away_placeholder: "Loser Match 102",
+      home_placeholder: "Loser Match 101",
+      status: "SCHEDULED",
+    };
+  }
+
+  return {
+    ...fixture,
+    away_placeholder:
+      getKnockoutSlotLabel(fixture.match_number, "AWAY") ?? "TBD",
+    home_placeholder:
+      getKnockoutSlotLabel(fixture.match_number, "HOME") ?? "TBD",
+    status: "SCHEDULED",
+  };
+}
+
+const mockKnockoutMatches = mockKnockoutFixtures.map(createMockKnockoutMatch);
+
 export const mockMatches = [
   { away_team_code: "MEX", city: "Toronto", group_letter: "A", home_score: 1, home_team_code: "CAN", away_score: 1, kickoff: "2026-06-11T19:00:00Z", match_number: 1, phase: "GROUP_STAGE", status: "FINISHED", venue: "BMO Field" },
   { away_team_code: "CRC", city: "Los Angeles", group_letter: "A", home_score: 2, home_team_code: "USA", away_score: 0, kickoff: "2026-06-12T02:00:00Z", match_number: 2, phase: "GROUP_STAGE", status: "FINISHED", venue: "SoFi Stadium" },
@@ -87,13 +147,7 @@ export const mockMatches = [
   { away_team_code: "PAN", city: "Toronto", group_letter: "L", home_team_code: "NZL", kickoff: "2026-06-18T19:00:00Z", match_number: 27, phase: "GROUP_STAGE", status: "SCHEDULED", venue: "BMO Field" },
   { away_team_code: "TBA", city: "Foxborough", group_letter: "K", home_team_code: "DZA", kickoff: "2026-06-22T02:00:00Z", match_number: 28, phase: "GROUP_STAGE", status: "SCHEDULED", venue: "Gillette Stadium" },
   { away_team_code: "TBD", city: "Vancouver", group_letter: "L", home_team_code: "TBC", kickoff: "2026-06-22T19:00:00Z", match_number: 29, phase: "GROUP_STAGE", status: "SCHEDULED", venue: "BC Place" },
-  { away_placeholder: "Runner-up Group B", city: "Los Angeles", home_placeholder: "Winner Group A", kickoff: "2026-07-01T19:00:00Z", match_number: 30, phase: "ROUND_OF_32", status: "SCHEDULED", venue: "SoFi Stadium" },
-  { away_placeholder: "Best Third Group B", city: "Houston", home_placeholder: "Winner Group C", kickoff: "2026-07-01T23:00:00Z", match_number: 31, phase: "ROUND_OF_32", status: "SCHEDULED", venue: "NRG Stadium" },
-  { away_placeholder: "Winner Match 31", city: "New York", home_placeholder: "Winner Match 30", kickoff: "2026-07-05T19:00:00Z", match_number: 32, phase: "ROUND_OF_16", status: "SCHEDULED", venue: "MetLife Stadium" },
-  { away_placeholder: "Winner Round of 16 Slot 2", city: "Santa Clara", home_placeholder: "Winner Round of 16 Slot 1", kickoff: "2026-07-09T19:00:00Z", match_number: 33, phase: "QUARTER_FINALS", status: "SCHEDULED", venue: "Levi's Stadium" },
-  { away_placeholder: "Winner Quarter-final Slot 2", city: "Atlanta", home_placeholder: "Winner Quarter-final Slot 1", kickoff: "2026-07-13T19:00:00Z", match_number: 34, phase: "SEMI_FINALS", status: "SCHEDULED", venue: "Mercedes-Benz Stadium" },
-  { away_placeholder: "Semi-final Loser 2", city: "Miami Gardens", home_placeholder: "Semi-final Loser 1", kickoff: "2026-07-17T19:00:00Z", match_number: 35, phase: "THIRD_PLACE", status: "SCHEDULED", venue: "Hard Rock Stadium" },
-  { away_placeholder: "Semi-final Winner 2", city: "New York", home_placeholder: "Semi-final Winner 1", kickoff: "2026-07-19T19:00:00Z", match_number: 36, phase: "FINAL", status: "SCHEDULED", venue: "MetLife Stadium" },
+  ...mockKnockoutMatches,
 ] satisfies MatchDTO[];
 
 export const mockStandings = [
@@ -111,7 +165,7 @@ export const mockStandings = [
   { goals_against: 2, goals_for: 1, goal_difference: -1, group_letter: "C", is_final: false, lost: 1, played: 1, points: 0, position: 4, team_code: "COL", won: 0, drawn: 0 },
 ] satisfies GroupStandingDTO[];
 
-function cloneList<T extends Record<string, unknown>>(items: T[]) {
+function cloneList<T extends object>(items: readonly T[]): T[] {
   return items.map((item) => ({ ...item }));
 }
 

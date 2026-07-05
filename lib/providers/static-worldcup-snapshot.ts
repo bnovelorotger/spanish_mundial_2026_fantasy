@@ -62,10 +62,10 @@ export const STATIC_WORLD_CUP_TEAMS_RESPONSE = {
 };
 
 export const STATIC_WORLD_CUP_FIXTURES_RESPONSE = {
-  response: mockMatches.map<ApiFootballFixtureResponseItem>((match, index) => ({
+  response: mockMatches.map<ApiFootballFixtureResponseItem>((match) => ({
     fixture: {
       date: match.kickoff,
-      id: 1000 + index + 1,
+      id: match.match_number,
       status: {
         short: statusShort(match.status),
       },

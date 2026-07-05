@@ -87,6 +87,86 @@ describe("buildCanonicalKnockoutPredictionMap", () => {
     });
   });
 
+  it("remaps a saved quarter-final team into the current quarter-final where that team now appears", () => {
+    const result = buildCanonicalKnockoutPredictionMap({
+      matches: [
+        {
+          away_team_id: "team-arg",
+          home_team_id: "team-bra",
+          id: "match-97",
+          match_number: 97,
+          phase: "QUARTER_FINALS",
+        },
+        {
+          away_team_id: "team-fra",
+          home_team_id: "team-mar",
+          id: "match-99",
+          match_number: 99,
+          phase: "QUARTER_FINALS",
+        },
+      ],
+      predictions: [
+        {
+          is_random: false,
+          match_id: "match-97",
+          predicted_winner_slot: "AWAY",
+          predicted_winner_team_id: "team-fra",
+          updated_at: "2026-07-09T12:00:00Z",
+          user_id: "user-1",
+        },
+      ],
+    });
+
+    expect(result.predictionsByMatchId.get("match-99")).toMatchObject({
+      canonicalMatchId: "match-99",
+      canonicalMatchNumber: 99,
+      currentWinnerSlot: "AWAY",
+      predictedWinnerTeamId: "team-fra",
+      sourceMatchId: "match-97",
+      warningState: "NONE",
+    });
+  });
+
+  it("remaps a saved semi-final team into the current semi-final where that team now appears", () => {
+    const result = buildCanonicalKnockoutPredictionMap({
+      matches: [
+        {
+          away_team_id: "team-mar",
+          home_team_id: "team-bra",
+          id: "match-101",
+          match_number: 101,
+          phase: "SEMI_FINALS",
+        },
+        {
+          away_team_id: "team-fra",
+          home_team_id: "team-arg",
+          id: "match-102",
+          match_number: 102,
+          phase: "SEMI_FINALS",
+        },
+      ],
+      predictions: [
+        {
+          is_random: false,
+          match_id: "match-101",
+          predicted_winner_slot: "HOME",
+          predicted_winner_team_id: "team-fra",
+          updated_at: "2026-07-14T12:00:00Z",
+          user_id: "user-1",
+        },
+      ],
+    });
+
+    expect(result.predictionsByMatchId.get("match-102")).toMatchObject({
+      canonicalMatchId: "match-102",
+      canonicalMatchNumber: 102,
+      currentWinnerSlot: "AWAY",
+      predictedWinnerTeamId: "team-fra",
+      sourceMatchId: "match-101",
+      warningState: "NONE",
+    });
+  });
+
   it("keeps the warning only when the saved team is no longer present in that round", () => {
     const result = buildCanonicalKnockoutPredictionMap({
       matches: [
