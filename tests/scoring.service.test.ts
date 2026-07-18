@@ -349,6 +349,47 @@ describe("buildKnockoutPointsRows", () => {
     });
   });
 
+  it("awards both final winner points and champion bonus when the final pick is correct", () => {
+    const rows = buildKnockoutPointsRows(
+      [
+        {
+          confirmed_at: "2026-07-19T18:30:00Z",
+          match_id: "match-final",
+          predicted_winner_slot: "HOME",
+          predicted_winner_team_id: "team-esp",
+          provenance: "USER_SUBMITTED",
+          provenance_note: null,
+          user_id: "user-1",
+        },
+      ],
+      [
+        {
+          away_team_id: "team-arg",
+          home_team_id: "team-esp",
+          id: "match-final",
+          match_number: 104,
+          phase: "FINAL",
+          status: "FINISHED",
+          winner_side: "HOME",
+        },
+      ],
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(
+      rows.find((row) => row.source_type === "KNOCKOUT_WINNER"),
+    ).toMatchObject({
+      points_awarded: 25,
+      source_id: "knockout_match_match-final",
+      user_id: "user-1",
+    });
+    expect(rows.find((row) => row.source_type === "CHAMPION")).toMatchObject({
+      points_awarded: 25,
+      source_id: "champion_final_match-final",
+      user_id: "user-1",
+    });
+  });
+
   it("skips finished matches that still have no resolvable winner side", () => {
     const rows = buildKnockoutPointsRows(
       [

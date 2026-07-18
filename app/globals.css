@@ -93,3 +93,63 @@ a {
     @apply peer-focus-visible:outline-2 peer-focus-visible:outline-accent-primary peer-focus-visible:outline-offset-2;
   }
 }
+
+@keyframes final-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -32px, 0) rotate(0deg) scale(0.82);
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--confetti-drift), 88vh, 0)
+      rotate(calc(var(--confetti-rotation) * 8))
+      scale(1.08);
+  }
+}
+
+@keyframes final-celebration-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.94);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  85% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+
+.final-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 18px;
+  border-radius: 999px;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: final-confetti-fall;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+}
+
+.final-celebration-card {
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: final-celebration-pop 4.2s ease-out forwards;
+}

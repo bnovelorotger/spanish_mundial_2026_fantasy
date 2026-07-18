@@ -4,11 +4,13 @@ import { Suspense } from "react";
 
 import { AuthToastSurface } from "@/components/auth/AuthToastSurface";
 import { AppShell } from "@/components/layout/AppShell";
+import { FinalConfettiOverlay } from "@/components/layout/FinalConfettiOverlay";
 import { HeaderMinimal } from "@/components/layout/HeaderMinimal";
 import { KnockoutWindowBubble } from "@/components/layout/KnockoutWindowBubble";
 import { AppToaster } from "@/components/ui/AppToaster";
 import { getKnockoutAlertSummary } from "@/lib/services/knockout-window.service";
 import { getPhaseLock } from "@/lib/services/locks.service";
+import { getFinalCelebrationSummary } from "@/lib/services/matches.service";
 import {
   ensureProfileForUser,
   isProfileComplete,
@@ -34,18 +36,22 @@ export default async function ProtectedLayout({
   const profile = await ensureProfileForUser(user);
   const profileComplete = isProfileComplete(profile);
   let knockoutNotice = null;
+  let finalCelebration = null;
 
   try {
-    const [stageOneLock, stageTwoLock] = await Promise.all([
+    const [stageOneLock, stageTwoLock, finalSummary] = await Promise.all([
       getPhaseLock(supabase, "KNOCKOUT_STAGE_ONE"),
       getPhaseLock(supabase, "KNOCKOUT_STAGE_TWO"),
+      getFinalCelebrationSummary(supabase),
     ]);
     knockoutNotice = getKnockoutAlertSummary({
       stageOne: stageOneLock,
       stageTwo: stageTwoLock,
     });
+    finalCelebration = finalSummary;
   } catch {
     knockoutNotice = null;
+    finalCelebration = null;
   }
 
   return (
@@ -81,6 +87,7 @@ export default async function ProtectedLayout({
       >
         {children}
       </AppShell>
+      {finalCelebration ? <FinalConfettiOverlay summary={finalCelebration} /> : null}
       <AppToaster />
       <Suspense fallback={null}>
         <AuthToastSurface />

@@ -25,6 +25,7 @@ interface MatchRow {
   phase: MatchPhase;
   status: MatchStatus;
   venue: string | null;
+  winner_side: "HOME" | "AWAY" | null;
 }
 
 interface TeamRow {
@@ -44,6 +45,7 @@ const MATCHES_SELECT = `
   home_score,
   away_score,
   status,
+  winner_side,
   venue,
   city,
   kickoff,
@@ -172,4 +174,51 @@ export async function getNextScheduledMatch(
   }
 
   return toMatchCardViewModel(data as MatchRow);
+}
+
+export interface FinalCelebrationSummary {
+  awayTeamName: string;
+  homeTeamName: string;
+  matchId: string;
+  winnerName: string;
+  winnerSide: "HOME" | "AWAY";
+}
+
+export async function getFinalCelebrationSummary(
+  supabase: SupabaseClient,
+): Promise<FinalCelebrationSummary | null> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select(MATCHES_SELECT)
+    .eq("phase", "FINAL")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not load the final match: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const match = data as MatchRow;
+
+  if (match.status !== "FINISHED" || !match.winner_side) {
+    return null;
+  }
+
+  const homeTeam = normalizeTeam(match.home_team);
+  const awayTeam = normalizeTeam(match.away_team);
+
+  if (!homeTeam || !awayTeam) {
+    return null;
+  }
+
+  return {
+    awayTeamName: awayTeam.name,
+    homeTeamName: homeTeam.name,
+    matchId: match.id,
+    winnerName: match.winner_side === "HOME" ? homeTeam.name : awayTeam.name,
+    winnerSide: match.winner_side,
+  };
 }
