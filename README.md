@@ -1,5 +1,7 @@
 # Liga App Mundial 2026
 
+![Liga App Mundial 2026 final cover](docs/assets/github-cover.svg)
+
 Private mobile-first Pick'em web app built for a friends league during the
 World Cup 2026. The tournament is now closed and this repository is archived as
 the final product and operational record.
