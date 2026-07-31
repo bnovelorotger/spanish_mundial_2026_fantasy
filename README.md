@@ -6,6 +6,10 @@ calendar, and compete on a live ranking board with idempotent scoring.
 
 ## MVP status
 
+Post-tournament close-out has been completed. The final operational snapshot,
+ranking, and platform shutdown checklist are documented in
+[docs/PROJECT_WRAP_UP_2026.md](docs/PROJECT_WRAP_UP_2026.md).
+
 The MVP is implemented through Phase 10 of
 [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md):
 

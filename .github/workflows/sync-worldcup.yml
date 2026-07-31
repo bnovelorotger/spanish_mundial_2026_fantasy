@@ -2,11 +2,8 @@ name: Sync World Cup Data
 
 on:
   workflow_dispatch:
-  schedule:
-    # Final-only sync window for Sunday, July 19, 2026.
-    # Europe/Madrid 21:00 -> Monday 00:30 maps to UTC 19:00 -> 22:30
-    # on Sunday, July 19, 2026. This also disables scheduled syncs before then.
-    - cron: "0,30 19-22 19 7 *"
+  # Tournament closed. Keep this workflow manual-only for post-event audits or
+  # emergency repair runs; do not schedule provider writes after final archive.
 
 jobs:
   sync:

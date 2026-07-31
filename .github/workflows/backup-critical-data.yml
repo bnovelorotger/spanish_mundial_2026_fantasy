@@ -2,10 +2,8 @@ name: Backup Critical Data
 
 on:
   workflow_dispatch:
-  schedule:
-    # Run shortly before the hourly sync so every automated data refresh has a
-    # recent rollback artifact on the GitHub private repository.
-    - cron: "55 * * * *"
+  # Tournament closed. Keep manual backups available, but stop hourly artifacts
+  # after the final archive snapshot has been created.
 
 jobs:
   backup:

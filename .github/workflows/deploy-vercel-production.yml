@@ -1,10 +1,9 @@
 name: Deploy Vercel Production
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  # Tournament closed. Production deploys are manual-only so archival commits do
+  # not accidentally change the live app.
 
 concurrency:
   group: vercel-production-${{ github.ref }}
