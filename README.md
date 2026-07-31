@@ -1,284 +1,125 @@
-# World Cup 2026 Pick'em
+# Liga App Mundial 2026
 
-Mobile-first private tournament app for World Cup 2026 predictions. Players
-sign in with Supabase Auth, save group and knockout picks, follow the match
-calendar, and compete on a live ranking board with idempotent scoring.
+Private mobile-first Pick'em web app built for a friends league during the
+World Cup 2026. The tournament is now closed and this repository is archived as
+the final product and operational record.
 
-## MVP status
+- Final archive tag: `world-cup-2026-final`
+- Production URL during the tournament: `https://app-mundial-sage.vercel.app`
+- Final wrap-up: [docs/PROJECT_WRAP_UP_2026.md](docs/PROJECT_WRAP_UP_2026.md)
 
-Post-tournament close-out has been completed. The final operational snapshot,
-ranking, and platform shutdown checklist are documented in
-[docs/PROJECT_WRAP_UP_2026.md](docs/PROJECT_WRAP_UP_2026.md).
+## Final Result
 
-The MVP is implemented through Phase 10 of
-[docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md):
+| Pos | Player | Points |
+| ---: | --- | ---: |
+| 1 | Pablín Yamal | 255 |
+| 2 | Berni | 248 |
+| 3 | Petiit | 245 |
+| 4 | Patri | 232 |
+| 5 | martimessi2022 | 222 |
+| 6 | Andrukillo | 198 |
+| 7 | Gasti Jump | 176 |
+| 8 | Maytte | 48 |
 
-- App Router shell, auth, protected routes, dashboard, calendar, predictions,
-  ranking, sync route, and provider chain are in place.
-- Supabase schema, RLS, seeds, scoring, and ranking services are implemented.
-- ApiFootball and static providers remain safe skeletons by design until the
-  later provider phase.
+## Project Snapshot
+
+The app supported the full tournament lifecycle: authentication, profile setup,
+group predictions, knockout picks, champion picks, live match sync, standings,
+locked phases, automatic scoring and a final ranking.
+
+Final production data snapshot:
+
+- 9 profiles
+- 48 teams
+- 104 synced matches
+- 384 group-stage predictions
+- 209 knockout predictions
+- 2 champion predictions
+- 599 scored point rows
+- 1624 total points awarded
+
+## Product Analysis
+
+The project worked best as a private-league companion rather than a generic
+fantasy platform. The strongest parts were the mobile-first ranking, the
+phase-locking model, the scoring idempotency, and the post-incident operational
+hardening with critical backups and provenance metadata.
+
+The main operational lesson was that sync jobs must never be allowed to delete
+or rewrite user predictions without a rollback artifact and explicit
+provenance. After the mid-tournament repair, the app moved to safer sync
+behavior, manual recovery traces, protected backups and deterministic
+recalculation.
+
+The largest deferred product opportunity is a fully polished post-final
+experience: hall of fame, personal recap cards and shareable final results.
+Those were intentionally left out once the tournament ended.
 
 ## Stack
 
 - Next.js 16 App Router
 - TypeScript
 - Tailwind CSS v4
-- shadcn/ui primitives with custom brand styling
-- Supabase Auth, PostgreSQL, and RLS
+- Supabase Auth, PostgreSQL, Storage and RLS
+- Football-data provider sync
 - Vitest
 - GitHub Actions
 - Vercel
 
-## Product docs
+## Features
 
-Project documentation lives in [docs/](docs/). The key sources are:
+- Email/password auth with protected routes.
+- Private dashboard with countdowns, next match and ranking position.
+- Match calendar with local timezone formatting.
+- Group prediction editor with mobile-first navigation.
+- Knockout bracket prediction surface.
+- Ranking table with podium, avatars and point breakdown.
+- Idempotent group, knockout and champion scoring.
+- Provider fallback chain and protected sync flow.
+- Critical-data backup workflow with JSON/CSV artifacts.
+- Prediction provenance for recovered or manually reviewed data.
 
-1. [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md)
-2. [TECHNICAL_ARCHITECTURE.md](docs/TECHNICAL_ARCHITECTURE.md)
-3. [DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)
-4. [SCORING_RULES.md](docs/SCORING_RULES.md)
-5. [BRANDBOOK.md](docs/BRANDBOOK.md)
-6. [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
-7. [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md)
-8. [CODEX_RULES.md](docs/CODEX_RULES.md)
-9. [CODEX_PROMPTS.md](docs/CODEX_PROMPTS.md)
+## Operational Status
 
-## Local setup
+This repository is in close-out mode:
 
-Requirements:
+- Scheduled sync is disabled.
+- Scheduled backup is disabled.
+- Production deploy is manual-only.
+- Final backup was created locally at
+  `backups/critical-data-backup-2026-07-31T16-39-14-978Z`.
+- The final operational state is documented in
+  [docs/PROJECT_WRAP_UP_2026.md](docs/PROJECT_WRAP_UP_2026.md).
 
-- Node.js 20+
-- `pnpm`
-- Supabase CLI
-- Docker Desktop if you want local Supabase containers
-
-Install and start the app:
+## Local Commands
 
 ```bash
 pnpm install
-cp .env.example .env.local
-pnpm dev
-```
-
-The app runs at `http://localhost:3000`.
-
-## Environment variables
-
-Copy [.env.example](.env.example) to `.env.local` and fill in:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `CRON_SECRET`
-- `WORLD_CUP_API_PROVIDER`
-- `WORLD_CUP_API_KEY`
-- `NEXT_PUBLIC_APP_URL`
-- `APP_URL`
-
-Rules:
-
-- `NEXT_PUBLIC_*` values are browser-safe.
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only.
-- `.env.local` is git-ignored and must never be committed.
-
-## Supabase setup
-
-Initialize the project with either a local stack or a linked remote project.
-
-Local Supabase flow:
-
-```bash
-npx supabase start
-npx supabase db reset
-```
-
-Linked remote flow:
-
-```bash
-npx supabase login
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push --linked --include-all
-```
-
-Schema and seeds live in:
-
-- [supabase/migrations/001_initial_schema.sql](supabase/migrations/001_initial_schema.sql)
-- [supabase/migrations/002_rls.sql](supabase/migrations/002_rls.sql)
-- [supabase/seed/seed_teams.sql](supabase/seed/seed_teams.sql)
-- [supabase/seed/seed_matches_mock.sql](supabase/seed/seed_matches_mock.sql)
-
-## Migrations
-
-Apply the current schema:
-
-```bash
-npx supabase db push --linked --include-all
-```
-
-Validate local SQL against a running local stack:
-
-```bash
-npx supabase db reset
-```
-
-## Seed data
-
-The repeatable seed source is configured in
-[supabase/config.toml](supabase/config.toml). A local reset loads:
-
-- teams for groups A-L, including TBD support
-- mock matches for calendar and bracket development
-- sample group standings for scoring tests
-
-Recommended seed command:
-
-```bash
-npx supabase db reset
-```
-
-Current note:
-
-- `pnpm seed` is still a placeholder script and does not replace the Supabase
-  CLI seed flow.
-
-## Development commands
-
-```bash
 pnpm dev
 pnpm lint
 pnpm test
 pnpm build
+pnpm backup:critical
 pnpm sync
 pnpm recalculate-points
 ```
 
-What they do:
-
-- `pnpm dev`: start the Next.js app
-- `pnpm lint`: run ESLint
-- `pnpm test`: run Vitest
-- `pnpm build`: production build check
-- `pnpm sync`: run the provider chain and upsert World Cup data
-- `pnpm recalculate-points`: rebuild deterministic points rows
-
-## Auth and protected routes
-
-- Email/password auth is implemented with `@supabase/ssr`.
-- Protected pages live under `app/(protected)`.
-- `middleware.ts` redirects unauthenticated users to `/login`.
-- Profiles are created server-side on first login if missing.
-- `SUPABASE_SERVICE_ROLE_KEY` is only used by server-only admin code and
-  scripts.
-
-## Sync and provider switching
-
-Provider interface:
-
-- `ApiFootballProvider`
-- `StaticWorldCupProvider`
-- `MockWorldCupProvider`
-
-Current MVP default:
-
-```bash
-WORLD_CUP_API_PROVIDER=mock
-```
-
-Behavior:
-
-- `mock` works end-to-end and is the safe default.
-- `static` is a safe skeleton.
-- `apifootball` is a safe skeleton for the later real-provider phase.
-
-The sync endpoint is:
-
-- `POST /api/sync`
-
-It requires:
-
-- `Authorization: Bearer <CRON_SECRET>`
-
-## GitHub Actions
-
-Workflow:
-
-- [.github/workflows/sync-worldcup.yml](.github/workflows/sync-worldcup.yml)
-
-It supports:
-
-- manual `workflow_dispatch`
-- scheduled execution every 6 hours
-
-Required GitHub secrets:
-
-- `APP_URL`
-- `CRON_SECRET`
-
-## Vercel deploy
-
-Primary path:
-
-1. Add every required env var from `.env.example` in Vercel.
-2. Set `APP_URL` and `NEXT_PUBLIC_APP_URL` to the deployed URL.
-3. Ensure the linked Supabase project has the latest migrations.
-4. Add the GitHub repository secret `VERCEL_AUTH_JSON` with the serialized
-   Vercel CLI `auth.json` payload for the project owner session.
-5. Push to `main` or run `Deploy Vercel Production` from GitHub Actions.
-6. Verify login, protected routes, predictions, ranking, and `/api/sync`.
-
-Fallback path:
-
-1. Authenticate locally with `vercel login`.
-2. Run `vercel pull --environment=production`.
-3. Run `vercel build --prod`.
-4. Run `vercel deploy --prebuilt --prod`.
-
-Current operational note:
-
-- Native Vercel Git auto-deploy is not the trusted path right now because the
-  GitHub user `bnovelorotger` is being attributed to a stale Vercel account
-  during Git-triggered deployments. See
-  `docs/VERCEL_AUTO_DEPLOY_RECOVERY_2026-06-25.md`.
-
-## Repository layout
+## Repository Layout
 
 ```text
-app/
-components/
-lib/
-scripts/
-supabase/
-tests/
-.github/workflows/
-docs/
+app/                  Next.js App Router routes
+components/           UI, layout and World Cup components
+lib/                  Supabase clients, services, providers and utilities
+scripts/              Backup, sync and scoring scripts
+supabase/             Migrations and seed data
+tests/                Vitest test suite
+docs/                 Product, architecture, audit and close-out docs
+.github/workflows/    Manual-only operational workflows
 ```
 
-Key runtime areas:
+## Notes For Future Reuse
 
-- `app/(auth)`: login flow
-- `app/(protected)`: dashboard, calendar, predictions, ranking, profile
-- `app/api/sync`: protected sync endpoint
-- `lib/services`: auth/profile, matches, predictions, bracket, scoring,
-  ranking, sync
-- `lib/supabase`: browser, server, admin clients
-- `lib/providers`: mock/static/api-football provider chain
-
-## Security notes
-
-- No client code imports the admin Supabase client.
-- Secrets are expected only in `.env.local`, Vercel env vars, and GitHub
-  secrets.
-- Match and points writes are blocked from clients by RLS.
-- Sync is protected by `CRON_SECRET`.
-
-## Roadmap
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for post-MVP work, especially:
-
-- real external provider implementation
-- richer sync observability
-- knockout propagation and champion predictions
-- league creation and invites
-- push notifications and reminder loops
+This codebase can be reused for another private tournament, but it should start
+from a fresh Supabase project and a new provider season. Keep the backup,
+provenance and restrict-first sync rules from this version; they were the most
+important reliability improvements.
