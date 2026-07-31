@@ -56,9 +56,9 @@
     <text x="742" y="216" fill="#C9D7F2" font-family="Inter, Segoe UI, sans-serif" font-size="17" font-weight="800" letter-spacing="3">FINAL PODIUM</text>
     <text x="742" y="284" fill="#FDE68A" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="27" font-weight="800">1. Pablin Yamal</text>
     <text x="1032" y="284" fill="#F8FAFC" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="34" font-weight="800" text-anchor="end">255</text>
-    <text x="742" y="340" fill="#CBD5E1" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="34" font-weight="800">2. Berni</text>
+    <text x="742" y="340" fill="#CBD5E1" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="27" font-weight="800">2. Berni</text>
     <text x="1032" y="340" fill="#F8FAFC" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="30" font-weight="800" text-anchor="end">248</text>
-    <text x="742" y="392" fill="#FDBA74" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="34" font-weight="800">3. Petiit</text>
+    <text x="742" y="392" fill="#FDBA74" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="27" font-weight="800">3. Petiit</text>
     <text x="1032" y="392" fill="#F8FAFC" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="30" font-weight="800" text-anchor="end">245</text>
     <rect x="742" y="424" width="324" height="34" rx="17" fill="url(#pill)" fill-opacity="0.18"/>
     <text x="904" y="447" fill="#E0F7FF" font-family="Inter, Segoe UI, sans-serif" font-size="15" font-weight="800" text-anchor="middle" letter-spacing="1.5">ARCHIVED FINAL STATE</text>
