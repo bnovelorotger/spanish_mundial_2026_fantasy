@@ -1,6 +1,6 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Liga App Mundial 2026 final archive</title>
-  <desc id="desc">Final project cover for a private World Cup Pick'em app with winner Pablin Yamal and tournament stats.</desc>
+  <title id="title">spanish_mundial_2026_fantasy final archive</title>
+  <desc id="desc">Final project cover for a Spanish private World Cup fantasy Pick'em app with winner Pablin Yamal and tournament stats.</desc>
   <defs>
     <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 60) rotate(45) scale(980 720)">
       <stop stop-color="#00D9FF" stop-opacity="0.22"/>
@@ -33,9 +33,10 @@
   </g>
   <rect x="88" y="116" width="1024" height="2" fill="url(#line)"/>
   <text x="104" y="108" fill="#8FB6FF" font-family="Inter, Segoe UI, sans-serif" font-size="18" font-weight="700" letter-spacing="5">PRIVATE TOURNAMENT MODE</text>
-  <text x="104" y="190" fill="#F8FAFC" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="72" font-weight="800" letter-spacing="-2">Liga App Mundial</text>
-  <text x="104" y="248" fill="#B8C4D9" font-family="Inter, Segoe UI, sans-serif" font-size="28" font-weight="500">World Cup 2026 Pick'em entre amigos</text>
-  <text x="104" y="304" fill="#E2E8F0" font-family="Inter, Segoe UI, sans-serif" font-size="22" font-weight="600">Auth, predicciones, sync real, locks, scoring idempotente y ranking final.</text>
+  <text x="104" y="176" fill="#F8FAFC" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="56" font-weight="800" letter-spacing="-1.5">spanish_mundial</text>
+  <text x="104" y="228" fill="#F8FAFC" font-family="Space Grotesk, Segoe UI, sans-serif" font-size="56" font-weight="800" letter-spacing="-1.5">2026_fantasy</text>
+  <text x="104" y="274" fill="#B8C4D9" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="500">Pick'em español entre amigos</text>
+  <text x="104" y="312" fill="#E2E8F0" font-family="Inter, Segoe UI, sans-serif" font-size="19" font-weight="600">Predicciones, sync real, locks, scoring idempotente y ranking final.</text>
 
   <g>
     <rect x="104" y="360" width="242" height="118" rx="24" fill="#111C31"/>

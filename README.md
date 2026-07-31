@@ -1,14 +1,30 @@
-# Liga App Mundial 2026
+# spanish_mundial_2026_fantasy
 
-![Liga App Mundial 2026 final cover](docs/assets/github-cover.svg)
+![spanish_mundial_2026_fantasy final cover](docs/assets/github-cover.svg)
 
-Private mobile-first Pick'em web app built for a friends league during the
+Mobile-first fantasy Pick'em app built for a Spanish friends league during the
 World Cup 2026. The tournament is now closed and this repository is archived as
 the final product and operational record.
 
 - Final archive tag: `world-cup-2026-final`
 - Production URL during the tournament: `https://app-mundial-sage.vercel.app`
 - Final wrap-up: [docs/PROJECT_WRAP_UP_2026.md](docs/PROJECT_WRAP_UP_2026.md)
+
+## Story
+
+A World Cup is always legendary: the players, the teams, the impossible
+matchups, the late goals, the arguments after every result, and the people you
+share all of it with.
+
+This project came from that exact place. The best work is often the work that is
+fun to build, easy to share, and tied to something people actually care about.
+Football has that effect: it turns a calendar into a ritual and a small group of
+friends into a private tournament with bragging rights.
+
+`spanish_mundial_2026_fantasy` was built to make that shared tournament feel
+real: predictions before the locks, a live ranking after every matchday,
+recoverable scoring, and a final table everyone could argue about long after
+the final whistle.
 
 ## Final Result
 
